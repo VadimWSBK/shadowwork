@@ -1,0 +1,22 @@
+export const questions = [
+  { text: "What emotions do you find hardest to express (e.g., anger, sadness, fear, joy)? Why?", explanation: "This explores suppressed emotions that may be part of your shadow, helping you understand barriers to authentic expression." },
+  { text: "When someone criticizes you, what is your typical first reaction—defensiveness, withdrawal, overexplaining, or something else?", explanation: "Examines defensive patterns that reveal hidden insecurities or unacknowledged aspects of self." },
+  { text: "Which type of person irritates or triggers you the most, and what about them bothers you?", explanation: "Triggers often mirror disowned parts of ourselves; this helps identify projected shadows." },
+  { text: "Think of a time you felt deep shame or embarrassment. What made it feel unbearable?", explanation: "Shame points to core wounds in the shadow; reflecting on it promotes healing and self-acceptance." },
+  { text: "Which situations make you feel powerless, and how do you usually cope?", explanation: "Powerlessness reveals areas of repressed vulnerability; understanding coping mechanisms aids integration." },
+  { text: "What do you believe you must always be or do to be loved or accepted?", explanation: "Uncovers conditional self-worth beliefs that may stem from early conditioning and shadow aspects." },
+  { text: "What aspects of yourself do you rarely share with others for fear of being judged?", explanation: "Highlights hidden traits or experiences in the shadow that, when acknowledged, foster authenticity." },
+  { text: "If someone truly knew everything about you, what part of your past or present would you fear they’d reject?", explanation: "Reveals deepest fears of rejection tied to shadow elements, encouraging self-compassion." },
+  { text: "When was the last time you pretended to be happy or “fine” when you weren’t?", explanation: "Points to patterns of emotional masking, which often hide shadow emotions like sadness or anger." },
+  { text: "What negative label (lazy, selfish, weak, unworthy, etc.) do you secretly fear is true about you?", explanation: "Exposes internalized negative beliefs in the shadow that impact self-esteem and behavior." },
+  { text: "In close relationships, what recurring conflicts or patterns keep showing up?", explanation: "Recurring patterns often reflect unresolved shadow dynamics projected onto others." },
+  { text: "Who in your life do you feel jealous of—and what does their life or personality represent to you?", explanation: "Jealousy highlights repressed desires or qualities in your shadow that you wish to embody." },
+  { text: "Think of someone you can’t forgive. What would it mean to let go of your resentment?", explanation: "Unforgiveness holds shadow energy; exploring release can lead to personal freedom." },
+  { text: "What qualities in others do you admire but struggle to embody yourself?", explanation: "Admired qualities may be disowned parts of your shadow, waiting to be integrated." },
+  { text: "What do you secretly wish you could do if no one would ever judge you?", explanation: "Reveals repressed desires and potentials in the shadow stifled by fear of judgment." },
+  { text: "What pleasure, dream, or lifestyle do you deny yourself because it feels “too selfish,” “too risky,” or “unrealistic”?", explanation: "Denial of desires points to shadow aspects related to self-worth and risk aversion." },
+  { text: "What would you pursue if failure or rejection were impossible?", explanation: "Uncovers ambitions held back by shadow fears, encouraging bold self-expression." },
+  { text: "What do you fear people would think if you showed your true desires openly?", explanation: "Explores fears around vulnerability and authenticity tied to shadow self." },
+  { text: "If your inner child could speak freely, what would they say you need most right now?", explanation: "Connects with the wounded inner child in the shadow, revealing unmet needs." },
+  { text: "When you imagine your highest, most authentic self, what is the biggest difference between that version of you and who you are today?", explanation: "Highlights gaps between current self and potential, often due to unintegrated shadow elements." }
+];
