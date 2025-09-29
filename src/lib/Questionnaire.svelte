@@ -92,31 +92,31 @@
   }
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-4 sm:py-8 px-3 sm:px-4 lg:px-8">
   <div class="w-full max-w-4xl mx-auto">
     <!-- Header Card -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-t-2xl shadow-xl border-b-4 border-frame p-6">
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-800 mb-2">Discover your shadows</h1>
-          <p class="text-gray-600">Question {currentIndex + 1} of {questions.length}</p>
+    <div class="bg-white/95 backdrop-blur-sm rounded-t-2xl shadow-xl border-b-4 border-frame p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
+        <div class="text-center sm:text-left">
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Discover your shadows</h1>
+          <p class="text-gray-600 text-sm sm:text-base">Question {currentIndex + 1} of {questions.length}</p>
         </div>
-        <div class="text-right">
-          <div class="text-2xl font-bold text-gray-800">{Math.round((currentIndex / (questions.length - 1)) * 100)}%</div>
-          <div class="text-sm text-gray-600">Complete</div>
+        <div class="text-center sm:text-right">
+          <div class="text-xl sm:text-2xl font-bold text-gray-800">{Math.round((currentIndex / (questions.length - 1)) * 100)}%</div>
+          <div class="text-xs sm:text-sm text-gray-600">Complete</div>
         </div>
       </div>
       
-      <div class="w-full bg-gray-200 rounded-full h-4 mt-4 shadow-inner" role="progressbar" aria-valuenow={Math.round((currentIndex / (questions.length - 1)) * 100)} aria-valuemin="0" aria-valuemax="100" aria-label="Progress">
-        <div class="h-4 rounded-full transition-all duration-700 ease-out shadow-lg relative overflow-hidden" style="width: {Math.round((currentIndex / (questions.length - 1)) * 100)}%; background: linear-gradient(90deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
+      <div class="w-full bg-gray-200 rounded-full h-3 sm:h-4 mt-4 shadow-inner" role="progressbar" aria-valuenow={Math.round((currentIndex / (questions.length - 1)) * 100)} aria-valuemin="0" aria-valuemax="100" aria-label="Progress">
+        <div class="h-3 sm:h-4 rounded-full transition-all duration-700 ease-out shadow-lg relative overflow-hidden" style="width: {Math.round((currentIndex / (questions.length - 1)) * 100)}%; background: linear-gradient(90deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
         </div>
       </div>
     </div>
 
     <!-- Main Content Card -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-b-2xl shadow-xl p-8 relative overflow-hidden">
-      <div class="relative min-h-[400px]">
+    <div class="bg-white/95 backdrop-blur-sm rounded-b-2xl shadow-xl p-4 sm:p-8 relative overflow-hidden">
+      <div class="relative min-h-[350px] sm:min-h-[400px]">
         {#if !isTransitioning}
           <div 
             in:fly={{ 
@@ -126,14 +126,14 @@
             }}
             class="absolute inset-0"
           >
-            <div class="mb-8">
-              <div class="flex items-start gap-4">
-                <div class="flex-1">
-                  <h2 class="text-xl font-semibold text-gray-800 leading-relaxed mb-4">{questions[displayIndex].text}</h2>
+            <div class="mb-6 sm:mb-8">
+              <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                <div class="flex-1 order-2 sm:order-1">
+                  <h2 class="text-lg sm:text-xl font-semibold text-gray-800 leading-relaxed mb-4">{questions[displayIndex].text}</h2>
                 </div>
                 <button 
                   type="button" 
-                  class="flex-shrink-0 w-10 h-10 bg-primary/10 hover:bg-primary/20 dark:bg-primary-light/10 dark:hover:bg-primary-light/20 text-primary dark:text-primary-light rounded-full flex items-center justify-center text-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-secondary-dark" 
+                  class="flex-shrink-0 order-1 sm:order-2 self-center sm:self-start w-10 h-10 bg-primary/10 hover:bg-primary/20 dark:bg-primary-light/10 dark:hover:bg-primary-light/20 text-primary dark:text-primary-light rounded-full flex items-center justify-center text-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-secondary-dark" 
                   aria-expanded={showInfo} 
                   aria-controls="explanation" 
                   on:click={() => (showInfo = !showInfo)} 
@@ -144,15 +144,15 @@
               </div>
               
               {#if showInfo}
-                <div id="explanation" class="mt-4 bg-frame/10 border-l-4 border-frame p-4 rounded-r-lg" 
+                <div id="explanation" class="mt-4 bg-frame/10 border-l-4 border-frame p-3 sm:p-4 rounded-r-lg" 
                      in:slide={{ duration: 300, easing: quintOut }} 
-                     out:slide={{ duration: 200, easing: cubicInOut }}>
+                     out:slide={{ duration: 300, easing: quintOut }}>
                   <p class="text-gray-700 text-sm leading-relaxed">{questions[displayIndex].explanation}</p>
                 </div>
               {/if}
             </div>
             
-            <div class="space-y-4">
+            <div class="space-y-3 sm:space-y-4">
               <label for="answer" class="block text-sm font-medium text-gray-600">Your reflection:</label>
               <textarea 
                 id="answer"
@@ -164,14 +164,14 @@
                   else if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); prev(); }
                 }} 
                 placeholder="Take your time to reflect deeply on this question..." 
-                rows="8"
-                class="w-full px-4 py-3 text-gray-800 placeholder-gray-500 bg-white border-2 border-secondary/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none shadow-inner"
+                rows="6"
+                class="w-full px-3 sm:px-4 py-3 text-gray-800 placeholder-gray-500 bg-white border-2 border-secondary/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none shadow-inner text-sm sm:text-base"
               ></textarea>
               
-              <div class="flex justify-between items-center text-sm">
-                <div class="flex items-center gap-4">
-                  <span class="text-gray-500">{($answersStore[displayIndex] || '').length} characters</span>
-                  <div class="flex items-center gap-2 text-gray-400">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <span class="text-gray-500 text-xs sm:text-sm">{($answersStore[displayIndex] || '').length} characters</span>
+                  <div class="flex items-center gap-2 text-gray-400 text-xs sm:text-sm">
                     <kbd class="px-2 py-1 bg-gray-100 rounded text-xs">⌘ + Enter</kbd>
                     <span>to continue</span>
                   </div>
@@ -192,37 +192,36 @@
             }}
             class="absolute inset-0"
           >
-            <div class="mb-8">
-              <div class="flex items-start gap-4">
-                <div class="flex-1">
-                  <h2 class="text-xl font-semibold text-gray-800 leading-relaxed mb-4">{questions[displayIndex].text}</h2>
+            <div class="mb-6 sm:mb-8">
+              <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                <div class="flex-1 order-2 sm:order-1">
+                  <h2 class="text-lg sm:text-xl font-semibold text-gray-800 leading-relaxed mb-4">{questions[displayIndex].text}</h2>
                 </div>
                 <button 
                   type="button" 
-                  class="flex-shrink-0 w-10 h-10 bg-primary/10 hover:bg-primary/20 dark:bg-primary-light/10 dark:hover:bg-primary-light/20 text-primary dark:text-primary-light rounded-full flex items-center justify-center text-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-secondary-dark" 
+                  class="flex-shrink-0 order-1 sm:order-2 self-center sm:self-start w-10 h-10 bg-primary/10 hover:bg-primary/20 dark:bg-primary-light/10 dark:hover:bg-primary-light/20 text-primary dark:text-primary-light rounded-full flex items-center justify-center text-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-secondary-dark" 
                   disabled
-                  title="Show explanation"
                 >
                   ?
                 </button>
               </div>
             </div>
             
-            <div class="space-y-4">
+            <div class="space-y-3 sm:space-y-4">
               <label for="answer-transitioning" class="block text-sm font-medium text-gray-600">Your reflection:</label>
               <textarea 
                 id="answer-transitioning"
                 value={$answersStore[displayIndex] || ''} 
                 placeholder="Take your time to reflect deeply on this question..." 
-                rows="8"
+                rows="6"
                 disabled
-                class="w-full px-4 py-3 text-gray-800 placeholder-gray-500 bg-white border-2 border-secondary/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none shadow-inner opacity-75"
+                class="w-full px-3 sm:px-4 py-3 text-gray-800 placeholder-gray-500 bg-white border-2 border-secondary/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-none shadow-inner opacity-75 text-sm sm:text-base"
               ></textarea>
               
-              <div class="flex justify-between items-center text-sm">
-                <div class="flex items-center gap-4">
-                  <span class="text-gray-500">{($answersStore[displayIndex] || '').length} characters</span>
-                  <div class="flex items-center gap-2 text-gray-400">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <span class="text-gray-500 text-xs sm:text-sm">{($answersStore[displayIndex] || '').length} characters</span>
+                  <div class="flex items-center gap-2 text-gray-400 text-xs sm:text-sm">
                     <kbd class="px-2 py-1 bg-gray-100 rounded text-xs">⌘ + Enter</kbd>
                     <span>to continue</span>
                   </div>
@@ -236,11 +235,11 @@
         {/if}
       </div>
       
-      <div class="flex justify-between items-center mt-8 pt-6 border-t border-secondary/10">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-secondary/10">
         <button 
           on:click={prev} 
           disabled={currentIndex === 0 || isTransitioning}
-          class="px-6 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 rounded-xl shadow-sm"
+          class="order-2 sm:order-1 w-full sm:w-auto px-4 sm:px-6 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 rounded-xl shadow-sm"
         >
           ← Previous
         </button>
@@ -254,11 +253,11 @@
         <button 
           on:click={next} 
           disabled={isTransitioning}
-          class="px-8 py-4 text-sm font-bold text-white rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+          class="order-1 sm:order-3 w-full sm:w-auto px-6 sm:px-8 py-4 text-sm font-bold text-white rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
           style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
         >
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300"></div>
-          <span class="relative z-10 flex items-center gap-2">
+          <span class="relative z-10 flex items-center justify-center gap-2">
             {currentIndex === questions.length - 1 ? 'Complete Journey' : 'Continue'}
             <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
