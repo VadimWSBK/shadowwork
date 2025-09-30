@@ -48,12 +48,11 @@
     </div>
     <button
       on:click={onBack}
-      class="px-6 py-3 text-sm font-medium text-white rounded-xl shadow-lg transition-all duration-200 relative overflow-hidden group"
-      style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
+      class="px-6 py-3 text-sm font-medium text-white rounded-xl shadow-lg transition-all duration-200 hover:opacity-90"
+      style="background-color: #0C6E78;"
     >
-      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <span class="relative z-10 flex items-center gap-2">
-        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
         Go to Questionnaire

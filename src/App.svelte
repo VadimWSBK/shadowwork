@@ -1,16 +1,26 @@
 <script lang="ts">
   import Login from './lib/Login.svelte';
+  import Sidebar from './lib/Sidebar.svelte';
   import Questionnaire from './lib/Questionnaire.svelte';
   import ViewAnswers from './lib/ViewAnswers.svelte';
-  import Sidebar from './lib/Sidebar.svelte';
+  import Settings from './lib/Settings.svelte';
   import { courseData } from './lib/questions';
   import type { DayData } from './lib/questions';
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
-  import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
+  import { slide } from 'svelte/transition';
+  import introBg from './assets/shadowwork_bg_intro.webp';
+  import sittingWomanShadow from './assets/sitting_woman_shadow.svg';
+  import day2Img from './assets/shadowworkt_day_2.png';
+  import day3Img from './assets/shadow_work_day_3.png';
+  import day4Img from './assets/shadowwork_day_4.png';
+  import day5Img from './assets/shadowwork_day_5.png';
+  import day6Img from './assets/shadowwork_day_6.png';
+  import day7Img from './assets/shadow_work_day_7.png';
+  
 
-  let currentView: 'login' | 'intro' | 'questionnaire' | 'view-answers' = 'login';
+  let currentView: 'login' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
   let username = '';
   let answers: Record<string, string[]> = {};
   let answersStore = writable<Record<string, string[]>>({});
@@ -19,6 +29,27 @@
   let isMobileMenuOpen = false;
   let currentDay: DayData = courseData[0]; // Start with Intro
   let sidebarOpen = false;
+  let showSettings = false;
+
+  const daySummaries: Record<string, string> = {
+    day1: 'Grounding and emotional awareness. Notice, name, and normalize feelings.',
+    day2: 'Triggers, projection and relationships. See what reactions reveal about you.',
+    day3: 'Shame, guilt and self-beliefs. Meet the inner critic and the stories you carry.',
+    day4: 'Childhood patterns and family conditioning. Trace roles, rules, and dynamics.',
+    day5: 'Anger, boundaries, money and power. Clarify limits, energy, and agency.',
+    day6: 'Desires, authenticity and the golden shadow. Reclaim strengths and true wants.',
+    day7: 'Integration, forgiveness and next steps. Choose small, practical commitments.'
+  };
+
+  const dayIntros: Record<string, { title: string; theme: string; intro: string }> = {
+    day1: { title: 'Meeting your inner world', theme: 'Awareness', intro: 'Every journey begins with noticing. Today you will gently meet the parts of yourself you often overlook. Slow down, name what you feel, and let honesty lead the way.' },
+    day2: { title: 'Triggers and reflections', theme: 'Relationships', intro: 'Relationships are mirrors. When something or someone sets you off, it shows you a part of yourself asking to be seen. Today you will look at triggers and what they reveal.' },
+    day3: { title: 'Shame, guilt and core beliefs', theme: 'Self-beliefs', intro: 'Hidden beliefs can shape your choices. By meeting shame and guilt with kindness, you create space for a truer story. Today you will listen to your inner voice and update it.' },
+    day4: { title: 'Early patterns and family rules', theme: 'Origins', intro: 'Many patterns began in childhood. Roles, rules, and unspoken messages still echo. Today you will trace where they came from and decide which ones you want to keep.' },
+    day5: { title: 'Boundaries, power and energy', theme: 'Agency', intro: 'Power lives in clear boundaries. When you honor your limits, your energy returns. Today you will explore anger, money beliefs, and the places you want to stand taller.' },
+    day6: { title: 'Desires and the golden shadow', theme: 'Authenticity', intro: 'Your deepest desires are signals. Qualities you admire in others may already live in you. Today you will reclaim hidden strengths and say yes to what you truly want.' },
+    day7: { title: 'Integration and next steps', theme: 'Wholeness', intro: 'Wholeness means welcoming all parts of you. Today you will gather your insights, offer yourself forgiveness, and choose small actions that help your growth continue.' }
+  };
 
   function toggleMobileMenu() {
     isMobileMenuOpen = !isMobileMenuOpen;
@@ -130,6 +161,15 @@
     localStorage.setItem(`answers_${username}`, JSON.stringify(answers));
   }
 
+  function calculateCompletionRate(dayId: string): number {
+    const dayAnswers = answers[dayId] || [];
+    const day = courseData.find(d => d.id === dayId);
+    if (!day) return 0;
+    
+    const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
+    return Math.round((answeredCount / day.questions.length) * 100);
+  }
+
   function handleDayComplete(dayId: string) {
     // Handle day completion logic if needed
     console.log(`Day ${dayId} completed`);
@@ -150,7 +190,7 @@
     if (day.id === 'intro') {
       currentView = 'intro';
     } else {
-      currentView = 'questionnaire';
+      currentView = 'day-intro';
     }
   }
 
@@ -161,6 +201,33 @@
     answers = {};
     answersStore.set({});
     currentView = 'login';
+    showSettings = false;
+  }
+
+  function handleChangePassword(event: CustomEvent<{ oldPassword: string; newPassword: string }>) {
+    // For now, just show a success message since we don't have actual password authentication
+    alert('Password changed successfully!');
+    showSettings = false;
+  }
+
+  function handleChangeName(event: CustomEvent<{ newName: string }>) {
+    const { newName } = event.detail;
+    username = newName;
+    localStorage.setItem('shadowwork_username', newName);
+    // No alert popup - the Settings component will show subtle success feedback
+  }
+
+  function handleDeleteAllData() {
+    // Clear all stored data
+    localStorage.removeItem(`answers_${username}`);
+    answers = {};
+    answersStore.set({});
+    // No alert popup - the Settings component will show subtle success feedback
+  }
+
+  function getDayNumber(id: string): number {
+    const m = id.match(/day(\d+)/);
+    return m ? Number(m[1]) : 0;
   }
 </script>
 
@@ -169,7 +236,7 @@
   {#if currentView !== 'login'}
     <nav 
       bind:this={navElement}
-      class="fixed top-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20 transition-all duration-300 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}"
+      class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20 transition-all duration-300 lg:left-80"
     >
       <div class="max-w-none px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
@@ -182,27 +249,21 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </button>
-          
 
           
           <!-- User Account Section -->
           <div class="flex items-center gap-3 ml-auto">
             <span class="text-white/80 text-sm font-medium hidden sm:block">{username}</span>
             <div class="flex items-center">
-              <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg">
+              <button 
+                class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg hover:bg-white/25 transition-all duration-200"
+                on:click={() => showSettings = true}
+                aria-label="Settings"
+                title="Settings"
+              >
                 <span class="text-white font-semibold text-sm">
                   {username.split(' ').map(name => name.charAt(0).toUpperCase()).join('').slice(0, 2)}
                 </span>
-              </div>
-              <button 
-                class="ml-2 p-1 text-white/60 hover:text-white/80 transition-colors duration-200"
-                on:click={logout}
-                aria-label="Logout"
-                title="Logout"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
               </button>
             </div>
           </div>
@@ -222,8 +283,7 @@
           bind:isOpen={sidebarOpen}
         />
       {/if}
-
-      <!-- Main Content Area -->
+ 
       <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-300 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
         {#if currentView === 'login'}
           <Login on:login={handleLogin} />
@@ -231,8 +291,25 @@
           <div class="min-h-screen flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
               <!-- Day Title and Description -->
-              <div class="mb-6 text-left">
-                <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
+              <div class="mb-6 text-left relative">
+                {#if currentDay.id !== 'intro'}
+                  <div class="absolute top-0 right-0">
+                    <div class="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 shadow-lg">
+                      <div class="text-center">
+                        <div class="text-2xl font-bold text-white">{calculateCompletionRate(currentDay.id)}%</div>
+                        <div class="text-xs text-white/80 font-medium">Complete</div>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
+                <div class="flex items-center gap-3 mb-1">
+                  <h1 class="text-2xl lg:text-3xl font-bold text-white">{currentDay.title}</h1>
+                  {#if currentDay.id !== 'intro'}
+                    <span class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full bg-white/20 text-white/90 border border-white/30">
+                      {calculateCompletionRate(currentDay.id)}%
+                    </span>
+                  {/if}
+                </div>
                 <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
               </div>
               
@@ -242,51 +319,49 @@
                 <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded-full after:mt-3">
                   Welcome to Your Shadow Work Journey
                 </h2>
-                <p class="text-white/80 text-base sm:text-lg lg:text-xl leading-snug italic mb-6">A calm, guided space for honest self‑inquiry.</p>
-                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-4 max-w-2xl">
-                  This space is here to help you gently explore the parts of yourself you don’t always see — the thoughts, feelings, and patterns that sit just out of view. As you move through the questions, you’ll bring more light to them, and with that comes clarity, relief, and room to grow.
-                </p>
-                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-4 max-w-2xl">
-                  Don’t overthink it. Write what comes up first — even if it’s messy or incomplete. Honesty matters more than polish.
-                </p>
-                <div class="mt-6 mb-4">
-                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">You may start to notice</p>
-                  <ul class="space-y-3">
-                    <li class="flex items-start gap-3">
-                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                      <span class="text-white/90">Greater clarity about why you react the way you do</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                      <span class="text-white/90">Awareness of hidden beliefs that have shaped your life</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                      <span class="text-white/90">Relief from emotions you’ve been holding back</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                      <span class="text-white/90">Insights into patterns in relationships, work, and self‑worth</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                      <span class="text-white/90">A stronger sense of what you truly want</span>
-                    </li>
+
+                <div class="mt-10 mb-12">
+                  <div class="grid grid-cols-1 gap-8">
+                    <div class="relative overflow-hidden rounded-xl p-6 lg:p-8 bg-cover bg-center bg-no-repeat ring-1 ring-white/10 w-full" style={`background-image: linear-gradient(to bottom right, rgba(0,68,75,0.65), rgba(0,68,75,0.75)), url('${introBg}')`}>
+                      <img src={sittingWomanShadow} alt="silhouette" class="pointer-events-none select-none absolute -right-24 bottom-0 w-[22rem] sm:w-[26rem] md:w-[30rem] opacity-20" />
+                      <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-4">What is shadow work?</p>
+                      <div class="space-y-5 text-white/90 leading-relaxed">
+                        <p>Shadow work is the practice of meeting the hidden sides of yourself with curiosity and compassion. These are the emotions you suppress, the beliefs you inherited, and the patterns that quietly shape your choices. They’re not “bad” parts — just unseen.</p>
+                        <p>When you shine light on them, you stop repeating the same old cycles. You begin to understand why you react the way you do. You discover strengths, desires, and parts of yourself you’ve been denying.</p>
+                        <p>This 7-day journey is designed to guide you gently through that process. With powerful questions and space for honest reflection, you’ll uncover what holds you back, release old stories, and reconnect with your most authentic self. The result? More clarity, more freedom, and more self-trust.</p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <div class="mt-4 mb-6">
+                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">7‑day overview</p>
+                  <ul class="space-y-4">
+                    {#each courseData.slice(1) as day}
+                      <li class="flex items-start gap-3">
+                        <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                        <div>
+                          <p class="text-white font-semibold text-sm sm:text-base">{day.title}: {day.subtitle}</p>
+                          <p class="text-white/90 text-sm">{daySummaries[day.id]}</p>
+                        </div>
+                      </li>
+                    {/each}
                   </ul>
                 </div>
-                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
-                  Completing this process is like holding up a mirror to your inner world. What you discover here can be the first step toward deep transformation.
-                </p>
+
                 <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-8 max-w-2xl">
-                  Take your time. Be real. This is your journey.
+                  Take your time. Be real. This is your journey. You can repeat days, skip and return, and move at your own pace.
                 </p>
-                <div class="flex justify-end">
+
+                <div class="flex justify-start">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-[1.02]"
-                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
+                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group"
+                    style="background-color: #0C6E78;"
                   >
-                    Start the Journey
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+                    <span class="relative z-10">Start the Journey</span>
                   </button>
                 </div>
               </div>
@@ -303,8 +378,88 @@
                         </linearGradient>
                       </defs>
                       <path d="M200 30c60 0 120 40 140 100 20 60-10 140-70 170s-150 10-190-40c-40-50-40-120 0-170 40-50 100-60 120-60z" fill="url(#introGrad)" opacity="0.25"></path>
-                      <circle cx="260" cy="160" r="45" fill="#ffffff" opacity="0.15"></circle>
+                      
                     </svg>
+                  </div>
+                </div>
+              </div>
+            <div class="mt-10 pt-6 border-t border-white/10">
+              <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">How to use this course</p>
+              <ul class="space-y-3">
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="text-white/90">Set aside 10–20 minutes per day. Write freely — honesty over perfection.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="text-white/90">If you feel overwhelmed, pause, breathe, and return later. Support is welcome.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="text-white/90">We recommend revisiting this journey twice a year, or during life transitions.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="text-white/90">Your data is fully encrypted and secure. It is only visible to you.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="text-white/90">Your data will never be shared with anyone.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="text-white/90">You can download your answers anytime or request a full deletion of your data in your profile settings.</span>
+                </li>
+              </ul>
+            </div>
+            </div>
+          </div>
+        {:else if currentView === 'day-intro'}
+          <div class="min-h-screen flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
+            <div class="w-full max-w-6xl mx-auto">
+              <div class="mb-6 text-left">
+                <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
+                <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
+              </div>
+              
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
+                <div class="lg:col-span-2 border-l border-white/10 pl-6">
+                  <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
+                    {dayIntros[currentDay.id]?.title}
+                  </h2>
+                  <div class="flex flex-wrap items-center gap-3 mb-3">
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">Theme: {dayIntros[currentDay.id]?.theme}</span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">Questions: {currentDay.questions.length}</span>
+                  </div>
+                  {#if currentDay.id === 'day1'}
+                    <img src={introBg} alt="Day 1 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {:else if currentDay.id === 'day2'}
+                    <img src={day2Img} alt="Day 2 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {:else if currentDay.id === 'day3'}
+                    <img src={day3Img} alt="Day 3 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {:else if currentDay.id === 'day4'}
+                    <img src={day4Img} alt="Day 4 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {:else if currentDay.id === 'day5'}
+                    <img src={day5Img} alt="Day 5 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {:else if currentDay.id === 'day6'}
+                    <img src={day6Img} alt="Day 6 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {:else if currentDay.id === 'day7'}
+                    <img src={day7Img} alt="Day 7 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                  {/if}
+                  <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
+                    {dayIntros[currentDay.id]?.intro}
+                  </p>
+                  <p class="text-white/80 text-sm mb-6">Tip: Set aside 10–20 minutes. Breathe. Be honest, not perfect.</p>
+                
+                  <div class="flex gap-3 justify-start">
+                    <button
+                      on:click={() => currentView = 'questionnaire'}
+                      class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group"
+                      style="background-color: #0C6E78;"
+                    >
+                      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+                      <span class="relative z-10">Start Day {getDayNumber(currentDay.id)}</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -330,7 +485,24 @@
             }}
           />
           {/if}
+        <footer class="px-4 sm:px-6 lg:px-8 mt-8 mb-6 pt-4 border-t border-white/10 text-center">
+          <p class="text-[11px] sm:text-xs text-white/50 leading-snug">
+            Disclaimer: This app provides educational self‑reflection prompts and is not therapy, counseling, medical, or psychological advice. It does not diagnose, treat, or prevent any condition and is not a substitute for professional care. If you have concerns about your mental or physical health, or you are experiencing significant distress, please consult a qualified healthcare professional. If you feel unsafe or in Crisis, seek immediate support from local emergency or Crisis services.
+          </p>
+        </footer>
         </div>
       </div>
+
+  <!-- Settings Modal -->
+  {#if showSettings}
+    <Settings 
+      {username}
+      on:close={() => showSettings = false}
+      on:logout={logout}
+      on:changePassword={handleChangePassword}
+      on:changeName={handleChangeName}
+      on:deleteAllData={handleDeleteAllData}
+    />
+  {/if}
 
 </main>

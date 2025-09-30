@@ -13,7 +13,6 @@
   export let currentDay: DayData;
 
   let currentIndex = 0;
-  let showInfo = false;
   let answerEl: HTMLTextAreaElement;
   let saveTimer: number;
   let isTransitioning = false;
@@ -48,7 +47,6 @@
     
     if (currentIndex < questions.length - 1) {
       currentIndex++;
-      showInfo = false;
       tick().then(() => answerEl?.focus());
     } else {
       const unanswered = dayAnswers.filter((a) => !a || a.trim().length === 0).length;
@@ -75,7 +73,6 @@
     
     if (currentIndex > 0) {
       currentIndex--;
-      showInfo = false;
       tick().then(() => answerEl?.focus());
     }
   }
@@ -225,9 +222,7 @@
             <div class="mb-2 sm:mb-4 lg:mb-2 xl:mb-6">
               <div class="flex-1">
                 <h2 class="text-lg lg:text-xl font-bold text-white leading-tight mb-3 bounce-in" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
-                <p class="text-sm text-white/70 italic leading-relaxed bounce-in" style="animation-delay: 0.2s;">
-                  {questions[displayIndex].explanation}
-                </p>
+                <p class="text-white/70 text-sm mt-2 italic">{questions[displayIndex].explanation}</p>
               </div>
             </div>
             
@@ -352,8 +347,8 @@
           <button 
             on:click={next} 
             disabled={isTransitioning}
-            class="order-2 w-auto flex-1 sm:flex-none px-5 py-3 text-sm font-bold text-white rounded-lg transition-all duration-200 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg"
-            style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
+            class="order-2 w-auto flex-1 sm:flex-none px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background-color: #0C6E78;"
           >
             <span class="flex items-center justify-center gap-2">
               {currentIndex === questions.length - 1 ? `Complete ${currentDay.title}` : 'Next'}
@@ -371,42 +366,47 @@
 <!-- Confirmation Modal -->
 {#if showConfirmModal}
   <div 
-    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-    transition:fade={{ duration: 200 }}
+    class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+    transition:fade={{ duration: 300 }}
     on:click={cancelComplete}
   >
     <div 
-      class="bg-white/20 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-6 max-w-md w-full mx-4"
-      transition:fly={{ y: 20, duration: 300, easing: cubicInOut }}
+      class="bg-gradient-to-br from-white/25 via-white/20 to-white/15 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 max-w-lg w-full mx-4 relative overflow-hidden"
+      transition:fly={{ y: 30, duration: 400, easing: cubicInOut }}
       on:click|stopPropagation
     >
+      <!-- Subtle background pattern -->
+      <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-50"></div>
+      
       <!-- Modal Header -->
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      <div class="text-center mb-8 relative z-10">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center shadow-lg relative overflow-hidden group" 
+             style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12"></div>
+          <svg class="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-white mb-2">Complete this day?</h3>
-        <p class="text-white/80 text-sm">
-          You have <span class="font-semibold text-white">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
+        <h3 class="text-2xl font-bold text-white mb-3 drop-shadow-sm">Complete this day?</h3>
+        <p class="text-white/90 text-base leading-relaxed">
+          You have <span class="font-bold text-white bg-white/20 px-2 py-1 rounded-lg">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
         </p>
       </div>
 
       <!-- Modal Actions -->
-      <div class="flex gap-3 justify-end">
+      <div class="flex gap-4 justify-center relative z-10">
         <button
           on:click={cancelComplete}
-          class="px-6 py-3 text-sm font-medium text-white/80 bg-white/20 hover:bg-white/30 rounded-lg transition-all duration-200 border border-white/30"
+          class="px-8 py-3 text-base font-semibold text-white/90 bg-white/20 hover:bg-white/30 rounded-xl transition-all duration-300 border border-white/40 hover:border-white/60 hover:scale-105 hover:shadow-lg backdrop-blur-sm"
         >
           Cancel
         </button>
         <button
           on:click={confirmComplete}
-          class="px-6 py-3 text-sm font-bold text-white rounded-lg shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 relative overflow-hidden group"
-          style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
+          class="px-8 py-3 text-base font-bold text-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group"
+          style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
         >
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
           <span class="relative z-10">OK</span>
         </button>
       </div>
