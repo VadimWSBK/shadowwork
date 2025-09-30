@@ -1,13 +1,16 @@
 <script lang="ts">
-  import { questions } from './questions';
+  import { courseData, type DayData } from './questions';
   import { type Writable } from 'svelte/store';
   import { tick } from 'svelte';
   import { fade, fly, slide } from 'svelte/transition';
   import { cubicInOut, quintOut } from 'svelte/easing';
 
-  export let answersStore: Writable<string[]>;
+  export let answersStore: Writable<Record<string, string[]>>;
   export let onComplete = () => {};
+  export let onDayComplete = (dayId: string) => {};
+  export let onShowAnswers = () => {};
   export let username = '';
+  export let currentDay: DayData;
 
   let currentIndex = 0;
   let showInfo = false;
@@ -16,11 +19,24 @@
   let isTransitioning = false;
   let direction: 'forward' | 'backward' = 'forward';
   let displayIndex = 0; // Separate display index for smoother transitions
+  let showConfirmModal = false;
+  let unansweredCount = 0;
 
+  // Reset currentIndex when day changes
+  $: if (currentDay) {
+    currentIndex = 0;
+    displayIndex = 0;
+    isTransitioning = false;
+  }
+
+  $: questions = currentDay.questions;
   $: current = questions[currentIndex];
   $: currentQuestion = current.text;
   $: explanation = current.explanation;
-  $: charCount = ($answersStore[currentIndex] || '').length;
+  $: dayAnswers = $answersStore[currentDay.id] || [];
+  $: charCount = (dayAnswers[currentIndex] || '').length;
+  $: answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
+  $: completionRate = Math.round((answeredCount / questions.length) * 100);
 
   // Update display index after transition completes
   $: if (!isTransitioning) {
@@ -35,13 +51,23 @@
       showInfo = false;
       tick().then(() => answerEl?.focus());
     } else {
-      const unanswered = $answersStore.filter((a) => !a || a.trim().length === 0).length;
+      const unanswered = dayAnswers.filter((a) => !a || a.trim().length === 0).length;
       if (unanswered > 0) {
-        const proceed = confirm(`You have ${unanswered} unanswered ${unanswered === 1 ? 'question' : 'questions'}. Do you want to finish?`);
-        if (!proceed) return;
+        unansweredCount = unanswered;
+        showConfirmModal = true;
+      } else {
+        onDayComplete(currentDay.id);
       }
-      onComplete();
     }
+  }
+
+  function confirmComplete() {
+    showConfirmModal = false;
+    onDayComplete(currentDay.id);
+  }
+
+  function cancelComplete() {
+    showConfirmModal = false;
   }
 
   async function prev() {
@@ -57,9 +83,12 @@
   function updateAnswer(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     const value = target.value;
-    answersStore.update((a: string[]) => {
-      a[currentIndex] = value;
-      return a;
+    answersStore.update((allAnswers) => {
+      if (!allAnswers[currentDay.id]) {
+        allAnswers[currentDay.id] = [];
+      }
+      allAnswers[currentDay.id][currentIndex] = value;
+      return allAnswers;
     });
     if (typeof window !== 'undefined' && username) {
       clearTimeout(saveTimer);
@@ -147,30 +176,42 @@
   }
 </style>
 
-<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-2 sm:py-4 lg:py-8 xl:py-12 px-2 sm:px-4 lg:px-8 xl:px-12">
-  <div class="w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto">
-    <!-- Header Card -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-t-2xl shadow-xl border-b-4 border-frame p-3 sm:p-4 lg:p-6 xl:p-8 transition-all duration-300 hover:card-hover">
-      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 lg:gap-6">
+<div class="min-h-screen flex items-center justify-center py-4 px-4">
+  <div class="w-full max-w-4xl mx-auto">
+
+    <!-- Header -->
+    <div class="p-4 mb-6">
+      <!-- View Answers Button -->
+      <div class="flex justify-end mb-4">
+        <button 
+          on:click={onShowAnswers}
+          class="px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors duration-200 rounded-lg backdrop-blur-sm border border-white/30"
+        >
+          View Answers
+        </button>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div class="text-center sm:text-left">
-          <h1 class="text-xl sm:text-2xl lg:text-3xl xl:text-3xl font-bold text-gray-800 mb-2 sm:mb-2 lg:mb-3 bounce-in">Discover your shadows</h1>
-          <p class="text-gray-600 text-sm sm:text-base lg:text-lg xl:text-lg transition-all duration-300">Question {currentIndex + 1} of {questions.length}</p>
+          <h2 class="text-xl lg:text-2xl font-bold text-white mb-2 bounce-in">{currentDay.title}</h2>
+          <p class="text-white/80 text-base lg:text-lg transition-all duration-300">{currentDay.subtitle}</p>
+          <p class="text-white/60 text-sm lg:text-base mt-1">Question {currentIndex + 1} of {questions.length}</p>
         </div>
         <div class="text-center sm:text-right">
-          <div class="text-lg sm:text-xl lg:text-2xl xl:text-2xl font-bold text-gray-800 transition-all duration-500 bounce-in" style="animation-delay: 0.2s;">{Math.round((currentIndex / (questions.length - 1)) * 100)}%</div>
-          <div class="text-xs sm:text-sm lg:text-base xl:text-base text-gray-600">Complete</div>
+          <div class="text-xl lg:text-2xl font-bold text-white transition-all duration-500 bounce-in" style="animation-delay: 0.2s;">{completionRate}%</div>
+          <div class="text-sm lg:text-base text-white/70">Complete</div>
         </div>
       </div>
       
-      <div class="w-full bg-gray-200 rounded-full h-2 sm:h-3 lg:h-4 xl:h-5 mt-3 sm:mt-4 lg:mt-5 shadow-inner" role="progressbar" aria-valuenow={Math.round((currentIndex / (questions.length - 1)) * 100)} aria-valuemin="0" aria-valuemax="100" aria-label="Progress">
-        <div class="h-2 sm:h-3 lg:h-4 xl:h-5 rounded-full transition-all duration-700 ease-out shadow-lg relative overflow-hidden progress-bar-animated" style="width: {Math.round((currentIndex / (questions.length - 1)) * 100)}%; background: linear-gradient(90deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+      <div class="w-full bg-gray-400 rounded-full h-3 lg:h-4 mt-4" role="progressbar" aria-valuenow={completionRate} aria-valuemin="0" aria-valuemax="100" aria-label="Progress">
+        <div class="h-3 lg:h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden progress-bar-animated" style="width: {completionRate}%; background: linear-gradient(90deg, #ffffff 0%, #f3f4f6 50%, #ffffff 100%);">
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/50 to-transparent animate-pulse"></div>
         </div>
       </div>
     </div>
 
-    <!-- Main Content Card -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-b-2xl shadow-xl p-2 sm:p-4 lg:p-5 xl:p-6 relative transition-all duration-300 hover:card-hover">
+    <!-- Main Content -->
+    <div class="p-4 relative">
       <div class="relative">
         {#if !isTransitioning}
           <div 
@@ -183,19 +224,19 @@
           >
             <div class="mb-2 sm:mb-4 lg:mb-2 xl:mb-6">
               <div class="flex-1">
-                <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-gray-900 leading-tight mb-2 sm:mb-3 lg:mb-4 bounce-in bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
-                <p class="text-sm text-gray-600 italic leading-relaxed bounce-in" style="animation-delay: 0.2s;">
+                <h2 class="text-lg lg:text-xl font-bold text-white leading-tight mb-3 bounce-in" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
+                <p class="text-sm text-white/70 italic leading-relaxed bounce-in" style="animation-delay: 0.2s;">
                   {questions[displayIndex].explanation}
                 </p>
               </div>
             </div>
             
             <div class="space-y-2 sm:space-y-3 lg:space-y-4 xl:space-y-5">
-              <label for="answer" class="block text-sm sm:text-sm lg:text-base xl:text-base font-medium text-gray-600 bounce-in" style="animation-delay: 0.4s;">Your reflection:</label>
+              <label for="answer" class="block text-sm font-medium text-white/90 bounce-in" style="animation-delay: 0.4s;">Your reflection:</label>
               <textarea 
                 id="answer"
                 bind:this={answerEl}
-                value={$answersStore[displayIndex] || ''} 
+                value={dayAnswers[displayIndex] || ''} 
                 on:input={updateAnswer}
                 on:focus={() => answerEl?.classList.add('textarea-focus')}
                 on:blur={() => answerEl?.classList.remove('textarea-focus')}
@@ -208,19 +249,15 @@
                 autocapitalize="sentences"
                 inputmode="text"
                 enterkeyhint="next"
-                class="w-full px-2 sm:px-3 lg:px-4 xl:px-5 py-2 sm:py-3 lg:py-3 xl:py-4 leading-relaxed text-gray-800 placeholder-gray-500 bg-white border-2 border-secondary/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200 resize-y shadow-inner text-sm sm:text-base lg:text-lg xl:text-lg min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px] bounce-in"
-                style="animation-delay: 0.5s;"
+                class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 resize-y shadow-inner backdrop-blur-sm text-base min-h-[140px]"
               ></textarea>
               
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm lg:text-base xl:text-base bounce-in" style="animation-delay: 0.6s;">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 lg:gap-4 xl:gap-5">
-                  <span class="text-gray-500 text-xs sm:text-sm lg:text-base xl:text-base transition-all duration-300">{($answersStore[displayIndex] || '').length} characters</span>
-                  <div class="hidden sm:flex items-center gap-2 text-gray-400 text-xs sm:text-sm lg:text-base xl:text-base">
-                    <kbd class="px-2 py-1 bg-gray-100 rounded text-xs lg:text-sm xl:text-sm shimmer-effect">⌘ + Enter</kbd>
-                    <span>to continue</span>
-                  </div>
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bounce-in" style="animation-delay: 0.6s;">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <span class="text-white/60 text-sm transition-all duration-300">{(dayAnswers[displayIndex] || '').length} characters</span>
+                  <span class="text-white/40 text-xs">• Aim for 300+ characters. The more detailed, the better.</span>
                 </div>
-                <div class="text-gray-400 text-xs sm:text-xs lg:text-sm xl:text-sm">
+                <div class="text-white/50 text-sm">
                   Auto-saved
                 </div>
               </div>
@@ -239,7 +276,10 @@
             <div class="mb-2 sm:mb-4 lg:mb-5 xl:mb-6">
               <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 lg:gap-4 xl:gap-5">
                 <div class="flex-1 order-2 sm:order-1">
-                  <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-gray-900 leading-tight mb-2 sm:mb-3 lg:mb-4 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{questions[displayIndex].text}</h2>
+                  <div class="mb-1">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase">{currentDay.subtitle}</span>
+                  </div>
+                  <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white leading-tight mb-2 sm:mb-3 lg:mb-4">{questions[displayIndex].text}</h2>
                 </div>
                 <button 
                   type="button" 
@@ -252,25 +292,21 @@
             </div>
             
             <div class="space-y-3 sm:space-y-4 lg:space-y-5 xl:space-y-6">
-              <label for="answer-transitioning" class="block text-sm sm:text-sm lg:text-base xl:text-base font-medium text-gray-600">Your reflection:</label>
+              <label for="answer-transitioning" class="block text-sm sm:text-sm lg:text-base xl:text-base font-medium text-white/90">Your reflection:</label>
               <textarea 
                 id="answer-transitioning"
-                value={$answersStore[displayIndex] || ''} 
+                value={dayAnswers[displayIndex] || ''} 
                 placeholder="Take your time to reflect deeply on this question..." 
                 rows="6"
                 disabled
-                class="w-full px-3 sm:px-4 lg:px-5 xl:px-6 py-3 sm:py-3 lg:py-4 xl:py-5 text-gray-800 placeholder-gray-500 bg-white border-2 border-secondary/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 resize-y shadow-inner opacity-75 text-sm sm:text-base lg:text-lg xl:text-lg min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px]"
+                class="w-full px-3 sm:px-4 lg:px-5 xl:px-6 py-3 sm:py-3 lg:py-4 xl:py-5 text-gray-800 placeholder-gray-400 bg-gray-200 border-2 border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-primary transition-all duration-200 resize-y shadow-inner opacity-75 text-sm sm:text-base lg:text-lg xl:text-lg min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px]"
               ></textarea>
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm lg:text-base xl:text-base">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 lg:gap-5 xl:gap-6">
-                  <span class="text-gray-500 text-xs sm:text-sm lg:text-base xl:text-base">{($answersStore[displayIndex] || '').length} characters</span>
-                  <div class="flex items-center gap-2 text-gray-400 text-xs sm:text-sm lg:text-base xl:text-base">
-                    <kbd class="px-2 py-1 bg-gray-100 rounded text-xs lg:text-sm xl:text-sm">⌘ + Enter</kbd>
-                    <span>to continue</span>
-                  </div>
+                  <span class="text-white/60 text-xs sm:text-sm lg:text-base xl:text-base">{(dayAnswers[displayIndex] || '').length} characters</span>
                 </div>
-                <div class="text-gray-400 text-xs sm:text-xs lg:text-sm xl:text-base">
+                <div class="text-white/50 text-xs sm:text-xs lg:text-sm xl:text-base">
                   Auto-saved
                 </div>
               </div>
@@ -280,37 +316,48 @@
       </div>
       
       <!-- Fixed Navigation Section -->
-      <div class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-secondary/10 p-2 sm:p-3 lg:p-4 xl:p-5 rounded-b-2xl">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 lg:gap-4 xl:gap-5">
+      <div class="absolute bottom-0 left-0 right-0 p-4">
+        <div class="flex flex-row justify-between items-center gap-4">
           <button 
             on:click={prev} 
             disabled={currentIndex === 0 || isTransitioning}
-            class="order-2 sm:order-1 w-full sm:w-auto px-2 sm:px-3 lg:px-4 xl:px-5 py-2 sm:py-2 lg:py-2 xl:py-3 text-sm sm:text-sm lg:text-base xl:text-base font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded-xl shadow-sm"
+            class="order-1 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded-lg backdrop-blur-sm border border-white/30"
           >
             ← Previous
           </button>
           
-          <div class="flex sm:hidden items-center justify-center space-x-2">
+          <div class="hidden sm:flex items-center space-x-3 order-2">
             {#each questions as _, i}
-              <div class="w-1.5 h-1.5 rounded-full cursor-pointer {i === currentIndex ? '' : i < currentIndex ? 'bg-gray-400' : 'bg-gray-300'}" style="{i === currentIndex ? 'background-color: #0C6E78;' : ''}" on:click={() => { if (!isTransitioning) { currentIndex = i; } }}></div>
-            {/each}
-          </div>
-          
-          <div class="hidden sm:flex items-center space-x-1 lg:space-x-2 xl:space-x-2 order-2">
-            {#each questions as _, i}
-              <div class="w-1.5 h-1.5 lg:w-2 lg:h-2 xl:w-2 xl:h-2 rounded-full cursor-pointer {i === currentIndex ? '' : i < currentIndex ? 'bg-gray-400' : 'bg-gray-300'}" style="{i === currentIndex ? 'background-color: #0C6E78;' : ''}" on:click={() => { if (!isTransitioning) { currentIndex = i; } }}></div>
+              {@const isAnswered = dayAnswers[i] && dayAnswers[i].trim().length > 0}
+              <div class="relative group">
+                <div
+                  class="w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 {i === currentIndex ? 'border-white/60 bg-white/20 shadow-lg' : isAnswered ? 'border-white/40 bg-white/10' : 'border-white/20 bg-transparent'}"
+                  tabindex="0"
+                  on:click={() => { if (!isTransitioning) { currentIndex = i; } }}
+                  on:keydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isTransitioning) { e.preventDefault(); currentIndex = i; } }}
+                >
+                  {#if isAnswered}
+                    <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                  {/if}
+                </div>
+                <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-white text-xs font-semibold opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0 transition-all duration-200 whitespace-nowrap" style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
+                  {i + 1} {isAnswered ? '✓' : ''}
+                </div>
+              </div>
             {/each}
           </div>
           
           <button 
             on:click={next} 
             disabled={isTransitioning}
-            class="order-1 sm:order-3 w-full sm:w-auto px-3 sm:px-4 lg:px-5 xl:px-6 py-2 sm:py-3 lg:py-3 xl:py-4 text-sm sm:text-sm lg:text-base xl:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg"
+            class="order-2 w-auto flex-1 sm:flex-none px-5 py-3 text-sm font-bold text-white rounded-lg transition-all duration-200 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg"
             style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
           >
-            <span class="flex items-center justify-center gap-2 lg:gap-3">
-              {currentIndex === questions.length - 1 ? 'Complete Journey' : 'Continue'}
-              <svg class="w-4 h-4 sm:w-4 sm:h-4 lg:w-5 lg:h-5 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span class="flex items-center justify-center gap-2">
+              {currentIndex === questions.length - 1 ? `Complete ${currentDay.title}` : 'Next'}
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </span>
@@ -320,3 +367,49 @@
     </div>
   </div>
 </div>
+
+<!-- Confirmation Modal -->
+{#if showConfirmModal}
+  <div 
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    transition:fade={{ duration: 200 }}
+    on:click={cancelComplete}
+  >
+    <div 
+      class="bg-white/20 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-6 max-w-md w-full mx-4"
+      transition:fly={{ y: 20, duration: 300, easing: cubicInOut }}
+      on:click|stopPropagation
+    >
+      <!-- Modal Header -->
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Complete this day?</h3>
+        <p class="text-white/80 text-sm">
+          You have <span class="font-semibold text-white">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
+        </p>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="flex gap-3 justify-end">
+        <button
+          on:click={cancelComplete}
+          class="px-6 py-3 text-sm font-medium text-white/80 bg-white/20 hover:bg-white/30 rounded-lg transition-all duration-200 border border-white/30"
+        >
+          Cancel
+        </button>
+        <button
+          on:click={confirmComplete}
+          class="px-6 py-3 text-sm font-bold text-white rounded-lg shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 relative overflow-hidden group"
+          style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
+        >
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <span class="relative z-10">OK</span>
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

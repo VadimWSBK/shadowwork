@@ -2,18 +2,23 @@
   import Login from './lib/Login.svelte';
   import Questionnaire from './lib/Questionnaire.svelte';
   import ViewAnswers from './lib/ViewAnswers.svelte';
+  import Sidebar from './lib/Sidebar.svelte';
+  import { courseData } from './lib/questions';
+  import type { DayData } from './lib/questions';
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
-  let currentView: 'login' | 'questionnaire' | 'view-answers' = 'login';
+  let currentView: 'login' | 'intro' | 'questionnaire' | 'view-answers' = 'login';
   let username = '';
-  let answers: string[] = [];
-  let answersStore = writable<string[]>([]);
+  let answers: Record<string, string[]> = {};
+  let answersStore = writable<Record<string, string[]>>({});
   let navElement: HTMLElement;
   let isDarkText = false;
   let isMobileMenuOpen = false;
+  let currentDay: DayData = courseData[0]; // Start with Intro
+  let sidebarOpen = false;
 
   function toggleMobileMenu() {
     isMobileMenuOpen = !isMobileMenuOpen;
@@ -34,7 +39,7 @@
     const savedUsername = localStorage.getItem('shadowwork_username');
     if (savedUsername) {
       username = savedUsername;
-      currentView = 'questionnaire';
+      currentView = 'intro';
       loadAnswers();
     }
 
@@ -80,7 +85,8 @@
   function handleLogin(event: CustomEvent<{ username: string }>) {
     username = event.detail.username;
     localStorage.setItem('shadowwork_username', username);
-    currentView = 'questionnaire';
+    currentDay = courseData[0]; // Set to intro
+    currentView = 'intro';
     loadAnswers();
   }
 
@@ -89,12 +95,16 @@
     if (saved) {
       answers = JSON.parse(saved);
     } else {
-      answers = new Array(10).fill('');
+      // Initialize empty answers for all days
+      answers = {};
+      courseData.forEach(day => {
+        answers[day.id] = new Array(day.questions.length).fill('');
+      });
     }
     answersStore.set(answers);
   }
 
-  function handleAnswersUpdate(event: CustomEvent<string[]>) {
+  function handleAnswersUpdate(event: CustomEvent<Record<string, string[]>>) {
     answers = event.detail;
   }
 
@@ -110,19 +120,46 @@
     currentView = 'questionnaire';
   }
 
-  function handleUpdateAnswer(index: number, newAnswer: string) {
-    answers[index] = newAnswer;
+  function handleUpdateAnswer(dayId: string, index: number, newAnswer: string) {
+    if (!answers[dayId]) {
+      answers[dayId] = [];
+    }
+    answers[dayId][index] = newAnswer;
     answersStore.set(answers);
     // Save to localStorage
     localStorage.setItem(`answers_${username}`, JSON.stringify(answers));
+  }
+
+  function handleDayComplete(dayId: string) {
+    // Handle day completion logic if needed
+    console.log(`Day ${dayId} completed`);
+    
+    // Find the current day index
+    const currentDayIndex = courseData.findIndex(day => day.id === dayId);
+    
+    // Check if there's a next day available
+    if (currentDayIndex !== -1 && currentDayIndex < courseData.length - 1) {
+      // Automatically progress to the next day
+      const nextDay = courseData[currentDayIndex + 1];
+      handleDayChange(nextDay);
+    }
+  }
+
+  function handleDayChange(day: DayData) {
+    currentDay = day;
+    if (day.id === 'intro') {
+      currentView = 'intro';
+    } else {
+      currentView = 'questionnaire';
+    }
   }
 
   function logout() {
     localStorage.removeItem('shadowwork_username');
     localStorage.removeItem(`answers_${username}`);
     username = '';
-    answers = [];
-    answersStore.set([]);
+    answers = {};
+    answersStore.set({});
     currentView = 'login';
   }
 </script>
@@ -132,144 +169,168 @@
   {#if currentView !== 'login'}
     <nav 
       bind:this={navElement}
-      class="sticky top-0 z-50 shadow-lg transition-colors duration-300"
-      style="background-color: #0C6E78; color: white;"
+      class="fixed top-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20 transition-all duration-300 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}"
     >
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-none px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <!-- Logo/Brand -->
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-black/5">
-              <svg class="w-6 h-6 text-gray-200" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-xl font-semibold tracking-tight transition-colors duration-300">Shadow Work</h1>
-              <p class="text-xs opacity-70 transition-colors duration-300">Guided self‑inquiry</p>
-            </div>
-          </div>
+          <!-- Mobile menu button -->
+          <button 
+            class="lg:hidden p-2 text-white/80 hover:text-white"
+            on:click={() => sidebarOpen = !sidebarOpen}
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+          
 
-          <!-- Desktop Navigation Links -->
-          <div class="hidden md:flex items-center space-x-2 sm:space-x-4">
-            <button
-              on:click={() => currentView = 'questionnaire'}
-              class="px-3 sm:px-4 py-2 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-300 {currentView === 'questionnaire' ? 'bg-current/15 opacity-100' : ''}"
-            >
-              Questions
-            </button>
-            <button
-              on:click={showAnswers}
-              class="px-3 sm:px-4 py-2 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-300 {currentView === 'view-answers' ? 'bg-current/15 opacity-100' : ''}"
-            >
-              My Answers
-            </button>
-            <div class="h-6 w-px bg-current/20"></div>
-            <div class="flex items-center space-x-3">
-              <span class="text-sm opacity-80 transition-colors duration-300">Welcome, {username}</span>
-              <button
+          
+          <!-- User Account Section -->
+          <div class="flex items-center gap-3 ml-auto">
+            <span class="text-white/80 text-sm font-medium hidden sm:block">{username}</span>
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg">
+                <span class="text-white font-semibold text-sm">
+                  {username.split(' ').map(name => name.charAt(0).toUpperCase()).join('').slice(0, 2)}
+                </span>
+              </div>
+              <button 
+                class="ml-2 p-1 text-white/60 hover:text-white/80 transition-colors duration-200"
                 on:click={logout}
-                class="px-3 py-1.5 text-xs font-medium opacity-90 hover:opacity-100 hover:bg-red-500/20 rounded-md transition-all duration-300"
+                aria-label="Logout"
+                title="Logout"
               >
-                Logout
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
               </button>
             </div>
           </div>
-
-          <!-- Mobile Menu Button -->
-          <div class="md:hidden">
-            <button
-              on:click={toggleMobileMenu}
-              class="p-2 rounded-lg hover:bg-current/10 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/20"
-              aria-label="Toggle mobile menu"
-            >
-              <svg class="w-6 h-6 transition-transform duration-200 {isMobileMenuOpen ? 'rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {#if !isMobileMenuOpen}
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                {:else}
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                {/if}
-              </svg>
-            </button>
-          </div>
         </div>
-
-        <!-- Mobile Menu -->
-        {#if isMobileMenuOpen}
-          <div 
-            class="md:hidden border-t border-white/10 mt-2 pt-4 pb-4 space-y-2"
-            transition:slide={{ duration: 300, easing: quintOut }}
-          >
-            <button
-              on:click={() => { currentView = 'questionnaire'; closeMobileMenu(); }}
-              class="block w-full text-left px-4 py-3 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-200 {currentView === 'questionnaire' ? 'bg-current/15 opacity-100' : ''}"
-            >
-              Questions
-            </button>
-            <button
-              on:click={() => { showAnswers(); closeMobileMenu(); }}
-              class="block w-full text-left px-4 py-3 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-200 {currentView === 'view-answers' ? 'bg-current/15 opacity-100' : ''}"
-            >
-              My Answers
-            </button>
-            <div class="border-t border-white/10 my-2"></div>
-            <div class="px-4 py-2">
-              <span class="text-sm opacity-80">Welcome, {username}</span>
-            </div>
-            <button
-              on:click={() => { logout(); closeMobileMenu(); }}
-              class="block w-full text-left px-4 py-3 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-red-500/20 rounded-lg transition-all duration-200"
-            >
-              Logout
-            </button>
-          </div>
-        {/if}
       </div>
     </nav>
   {/if}
+<!-- Main Content -->
+    <div class="relative">
+      <!-- Sidebar -->
+      {#if currentView !== 'login'}
+        <Sidebar 
+          {courseData}
+          currentDay={currentDay.id}
+          {answersStore}
+          onDayChange={handleDayChange}
+          bind:isOpen={sidebarOpen}
+        />
+      {/if}
 
-  <!-- Main Content -->
-  <div class="relative">
-    {#if currentView === 'login'}
-      <Login on:login={handleLogin} />
-    {:else if currentView === 'questionnaire'}
-      <Questionnaire 
-        answersStore={answersStore}
-        {username}
-        onComplete={() => {}}
-      />
-    {:else if currentView === 'view-answers'}
-      <ViewAnswers 
-        {answers} 
-        {username}
-        onBack={backToQuestionnaire}
-        onUpdateAnswer={handleUpdateAnswer}
-      />
-    {/if}
-  </div>
-
-  <!-- Footer -->
-  {#if currentView !== 'login'}
-    <footer class="bg-secondary/20 backdrop-blur-sm border-t border-white/10 mt-16">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <div class="text-center md:text-left">
-            <p class="text-white/80 text-sm">
-              Shadow Work — a calm space for honest reflection
-            </p>
-            <p class="text-white/60 text-xs mt-1">
-              Your reflections are private and stored locally on your device
-            </p>
+      <!-- Main Content Area -->
+      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-300 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
+        {#if currentView === 'login'}
+          <Login on:login={handleLogin} />
+        {:else if currentView === 'intro'}
+          <div class="min-h-screen flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
+            <div class="w-full max-w-6xl mx-auto">
+              <!-- Day Title and Description -->
+              <div class="mb-6 text-left">
+                <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
+                <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
+              </div>
+              
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-center">
+                <!-- Copy -->
+                <div class="lg:col-span-2 border-l border-white/10 pl-6">
+                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded-full after:mt-3">
+                  Welcome to Your Shadow Work Journey
+                </h2>
+                <p class="text-white/80 text-base sm:text-lg lg:text-xl leading-snug italic mb-6">A calm, guided space for honest self‑inquiry.</p>
+                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-4 max-w-2xl">
+                  This space is here to help you gently explore the parts of yourself you don’t always see — the thoughts, feelings, and patterns that sit just out of view. As you move through the questions, you’ll bring more light to them, and with that comes clarity, relief, and room to grow.
+                </p>
+                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-4 max-w-2xl">
+                  Don’t overthink it. Write what comes up first — even if it’s messy or incomplete. Honesty matters more than polish.
+                </p>
+                <div class="mt-6 mb-4">
+                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">You may start to notice</p>
+                  <ul class="space-y-3">
+                    <li class="flex items-start gap-3">
+                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                      <span class="text-white/90">Greater clarity about why you react the way you do</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                      <span class="text-white/90">Awareness of hidden beliefs that have shaped your life</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                      <span class="text-white/90">Relief from emotions you’ve been holding back</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                      <span class="text-white/90">Insights into patterns in relationships, work, and self‑worth</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                      <span class="text-white/90">A stronger sense of what you truly want</span>
+                    </li>
+                  </ul>
+                </div>
+                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
+                  Completing this process is like holding up a mirror to your inner world. What you discover here can be the first step toward deep transformation.
+                </p>
+                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-8 max-w-2xl">
+                  Take your time. Be real. This is your journey.
+                </p>
+                <div class="flex justify-end">
+                  <button
+                    on:click={() => handleDayChange(courseData[1])}
+                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-[1.02]"
+                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
+                  >
+                    Start the Journey
+                  </button>
+                </div>
+              </div>
+    
+                <!-- Decorative Image / Illustration -->
+                <div class="lg:col-span-1">
+                  <div class="relative">
+                    <svg aria-hidden="true" class="w-full h-auto" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="introGrad" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stop-color="#0C6E78" />
+                          <stop offset="50%" stop-color="#0A5A63" />
+                          <stop offset="100%" stop-color="#0C6E78" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M200 30c60 0 120 40 140 100 20 60-10 140-70 170s-150 10-190-40c-40-50-40-120 0-170 40-50 100-60 120-60z" fill="url(#introGrad)" opacity="0.25"></path>
+                      <circle cx="260" cy="160" r="45" fill="#ffffff" opacity="0.15"></circle>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center space-x-6 text-xs text-white/60">
-            <span>Progress is automatically saved</span>
-            <span>•</span>
-            <span>Data stays on your device</span>
-            <span>•</span>
-            <span>Take your time</span>
-          </div>
+        {:else if currentView === 'questionnaire'}
+          <Questionnaire 
+            {answersStore}
+            {username}
+            {currentDay}
+            onComplete={() => {}}
+            onDayComplete={handleDayComplete}
+            onShowAnswers={showAnswers}
+          />
+        {:else if currentView === 'view-answers'}
+          <ViewAnswers 
+            answers={$answersStore[currentDay.id] || []} 
+            {username}
+            {currentDay}
+            onBack={backToQuestionnaire}
+            onUpdateAnswer={(index, answer) => {
+              handleUpdateAnswer(currentDay.id, index, answer);
+            }}
+          />
+          {/if}
         </div>
       </div>
-    </footer>
-  {/if}
+
 </main>
