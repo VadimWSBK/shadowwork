@@ -28,10 +28,10 @@
   }
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark py-4 px-3 sm:py-6 sm:px-4 lg:py-8 lg:px-8">
   <div class="max-w-5xl mx-auto">
     <!-- Header -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-t-2xl shadow-xl border-b-4 border-frame p-6 mb-0">
+    <div class="bg-white/95 backdrop-blur-sm rounded-t-2xl shadow-xl border-b-4 border-frame p-4 sm:p-5 lg:p-6 mb-0">
       <div class="flex justify-between items-center">
         <div>
           <h1 class="text-3xl font-bold text-gray-800 mb-2">Discover your shadows</h1>
@@ -54,12 +54,12 @@
     </div>
 
     <!-- Content -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-b-2xl shadow-xl p-8">
-      <div class="space-y-6">
+    <div class="bg-white/95 backdrop-blur-sm rounded-b-2xl shadow-xl p-4 sm:p-6 lg:p-8">
+      <div class="space-y-4 sm:space-y-5 lg:space-y-6">
         {#each questions as question, i}
           <div class="bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
             <!-- Question Header -->
-            <div class="p-6 border-b border-gray-100">
+            <div class="p-4 sm:p-5 lg:p-6 border-b border-gray-100">
               <div class="flex items-start gap-4">
                 <div class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
                      style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);">
@@ -77,7 +77,7 @@
             </div>
             
             <!-- Answer Section -->
-            <div class="p-6">
+            <div class="p-4 sm:p-5 lg:p-6">
               {#if editingIndex === i}
                 <!-- Edit Mode -->
                 <div class="space-y-4">
@@ -154,10 +154,10 @@
       </div>
       
       <!-- Summary Stats -->
-      <div class="mt-12 pt-8 border-t border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">Journey Summary</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="text-center p-6 bg-gradient-to-br from-[#0C6E78]/5 to-[#0C6E78]/10 rounded-xl border border-[#0C6E78]/20 shadow-sm">
+      <div class="mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-7 lg:pt-8 border-t border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 sm:mb-5 lg:mb-6 text-center">Journey Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+          <div class="text-center p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-[#0C6E78]/5 to-[#0C6E78]/10 rounded-xl border border-[#0C6E78]/20 shadow-sm">
             <div class="text-3xl font-bold text-gray-800 mb-2">
               {answers.filter(a => a && a.trim()).length}
             </div>
@@ -166,7 +166,7 @@
             </div>
           </div>
           
-          <div class="text-center p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 shadow-sm">
+          <div class="text-center p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 shadow-sm">
             <div class="text-3xl font-bold text-gray-800 mb-2">
               {answers.filter(a => a && a.trim()).reduce((total, answer) => total + answer.length, 0).toLocaleString()}
             </div>
@@ -175,7 +175,7 @@
             </div>
           </div>
           
-          <div class="text-center p-6 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 shadow-sm">
+          <div class="text-center p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 shadow-sm">
             <div class="text-3xl font-bold text-gray-800 mb-2">
               {Math.round((answers.filter(a => a && a.trim()).length / questions.length) * 100)}%
             </div>
@@ -185,8 +185,8 @@
           </div>
         </div>
         
-        <div class="mt-8 text-center">
-          <div class="bg-gradient-to-r from-gray-50 to-white rounded-xl p-6 border border-gray-200">
+        <div class="mt-6 sm:mt-7 lg:mt-8 text-center">
+          <div class="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 sm:p-5 lg:p-6 border border-gray-200">
             <p class="text-gray-700 text-base leading-relaxed max-w-3xl mx-auto">
               Your journey of self-discovery is ongoing. These reflections are stepping stones toward greater self-awareness and personal growth. 
               Consider revisiting these questions periodically as you continue to evolve.

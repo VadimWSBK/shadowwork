@@ -4,6 +4,8 @@
   import ViewAnswers from './lib/ViewAnswers.svelte';
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
+  import { slide } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
   let currentView: 'login' | 'questionnaire' | 'view-answers' = 'login';
   let username = '';
@@ -11,6 +13,21 @@
   let answersStore = writable<string[]>([]);
   let navElement: HTMLElement;
   let isDarkText = false;
+  let isMobileMenuOpen = false;
+
+  function toggleMobileMenu() {
+    isMobileMenuOpen = !isMobileMenuOpen;
+  }
+
+  function closeMobileMenu() {
+    isMobileMenuOpen = false;
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    if (isMobileMenuOpen && navElement && !navElement.contains(event.target as Node)) {
+      closeMobileMenu();
+    }
+  }
 
   onMount(() => {
     // Check if user is already logged in
@@ -20,6 +37,9 @@
       currentView = 'questionnaire';
       loadAnswers();
     }
+
+    // Add click outside listener for mobile menu
+    document.addEventListener('click', handleClickOutside);
 
     // Add scroll listener for dynamic text color
     const handleScroll = () => {
@@ -43,6 +63,7 @@
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleClickOutside);
     };
   });
 
@@ -129,8 +150,8 @@
             </div>
           </div>
 
-          <!-- Navigation Links -->
-          <div class="flex items-center space-x-2 sm:space-x-4">
+          <!-- Desktop Navigation Links -->
+          <div class="hidden md:flex items-center space-x-2 sm:space-x-4">
             <button
               on:click={() => currentView = 'questionnaire'}
               class="px-3 sm:px-4 py-2 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-300 {currentView === 'questionnaire' ? 'bg-current/15 opacity-100' : ''}"
@@ -154,7 +175,55 @@
               </button>
             </div>
           </div>
+
+          <!-- Mobile Menu Button -->
+          <div class="md:hidden">
+            <button
+              on:click={toggleMobileMenu}
+              class="p-2 rounded-lg hover:bg-current/10 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/20"
+              aria-label="Toggle mobile menu"
+            >
+              <svg class="w-6 h-6 transition-transform duration-200 {isMobileMenuOpen ? 'rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {#if !isMobileMenuOpen}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                {:else}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                {/if}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <!-- Mobile Menu -->
+        {#if isMobileMenuOpen}
+          <div 
+            class="md:hidden border-t border-white/10 mt-2 pt-4 pb-4 space-y-2"
+            transition:slide={{ duration: 300, easing: quintOut }}
+          >
+            <button
+              on:click={() => { currentView = 'questionnaire'; closeMobileMenu(); }}
+              class="block w-full text-left px-4 py-3 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-200 {currentView === 'questionnaire' ? 'bg-current/15 opacity-100' : ''}"
+            >
+              Questions
+            </button>
+            <button
+              on:click={() => { showAnswers(); closeMobileMenu(); }}
+              class="block w-full text-left px-4 py-3 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-current/10 rounded-lg transition-all duration-200 {currentView === 'view-answers' ? 'bg-current/15 opacity-100' : ''}"
+            >
+              My Answers
+            </button>
+            <div class="border-t border-white/10 my-2"></div>
+            <div class="px-4 py-2">
+              <span class="text-sm opacity-80">Welcome, {username}</span>
+            </div>
+            <button
+              on:click={() => { logout(); closeMobileMenu(); }}
+              class="block w-full text-left px-4 py-3 text-sm font-medium opacity-90 hover:opacity-100 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+            >
+              Logout
+            </button>
+          </div>
+        {/if}
       </div>
     </nav>
   {/if}
