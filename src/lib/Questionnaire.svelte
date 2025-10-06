@@ -4,13 +4,15 @@
   import { tick } from 'svelte';
   import { fade, fly, slide } from 'svelte/transition';
   import { cubicInOut, quintOut } from 'svelte/easing';
+  import { t } from './i18n';
+  import { persistAnswer } from './supabaseHelpers';
 
   export let answersStore: Writable<Record<string, string[]>>;
-  export let onComplete = () => {};
   export let onDayComplete = (dayId: string) => {};
   export let onShowAnswers = () => {};
   export let username = '';
   export let currentDay: DayData;
+  export let currentLanguage: 'en' | 'de' | 'pl' = 'en';
 
   let currentIndex = 0;
   let answerEl: HTMLTextAreaElement;
@@ -91,6 +93,13 @@
       clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
         localStorage.setItem(`answers_${username}`, JSON.stringify($answersStore));
+        // Fire-and-forget persistence to Supabase
+        void persistAnswer({
+          username,
+          dayId: currentDay.id,
+          questionIndex: currentIndex,
+          answer: value,
+        });
       }, 300);
     }
   }
@@ -110,27 +119,6 @@
   @keyframes bounce-in {
     0% { transform: scale(0.95); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
-  }
-  
-  .shimmer-effect {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .shimmer-effect::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    transform: translateX(-100%);
-    animation: shimmer 2s infinite;
-  }
-  
-  .pulse-glow {
-    animation: pulse-glow 2s infinite;
   }
   
   .bounce-in {
@@ -156,21 +144,6 @@
     0% { background-position: 0 0; }
     100% { background-position: 20px 0; }
   }
-  
-  .button-press {
-    transform: translateY(1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .textarea-focus {
-    transform: scale(1.01);
-    box-shadow: 0 8px 25px rgba(12, 110, 120, 0.15);
-  }
-  
-  .card-hover {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  }
 </style>
 
 <div class="min-h-screen flex items-center justify-center py-4 px-4">
@@ -184,7 +157,7 @@
           on:click={onShowAnswers}
           class="px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors duration-200 rounded-lg backdrop-blur-sm border border-white/30"
         >
-          View Answers
+          {t(currentLanguage, 'questionnaire.viewAnswers')}
         </button>
       </div>
       
@@ -192,15 +165,15 @@
         <div class="text-center sm:text-left">
           <h2 class="text-xl lg:text-2xl font-bold text-white mb-2 bounce-in">{currentDay.title}</h2>
           <p class="text-white/80 text-base lg:text-lg transition-all duration-300">{currentDay.subtitle}</p>
-          <p class="text-white/60 text-sm lg:text-base mt-1">Question {currentIndex + 1} of {questions.length}</p>
+          <p class="text-white/60 text-sm lg:text-base mt-1">{t(currentLanguage, 'questionnaire.questionXofY', { x: currentIndex + 1, y: questions.length })}</p>
         </div>
         <div class="text-center sm:text-right">
           <div class="text-xl lg:text-2xl font-bold text-white transition-all duration-500 bounce-in" style="animation-delay: 0.2s;">{completionRate}%</div>
-          <div class="text-sm lg:text-base text-white/70">Complete</div>
+          <div class="text-sm lg:text-base text-white/70">{t(currentLanguage, 'questionnaire.complete')}</div>
         </div>
       </div>
       
-      <div class="w-full bg-gray-400 rounded-full h-3 lg:h-4 mt-4" role="progressbar" aria-valuenow={completionRate} aria-valuemin="0" aria-valuemax="100" aria-label="Progress">
+      <div class="w-full bg-gray-400 rounded-full h-3 lg:h-4 mt-4" role="progressbar" aria-valuenow={completionRate} aria-valuemin="0" aria-valuemax="100" aria-label={t(currentLanguage, 'questionnaire.progressAria')}>
         <div class="h-3 lg:h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden progress-bar-animated" style="width: {completionRate}%; background: linear-gradient(90deg, #ffffff 0%, #f3f4f6 50%, #ffffff 100%);">
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/50 to-transparent animate-pulse"></div>
         </div>
@@ -227,7 +200,7 @@
             </div>
             
             <div class="space-y-2 sm:space-y-3 lg:space-y-4 xl:space-y-5">
-              <label for="answer" class="block text-sm font-medium text-white/90 bounce-in" style="animation-delay: 0.4s;">Your reflection:</label>
+              <label for="answer" class="block text-sm font-medium text-white/90 bounce-in" style="animation-delay: 0.4s;">{t(currentLanguage, 'questionnaire.reflectionLabel')}</label>
               <textarea 
                 id="answer"
                 bind:this={answerEl}
@@ -239,7 +212,7 @@
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); next(); }
                   else if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); prev(); }
                 }} 
-                placeholder="Take your time to reflect deeply on this question..." 
+                placeholder={t(currentLanguage, 'questionnaire.reflectionPlaceholder')} 
                 rows="6"
                 autocapitalize="sentences"
                 inputmode="text"
@@ -249,11 +222,11 @@
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bounce-in" style="animation-delay: 0.6s;">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                  <span class="text-white/60 text-sm transition-all duration-300">{(dayAnswers[displayIndex] || '').length} characters</span>
-                  <span class="text-white/40 text-xs">• Aim for 300+ characters. The more detailed, the better.</span>
+                  <span class="text-white/60 text-sm transition-all duration-300">{t(currentLanguage, 'questionnaire.characters', { count: (dayAnswers[displayIndex] || '').length })}</span>
+                  <span class="text-white/40 text-xs">{t(currentLanguage, 'questionnaire.aimForDetail')}</span>
                 </div>
                 <div class="text-white/50 text-sm">
-                  Auto-saved
+                  {t(currentLanguage, 'questionnaire.autoSaved')}
                 </div>
               </div>
             </div>
@@ -287,11 +260,11 @@
             </div>
             
             <div class="space-y-3 sm:space-y-4 lg:space-y-5 xl:space-y-6">
-              <label for="answer-transitioning" class="block text-sm sm:text-sm lg:text-base xl:text-base font-medium text-white/90">Your reflection:</label>
+              <label for="answer-transitioning" class="block text-sm sm:text-sm lg:text-base xl:text-base font-medium text-white/90">{t(currentLanguage, 'questionnaire.reflectionLabel')}</label>
               <textarea 
                 id="answer-transitioning"
                 value={dayAnswers[displayIndex] || ''} 
-                placeholder="Take your time to reflect deeply on this question..." 
+                placeholder={t(currentLanguage, 'questionnaire.reflectionPlaceholder')} 
                 rows="6"
                 disabled
                 class="w-full px-3 sm:px-4 lg:px-5 xl:px-6 py-3 sm:py-3 lg:py-4 xl:py-5 text-gray-800 placeholder-gray-400 bg-gray-200 border-2 border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-primary transition-all duration-200 resize-y shadow-inner opacity-75 text-sm sm:text-base lg:text-lg xl:text-lg min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px]"
@@ -299,10 +272,10 @@
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm lg:text-base xl:text-base">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 lg:gap-5 xl:gap-6">
-                  <span class="text-white/60 text-xs sm:text-sm lg:text-base xl:text-base">{(dayAnswers[displayIndex] || '').length} characters</span>
+                  <span class="text-white/60 text-xs sm:text-sm lg:text-base xl:text-base">{t(currentLanguage, 'questionnaire.characters', { count: (dayAnswers[displayIndex] || '').length })}</span>
                 </div>
                 <div class="text-white/50 text-xs sm:text-xs lg:text-sm xl:text-base">
-                  Auto-saved
+                  {t(currentLanguage, 'questionnaire.autoSaved')}
                 </div>
               </div>
             </div>
@@ -325,18 +298,17 @@
             {#each questions as _, i}
               {@const isAnswered = dayAnswers[i] && dayAnswers[i].trim().length > 0}
               <div class="relative group">
-                <div
+                <button
                   class="w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 {i === currentIndex ? 'border-white/60 bg-white/20 shadow-lg' : isAnswered ? 'border-white/40 bg-white/10' : 'border-white/20 bg-transparent'}"
-                  tabindex="0"
                   on:click={() => { if (!isTransitioning) { currentIndex = i; } }}
-                  on:keydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isTransitioning) { e.preventDefault(); currentIndex = i; } }}
+                  aria-label="Go to question {i + 1}"
                 >
                   {#if isAnswered}
                     <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                     </svg>
                   {/if}
-                </div>
+                </button>
                 <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-white text-xs font-semibold opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0 transition-all duration-200 whitespace-nowrap" style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
                   {i + 1} {isAnswered ? '✓' : ''}
                 </div>
@@ -369,11 +341,18 @@
     class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
     transition:fade={{ duration: 300 }}
     on:click={cancelComplete}
+    on:keydown={(e) => { if (e.key === 'Escape') cancelComplete(); }}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+    tabindex="-1"
   >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
     <div 
       class="bg-gradient-to-br from-white/25 via-white/20 to-white/15 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 max-w-lg w-full mx-4 relative overflow-hidden"
       transition:fly={{ y: 30, duration: 400, easing: cubicInOut }}
       on:click|stopPropagation
+      role="document"
     >
       <!-- Subtle background pattern -->
       <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-50"></div>
@@ -387,7 +366,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-2xl font-bold text-white mb-3 drop-shadow-sm">Complete this day?</h3>
+        <h3 id="modal-title" class="text-2xl font-bold text-white mb-3 drop-shadow-sm">Complete this day?</h3>
         <p class="text-white/90 text-base leading-relaxed">
           You have <span class="font-bold text-white bg-white/20 px-2 py-1 rounded-lg">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
         </p>

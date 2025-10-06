@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import type { DayData } from './questions';
   import type { Writable } from 'svelte/store';
+  import { t } from './i18n';
   
   const dispatch = createEventDispatcher();
   
@@ -10,6 +11,7 @@
   export let answersStore: Writable<Record<string, string[]>>;
   export let onDayChange: (day: DayData) => void;
   export let isOpen: boolean = true;
+  export let currentLanguage: 'en' | 'de' | 'pl' = 'en';
   
   // Calculate overall progress
   $: overallProgress = calculateOverallProgress($answersStore, courseData);
@@ -43,13 +45,14 @@
   <div class="p-6 border-b border-white/30 relative z-50">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-white mb-2">Shadow Work Course</h1>
-        <p class="text-white/80 text-sm">7-Day Journey of Self-Discovery</p>
+        <h1 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'sidebar.title')}</h1>
+        <p class="text-white/80 text-sm">{t(currentLanguage, 'sidebar.subtitle')}</p>
       </div>
       <!-- Mobile close button -->
       <button 
         class="lg:hidden p-2 text-white/90 hover:text-white"
         on:click={() => isOpen = false}
+        aria-label={t(currentLanguage, 'sidebar.close')}
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -62,7 +65,7 @@
   <div class="p-6 border-b border-white/30">
     <div class="mb-3">
       <div class="flex justify-between items-center mb-2">
-        <span class="text-white text-sm font-medium">Overall Progress</span>
+        <span class="text-white text-sm font-medium">{t(currentLanguage, 'sidebar.overallProgress')}</span>
         <span class="text-white text-sm font-bold">{Math.round(overallProgress)}%</span>
       </div>
       <div class="w-full bg-white/25 rounded-full h-2">
@@ -72,7 +75,7 @@
         ></div>
       </div>
     </div>
-    <p class="text-white/70 text-xs">{Math.round((overallProgress / 100) * 100)} of 100 questions completed</p>
+    <p class="text-white/70 text-xs">{t(currentLanguage, 'sidebar.completedOf100', { count: Math.round((overallProgress / 100) * 100) })}</p>
   </div>
   
   <!-- Navigation Menu -->
@@ -99,7 +102,7 @@
             </div>
             {#if day.id !== 'intro'}
               <div class="flex flex-col items-end text-xs text-white/70 ml-2">
-                <div>{day.questions.length} questions</div>
+                <div>{t(currentLanguage, 'sidebar.questionsCount', { count: day.questions.length })}</div>
               </div>
             {/if}
           </div>
@@ -114,20 +117,13 @@
   <!-- Footer -->
   <div class="p-6 border-t border-white/30">
     <div class="text-center">
-      <p class="text-white/70 text-xs">Take your time with each question</p>
-      <p class="text-white/70 text-xs">Your journey matters</p>
+      <p class="text-white/70 text-xs">{t(currentLanguage, 'sidebar.footerLine1')}</p>
+      <p class="text-white/70 text-xs">{t(currentLanguage, 'sidebar.footerLine2')}</p>
     </div>
   </div>
 </div>
 
 <style>
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
   /* Prevent scroll propagation from sidebar to main content */
   .sidebar-container {
     overscroll-behavior: contain;

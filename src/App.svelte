@@ -4,24 +4,29 @@
   import Questionnaire from './lib/Questionnaire.svelte';
   import ViewAnswers from './lib/ViewAnswers.svelte';
   import Settings from './lib/Settings.svelte';
-  import { courseData } from './lib/questions';
+  import { getCourseData } from './lib/questions';
   import type { DayData } from './lib/questions';
+  import type { Language } from './lib/questions';
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import { quintOut } from 'svelte/easing';
   import { slide } from 'svelte/transition';
   import introBg from './assets/shadowwork_bg_intro.webp';
-  import sittingWomanShadow from './assets/sitting_woman_shadow.svg';
+  import sittingWomanShadow from './assets/logo_shadowwork.png';
   import day2Img from './assets/shadowworkt_day_2.png';
   import day3Img from './assets/shadow_work_day_3.png';
   import day4Img from './assets/shadowwork_day_4.png';
   import day5Img from './assets/shadowwork_day_5.png';
   import day6Img from './assets/shadowwork_day_6.png';
   import day7Img from './assets/shadow_work_day_7.png';
+  import { t, getDaySummary, getDayIntro } from './lib/i18n';
   
 
   let currentView: 'login' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
   let username = '';
+  let currentLanguage: Language = 'en';
+  let courseData: DayData[] = getCourseData(currentLanguage);
+  $: courseData = getCourseData(currentLanguage);
   let answers: Record<string, string[]> = {};
   let answersStore = writable<Record<string, string[]>>({});
   let navElement: HTMLElement;
@@ -66,11 +71,18 @@
   }
 
   onMount(() => {
+    // Load saved language
+    const savedLanguage = localStorage.getItem('shadowwork_language') as Language | null;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
+      currentLanguage = savedLanguage;
+    }
+
     // Check if user is already logged in
     const savedUsername = localStorage.getItem('shadowwork_username');
     if (savedUsername) {
       username = savedUsername;
       currentView = 'intro';
+      currentDay = courseData[0];
       loadAnswers();
     }
 
@@ -225,6 +237,17 @@
     // No alert popup - the Settings component will show subtle success feedback
   }
 
+  function handleChangeLanguage(event: CustomEvent<{ language: Language }>) {
+    const { language } = event.detail;
+    currentLanguage = language;
+    localStorage.setItem('shadowwork_language', language);
+    // Keep the same current day id when switching languages
+    const newData = getCourseData(language);
+    const sameId = currentDay?.id || 'intro';
+    const updatedDay = newData.find(d => d.id === sameId) || newData[0];
+    currentDay = updatedDay;
+  }
+
   function getDayNumber(id: string): number {
     const m = id.match(/day(\d+)/);
     return m ? Number(m[1]) : 0;
@@ -244,6 +267,7 @@
           <button 
             class="lg:hidden p-2 text-white/80 hover:text-white"
             on:click={() => sidebarOpen = !sidebarOpen}
+            aria-label="Toggle sidebar menu"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -258,8 +282,8 @@
               <button 
                 class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg hover:bg-white/25 transition-all duration-200"
                 on:click={() => showSettings = true}
-                aria-label="Settings"
-                title="Settings"
+                aria-label={t(currentLanguage, 'settings.title')}
+                title={t(currentLanguage, 'settings.title')}
               >
                 <span class="text-white font-semibold text-sm">
                   {username.split(' ').map(name => name.charAt(0).toUpperCase()).join('').slice(0, 2)}
@@ -281,12 +305,13 @@
           {answersStore}
           onDayChange={handleDayChange}
           bind:isOpen={sidebarOpen}
+          {currentLanguage}
         />
       {/if}
  
       <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-300 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
         {#if currentView === 'login'}
-          <Login on:login={handleLogin} />
+          <Login {currentLanguage} on:login={handleLogin} />
         {:else if currentView === 'intro'}
           <div class="min-h-screen flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
@@ -297,7 +322,8 @@
                     <div class="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 shadow-lg">
                       <div class="text-center">
                         <div class="text-2xl font-bold text-white">{calculateCompletionRate(currentDay.id)}%</div>
-                        <div class="text-xs text-white/80 font-medium">Complete</div>
+-                        <div class="text-xs text-white/80 font-medium">Complete</div>
++                        <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
                       </div>
                     </div>
                   </div>
@@ -317,18 +343,18 @@
                 <!-- Copy -->
                 <div class="lg:col-span-2 border-l border-white/10 pl-6">
                 <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded-full after:mt-3">
-                  Welcome to Your Shadow Work Journey
+                  {t(currentLanguage, 'app.welcomeTitle')}
                 </h2>
 
                 <div class="mt-10 mb-12">
                   <div class="grid grid-cols-1 gap-8">
                     <div class="relative overflow-hidden rounded-xl p-6 lg:p-8 bg-cover bg-center bg-no-repeat ring-1 ring-white/10 w-full" style={`background-image: linear-gradient(to bottom right, rgba(0,68,75,0.65), rgba(0,68,75,0.75)), url('${introBg}')`}>
                       <img src={sittingWomanShadow} alt="silhouette" class="pointer-events-none select-none absolute -right-24 bottom-0 w-[22rem] sm:w-[26rem] md:w-[30rem] opacity-20" />
-                      <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-4">What is shadow work?</p>
+                      <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-4">{t(currentLanguage, 'app.whatIsShadowWorkTitle')}</p>
                       <div class="space-y-5 text-white/90 leading-relaxed">
-                        <p>Shadow work is the practice of meeting the hidden sides of yourself with curiosity and compassion. These are the emotions you suppress, the beliefs you inherited, and the patterns that quietly shape your choices. They’re not “bad” parts — just unseen.</p>
-                        <p>When you shine light on them, you stop repeating the same old cycles. You begin to understand why you react the way you do. You discover strengths, desires, and parts of yourself you’ve been denying.</p>
-                        <p>This 7-day journey is designed to guide you gently through that process. With powerful questions and space for honest reflection, you’ll uncover what holds you back, release old stories, and reconnect with your most authentic self. The result? More clarity, more freedom, and more self-trust.</p>
+                        <p>{t(currentLanguage, 'app.whatIsShadowWorkP1')}</p>
+                        <p>{t(currentLanguage, 'app.whatIsShadowWorkP2')}</p>
+                        <p>{t(currentLanguage, 'app.whatIsShadowWorkP3')}</p>
                       </div>
                     </div>
 
@@ -336,14 +362,14 @@
                 </div>
 
                 <div class="mt-4 mb-6">
-                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">7‑day overview</p>
+                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">{t(currentLanguage, 'app.overviewTitle')}</p>
                   <ul class="space-y-4">
                     {#each courseData.slice(1) as day}
                       <li class="flex items-start gap-3">
                         <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                         <div>
                           <p class="text-white font-semibold text-sm sm:text-base">{day.title}: {day.subtitle}</p>
-                          <p class="text-white/90 text-sm">{daySummaries[day.id]}</p>
+                          <p class="text-white/90 text-sm">{getDaySummary(currentLanguage, day.id)}</p>
                         </div>
                       </li>
                     {/each}
@@ -351,7 +377,7 @@
                 </div>
 
                 <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-8 max-w-2xl">
-                  Take your time. Be real. This is your journey. You can repeat days, skip and return, and move at your own pace.
+                  {t(currentLanguage, 'app.takeYourTimeLine')}
                 </p>
 
                 <div class="flex justify-start">
@@ -361,7 +387,7 @@
                     style="background-color: #0C6E78;"
                   >
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                    <span class="relative z-10">Start the Journey</span>
+                    <span class="relative z-10">{t(currentLanguage, 'app.startJourneyButton')}</span>
                   </button>
                 </div>
               </div>
@@ -384,31 +410,31 @@
                 </div>
               </div>
             <div class="mt-10 pt-6 border-t border-white/10">
-              <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">How to use this course</p>
+              <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">{t(currentLanguage, 'app.howToUseTitle')}</p>
               <ul class="space-y-3">
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">Set aside 10–20 minutes per day. Write freely — honesty over perfection.</span>
+                  <span class="text-white/90">{t(currentLanguage, 'app.howTo1')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">If you feel overwhelmed, pause, breathe, and return later. Support is welcome.</span>
+                  <span class="text-white/90">{t(currentLanguage, 'app.howTo2')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">We recommend revisiting this journey twice a year, or during life transitions.</span>
+                  <span class="text-white/90">{t(currentLanguage, 'app.howTo3')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">Your data is fully encrypted and secure. It is only visible to you.</span>
+                  <span class="text-white/90">{t(currentLanguage, 'app.howTo4')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">Your data will never be shared with anyone.</span>
+                  <span class="text-white/90">{t(currentLanguage, 'app.howTo5')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">You can download your answers anytime or request a full deletion of your data in your profile settings.</span>
+                  <span class="text-white/90">{t(currentLanguage, 'app.howTo6')}</span>
                 </li>
               </ul>
             </div>
@@ -425,11 +451,11 @@
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
                 <div class="lg:col-span-2 border-l border-white/10 pl-6">
                   <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
-                    {dayIntros[currentDay.id]?.title}
+                    {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
                   </h2>
                   <div class="flex flex-wrap items-center gap-3 mb-3">
-                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">Theme: {dayIntros[currentDay.id]?.theme}</span>
-                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">Questions: {currentDay.questions.length}</span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
                   </div>
                   {#if currentDay.id === 'day1'}
                     <img src={introBg} alt="Day 1 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
@@ -447,9 +473,9 @@
                     <img src={day7Img} alt="Day 7 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
                   {/if}
                   <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
-                    {dayIntros[currentDay.id]?.intro}
+                    {getDayIntro(currentLanguage, currentDay.id)?.intro}
                   </p>
-                  <p class="text-white/80 text-sm mb-6">Tip: Set aside 10–20 minutes. Breathe. Be honest, not perfect.</p>
+                  <p class="text-white/80 text-sm mb-6">{t(currentLanguage, 'app.dayIntroTip')}</p>
                 
                   <div class="flex gap-3 justify-start">
                     <button
@@ -458,7 +484,7 @@
                       style="background-color: #0C6E78;"
                     >
                       <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                      <span class="relative z-10">Start Day {getDayNumber(currentDay.id)}</span>
+                      <span class="relative z-10">{t(currentLanguage, 'app.startDayButton', { day: getDayNumber(currentDay.id) })}</span>
                     </button>
                   </div>
                 </div>
@@ -470,7 +496,7 @@
             {answersStore}
             {username}
             {currentDay}
-            onComplete={() => {}}
+            {currentLanguage}
             onDayComplete={handleDayComplete}
             onShowAnswers={showAnswers}
           />
@@ -479,6 +505,7 @@
             answers={$answersStore[currentDay.id] || []} 
             {username}
             {currentDay}
+            {currentLanguage}
             onBack={backToQuestionnaire}
             onUpdateAnswer={(index, answer) => {
               handleUpdateAnswer(currentDay.id, index, answer);
@@ -497,11 +524,13 @@
   {#if showSettings}
     <Settings 
       {username}
+      {currentLanguage}
       on:close={() => showSettings = false}
       on:logout={logout}
       on:changePassword={handleChangePassword}
       on:changeName={handleChangeName}
       on:deleteAllData={handleDeleteAllData}
+      on:changeLanguage={handleChangeLanguage}
     />
   {/if}
 

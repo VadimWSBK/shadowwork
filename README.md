@@ -45,3 +45,42 @@ If you have state that's important to retain within a component, consider creati
 import { writable } from 'svelte/store'
 export default writable(0)
 ```
+## Supabase: Gated Magic Link via GoHighLevel
+
+This app can send Supabase Magic Link emails only after payment is confirmed in GoHighLevel.
+
+### Database changes
+
+Run this SQL in Supabase (SQL editor):
+
+```
+alter table public.profiles
+  add column if not exists email text unique,
+  add column if not exists payment_received boolean not null default false;
+```
+
+### Edge Function (webhook)
+
+We use a Supabase Edge Function to receive the webhook from GoHighLevel and send the Magic Link:
+
+- Path: `supabase/functions/gohighlevel-webhook/index.ts`
+- Expected POST JSON: `{ email: string, username?: string, payment_status?: 'paid' | 'failed' | 'pending', payment_received?: boolean }`
+- When `payment_status === 'paid'` or `payment_received === true`, the function sets `profiles.payment_received = true` and triggers a Magic Link via `auth.signInWithOtp`.
+
+### Deploy steps
+
+1. Install Supabase CLI: `brew install supabase/tap/supabase`
+2. Link your project: `supabase link --project-ref <your-project-ref>`
+3. Set secrets:
+   - `supabase secrets set SUPABASE_URL=https://<your-ref>.supabase.co`
+   - `supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service_role_key>`
+   - `supabase secrets set GHL_WEBHOOK_SECRET=<random_shared_secret>`
+4. Deploy: `supabase functions deploy gohighlevel-webhook`
+5. Get URL: `supabase functions list` (copy the public endpoint)
+6. In GoHighLevel automation, configure a webhook step pointing to: `POST https://<edge-url>/gohighlevel-webhook?secret=<GHL_WEBHOOK_SECRET>` and send JSON with `email`, `username` and `payment_status`.
+
+### Notes
+
+- The function uses Supabase built-in email templates for Magic Link (`auth.signInWithOtp`).
+- If you later enable RLS, ensure policies allow the function (service role) to upsert into `profiles` and users to read their own profile.
+- You can also trigger the link manually from the app by calling `auth.signInWithOtp({ email })` after validating `payment_received` via a protected endpoint.
