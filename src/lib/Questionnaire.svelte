@@ -1,7 +1,7 @@
 <script lang="ts">
   import { courseData, type DayData } from './questions';
   import { type Writable } from 'svelte/store';
-  import { tick } from 'svelte';
+  import { tick, onMount, onDestroy } from 'svelte';
   import { fade, fly, slide } from 'svelte/transition';
   import { cubicInOut, quintOut } from 'svelte/easing';
   import { t } from './i18n';
@@ -11,6 +11,7 @@
   export let onDayComplete = (dayId: string) => {};
   export let onShowAnswers = () => {};
   export let username = '';
+  export let profileId = '';
   export let currentDay: DayData;
   export let currentLanguage: 'en' | 'de' | 'pl' = 'en';
 
@@ -22,6 +23,16 @@
   let displayIndex = 0; // Separate display index for smoother transitions
   let showConfirmModal = false;
   let unansweredCount = 0;
+
+  // Autosave state
+  let autosaveTimer: number;
+  // Track last-saved answers to avoid redundant remote writes
+  let lastSavedAnswers: Record<string, string[]> = {};
+  // Saving state for animated indicator
+  let isSaving = false;
+  let saveError = '';
+  let saveSlow = false;
+  let saveRetryAttempts = 0;
 
   // Reset currentIndex when day changes
   $: if (currentDay) {
@@ -44,8 +55,16 @@
     displayIndex = currentIndex;
   }
 
+  // Ensure lastSavedAnswers has an array for the current day
+  $: if (currentDay) {
+    if (!lastSavedAnswers[currentDay.id]) {
+      lastSavedAnswers[currentDay.id] = [...($answersStore[currentDay.id] || [])];
+    }
+  }
+
   async function next() {
     if (isTransitioning) return;
+    await maybeSaveCurrentAnswer();
     
     if (currentIndex < questions.length - 1) {
       currentIndex++;
@@ -92,17 +111,131 @@
     if (typeof window !== 'undefined' && username) {
       clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
+        // Persist to localStorage only; remote persistence handled by autosave/Next
         localStorage.setItem(`answers_${username}`, JSON.stringify($answersStore));
-        // Fire-and-forget persistence to Supabase
-        void persistAnswer({
-          username,
-          dayId: currentDay.id,
-          questionIndex: currentIndex,
-          answer: value,
-        });
       }, 300);
     }
   }
+
+  async function maybeSaveCurrentAnswer() {
+    const dayId = currentDay.id;
+    const idx = currentIndex;
+    const currentValue = ($answersStore[dayId]?.[idx] || '');
+    const lastSavedValue = (lastSavedAnswers[dayId]?.[idx] || '');
+    const currentTrim = currentValue.trim();
+    const lastTrim = lastSavedValue.trim();
+    // Only save if something was entered and content changed
+    if (currentTrim.length === 0 && lastTrim.length === 0) return;
+    if (currentValue === lastSavedValue) return;
+    if (isSaving) return;
+
+    isSaving = true;
+    saveError = '';
+    saveSlow = false;
+    let completed = false;
+    const timerId = typeof window !== 'undefined' ? window.setTimeout(() => {
+      if (!completed) {
+        saveSlow = true;
+      }
+    }, 6000) : 0;
+    // Hard-fail after 20s to avoid indefinite spinner if the network hangs
+    const failAfterId = typeof window !== 'undefined' ? window.setTimeout(() => {
+      if (!completed) {
+        saveError = 'Save failed. Will retry.';
+        saveSlow = false;
+        isSaving = false;
+        scheduleRetry(dayId, idx);
+      }
+    }, 20000) : 0;
+
+    try {
+      const { error } = await persistAnswer({
+        profileId,
+        username,
+        dayId,
+        questionIndex: idx,
+        answer: currentValue,
+      });
+      completed = true;
+      if (!error) {
+        if (!lastSavedAnswers[dayId]) lastSavedAnswers[dayId] = [];
+        lastSavedAnswers[dayId][idx] = currentValue;
+        saveError = '';
+        saveRetryAttempts = 0;
+      } else {
+        saveError = 'Save failed. Will retry.';
+        console.warn('Persist answer failed:', error);
+        scheduleRetry(dayId, idx);
+      }
+    } catch (e) {
+      completed = true;
+      saveError = 'Save failed. Will retry.';
+      console.warn('Persist answer threw:', e);
+      scheduleRetry(dayId, idx);
+    } finally {
+      isSaving = false;
+      saveSlow = false;
+      if (timerId) clearTimeout(timerId);
+      if (failAfterId) clearTimeout(failAfterId);
+    }
+  }
+
+  function scheduleRetry(dayId: string, idx: number) {
+    if (typeof window === 'undefined') return;
+    const attempt = Math.min(saveRetryAttempts + 1, 3);
+    saveRetryAttempts = attempt;
+    const delay = Math.min(16000, 2000 * Math.pow(2, attempt - 1));
+    window.setTimeout(async () => {
+      const currentValue = ($answersStore[dayId]?.[idx] || '');
+      const lastSavedValue = (lastSavedAnswers[dayId]?.[idx] || '');
+      if (currentValue.trim().length === 0) return;
+      if (currentValue === lastSavedValue) return; // already saved meanwhile
+
+      isSaving = true;
+      saveSlow = false;
+      saveError = '';
+      try {
+        const { error } = await persistAnswer({
+          profileId,
+          username,
+          dayId,
+          questionIndex: idx,
+          answer: currentValue,
+        });
+        if (!error) {
+          if (!lastSavedAnswers[dayId]) lastSavedAnswers[dayId] = [];
+          lastSavedAnswers[dayId][idx] = currentValue;
+          saveError = '';
+          saveRetryAttempts = 0;
+        } else {
+          saveError = 'Save failed.';
+          console.warn('Persist answer failed on retry:', error);
+        }
+      } catch (e) {
+        saveError = 'Save failed.';
+        console.warn('Persist answer threw on retry:', e);
+      } finally {
+        isSaving = false;
+      }
+    }, delay);
+  }
+
+  function autosaveTick() {
+    if (typeof window === 'undefined') return;
+    if (!username && !profileId) return;
+    void maybeSaveCurrentAnswer();
+  }
+
+  onMount(() => {
+    if (typeof window !== 'undefined') {
+      autosaveTimer = window.setInterval(autosaveTick, 10000);
+    }
+  });
+
+  onDestroy(() => {
+    if (autosaveTimer) clearInterval(autosaveTimer);
+    if (saveTimer) clearTimeout(saveTimer);
+  });
 </script>
 
 <style>
@@ -226,7 +359,17 @@
                   <span class="text-white/40 text-xs">{t(currentLanguage, 'questionnaire.aimForDetail')}</span>
                 </div>
                 <div class="text-white/50 text-sm">
-                  {t(currentLanguage, 'questionnaire.autoSaved')}
+                  {#if isSaving}
+                    <span class="inline-flex items-center gap-2">
+                      <svg class="w-3.5 h-3.5 animate-spin text-white/70" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                      Saving{saveSlow ? ' — taking longer…' : '…'}
+                    </span>
+                  {:else}
+                    {saveError ? saveError : t(currentLanguage, 'questionnaire.autoSaved')}
+                  {/if}
                 </div>
               </div>
             </div>
@@ -275,7 +418,17 @@
                   <span class="text-white/60 text-xs sm:text-sm lg:text-base xl:text-base">{t(currentLanguage, 'questionnaire.characters', { count: (dayAnswers[displayIndex] || '').length })}</span>
                 </div>
                 <div class="text-white/50 text-xs sm:text-xs lg:text-sm xl:text-base">
-                  {t(currentLanguage, 'questionnaire.autoSaved')}
+                  {#if isSaving}
+                    <span class="inline-flex items-center gap-2">
+                      <svg class="w-3.5 h-3.5 animate-spin text-white/70" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                      Saving{saveSlow ? ' — taking longer…' : '…'}
+                    </span>
+                  {:else}
+                    {saveError ? saveError : t(currentLanguage, 'questionnaire.autoSaved')}
+                  {/if}
                 </div>
               </div>
             </div>

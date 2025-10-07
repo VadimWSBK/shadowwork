@@ -20,16 +20,25 @@
   import day6Img from './assets/shadowwork_day_6.png';
   import day7Img from './assets/shadow_work_day_7.png';
   import { t, getDaySummary, getDayIntro } from './lib/i18n';
+  import { supabase } from './lib/supabaseClient';
+  import { isAuthorizedUser, getProfileByEmail, updateProfileSettings, deleteAllAnswers, deleteAllAnswersForUser, deleteUserAnswersRpc, persistAnswer, fetchAnswersForUser, type AnswerRow } from './lib/supabaseHelpers';
   
 
   let currentView: 'login' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
   let username = '';
+  let profileId = '';
   let currentLanguage: Language = 'en';
+  let languageMenuOpen = false;
   let courseData: DayData[] = getCourseData(currentLanguage);
   $: courseData = getCourseData(currentLanguage);
   let answers: Record<string, string[]> = {};
   let answersStore = writable<Record<string, string[]>>({});
+
+  let session: any = null;
+  let authorized = false;
   let navElement: HTMLElement;
+  let languageMenuEl: HTMLElement | null = null;
+  let languageMenuButtonEl: HTMLElement | null = null;
   let isDarkText = false;
   let isMobileMenuOpen = false;
   let currentDay: DayData = courseData[0]; // Start with Intro
@@ -67,6 +76,15 @@
   function handleClickOutside(event: MouseEvent) {
     if (isMobileMenuOpen && navElement && !navElement.contains(event.target as Node)) {
       closeMobileMenu();
+    }
+    // Close language menu when clicking outside of the dropdown or its toggle button
+    if (languageMenuOpen) {
+      const target = event.target as Node;
+      const insideMenu = languageMenuEl ? languageMenuEl.contains(target) : false;
+      const insideButton = languageMenuButtonEl ? languageMenuButtonEl.contains(target) : false;
+      if (!insideMenu && !insideButton) {
+        languageMenuOpen = false;
+      }
     }
   }
 
@@ -115,6 +133,89 @@
     };
   });
 
+  onMount(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    session = user ? { user } : null; // Minimal session-like object
+    await checkAuthAndRedirect();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      session = user ? { user } : null;
+      await checkAuthAndRedirect();
+    });
+    // Optional: you could store authListener.subscription to unsubscribe later
+  });
+
+  async function checkAuthAndRedirect() {
+    if (!session?.user) {
+      authorized = false;
+      currentView = 'login';
+      return;
+    }
+    authorized = await isAuthorizedUser();
+    if (!authorized) {
+      // Sign out unauthorized users to avoid lingering sessions
+      await supabase.auth.signOut();
+      currentView = 'login';
+      return;
+    }
+    // Load profile settings when authorized
+    const email = session.user.email as string | undefined;
+    if (email) {
+      const { data } = await getProfileByEmail(email);
+      if (data) {
+        profileId = (data.id as string) || '';
+        username = (data.username as string) || email;
+        const lang = (data.language as Language) || (localStorage.getItem('shadowwork_language') as Language) || 'en';
+        if (lang === 'en' || lang === 'de' || lang === 'pl') {
+          currentLanguage = lang;
+        }
+        localStorage.setItem('shadowwork_username', username);
+        localStorage.setItem('shadowwork_language', currentLanguage);
+        if (profileId) {
+          localStorage.setItem('shadowwork_profile_id', profileId);
+        }
+        // Hydrate answers from remote after profile is known
+        await hydrateAnswersFromRemote();
+      } else {
+        // Ensure a profile record exists for this email
+        await updateProfileSettings({ email, username: email, language: currentLanguage });
+        // Try to read back the profile to capture profileId
+        const { data: created } = await getProfileByEmail(email);
+        profileId = (created?.id as string) || '';
+        if (profileId) localStorage.setItem('shadowwork_profile_id', profileId);
+        await hydrateAnswersFromRemote();
+      }
+    }
+    // If authorized and currently at login, proceed to intro
+    if (currentView === 'login') {
+      currentDay = courseData[0];
+      currentView = 'intro';
+    }
+  }
+
+  async function hydrateAnswersFromRemote() {
+    try {
+      const { data } = await fetchAnswersForUser({ profileId, username });
+      if (!data || data.length === 0) return;
+      // Build the in-memory structure: Record<dayId, string[]> with proper lengths
+      const next: Record<string, string[]> = {};
+      courseData.forEach(day => {
+        next[day.id] = new Array(day.questions.length).fill('');
+      });
+      for (const row of data as AnswerRow[]) {
+        const d = row.day_id;
+        const i = Number(row.question_index ?? 0);
+        if (next[d] && i >= 0 && i < next[d].length) {
+          next[d][i] = row.answer_text || '';
+        }
+      }
+      answers = next;
+      answersStore.set(next);
+      if (username) localStorage.setItem(`answers_${username}`, JSON.stringify(next));
+    } catch {}
+  }
+
   function getBrightness(color: string): number {
     // Parse RGB values from color string
     const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -125,9 +226,17 @@
     return (r * 299 + g * 587 + b * 114) / 1000;
   }
 
-  function handleLogin(event: CustomEvent<{ username: string }>) {
+  async function handleLogin(event: CustomEvent<{ username: string }>) {
     username = event.detail.username;
     localStorage.setItem('shadowwork_username', username);
+    // Enforce auth guard: only proceed if session exists and user is authorized
+    const { data: { user } } = await supabase.auth.getUser();
+    session = user ? { user } : null;
+    const ok = session?.user ? await isAuthorizedUser() : false;
+    if (!ok) {
+      currentView = 'login';
+      return;
+    }
     currentDay = courseData[0]; // Set to intro
     currentView = 'intro';
     loadAnswers();
@@ -163,15 +272,34 @@
     currentView = 'questionnaire';
   }
 
-  function handleUpdateAnswer(dayId: string, index: number, newAnswer: string) {
-    if (!answers[dayId]) {
-      answers[dayId] = [];
-    }
-    answers[dayId][index] = newAnswer;
-    answersStore.set(answers);
-    // Save to localStorage
-    localStorage.setItem(`answers_${username}`, JSON.stringify(answers));
+  async function handleUpdateAnswer(dayId: string, index: number, newAnswer: string): Promise<{ success: boolean; error?: any }> {
+  if (!answers[dayId]) {
+    answers[dayId] = [];
   }
+  answers[dayId][index] = newAnswer;
+  answersStore.set(answers);
+  // Save to localStorage
+  localStorage.setItem(`answers_${username}`, JSON.stringify(answers));
+
+  // Persist to Supabase using RPC-first upsert
+  try {
+    const { error } = await persistAnswer({
+      profileId,
+      username,
+      dayId,
+      questionIndex: index,
+      answer: newAnswer,
+    });
+    if (error) {
+      console.warn('Save from ViewAnswers failed:', error);
+      return { success: false, error };
+    }
+    return { success: true };
+  } catch (e) {
+    console.warn('Save from ViewAnswers threw:', e);
+    return { success: false, error: e };
+  }
+}
 
   function calculateCompletionRate(dayId: string): number {
     const dayAnswers = answers[dayId] || [];
@@ -206,7 +334,7 @@
     }
   }
 
-  function logout() {
+  async function logout() {
     localStorage.removeItem('shadowwork_username');
     localStorage.removeItem(`answers_${username}`);
     username = '';
@@ -214,38 +342,93 @@
     answersStore.set({});
     currentView = 'login';
     showSettings = false;
+    await supabase.auth.signOut();
   }
 
-  function handleChangePassword(event: CustomEvent<{ oldPassword: string; newPassword: string }>) {
-    // For now, just show a success message since we don't have actual password authentication
-    alert('Password changed successfully!');
-    showSettings = false;
+  async function handleChangePassword(event: CustomEvent<{ oldPassword: string; newPassword: string }>) {
+    const { oldPassword, newPassword } = event.detail;
+    const email = session?.user?.email as string | undefined;
+    if (!email) {
+      alert('You need to be logged in to change your password.');
+      return;
+    }
+    try {
+      // Verify current password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: oldPassword });
+      if (signInError) {
+        const msg = (signInError.message || '').toLowerCase();
+        if (msg.includes('invalid login credentials')) {
+          alert('Current password is incorrect.');
+        } else {
+          alert('Could not verify current password. Please try again.');
+        }
+        return;
+      }
+
+      // Update password for the authenticated user
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        alert(`Could not update password: ${error.message || 'Unknown error'}`);
+        return;
+      }
+      alert('Password changed successfully!');
+      showSettings = false;
+    } catch (e: any) {
+      alert(`Password change failed: ${e?.message || 'Unknown error'}`);
+    }
   }
 
   function handleChangeName(event: CustomEvent<{ newName: string }>) {
     const { newName } = event.detail;
     username = newName;
     localStorage.setItem('shadowwork_username', newName);
+    const email = session?.user?.email as string | undefined;
+    if (email) {
+      updateProfileSettings({ email, username: newName }).catch(() => {});
+    }
     // No alert popup - the Settings component will show subtle success feedback
   }
 
-  function handleDeleteAllData() {
+  async function handleDeleteAllData() {
     // Clear all stored data
     localStorage.removeItem(`answers_${username}`);
     answers = {};
     answersStore.set({});
+    // Server-side deletion for both profile_id and legacy username rows
+    const pid = profileId || (localStorage.getItem('shadowwork_profile_id') || '');
+    const uname = username || (localStorage.getItem('shadowwork_username') || '');
+    // Try RPC first (atomic; respects RLS). Fallback to client-side delete.
+    try {
+      const { error: rpcError } = await deleteUserAnswersRpc();
+      if (rpcError) {
+        const { error } = await deleteAllAnswersForUser({ profileId: pid || undefined, username: uname || undefined });
+        if (error) console.error('Client delete failed:', error.message || error);
+      }
+    } catch (e) {
+      console.error('Delete all answers error:', e);
+      const { error } = await deleteAllAnswersForUser({ profileId: pid || undefined, username: uname || undefined });
+      if (error) console.error('Client delete failed:', error.message || error);
+    }
     // No alert popup - the Settings component will show subtle success feedback
   }
 
-  function handleChangeLanguage(event: CustomEvent<{ language: Language }>) {
-    const { language } = event.detail;
+  function changeLanguage(language: Language) {
     currentLanguage = language;
     localStorage.setItem('shadowwork_language', language);
+    const email = session?.user?.email as string | undefined;
+    if (email && (language === 'en' || language === 'de' || language === 'pl')) {
+      updateProfileSettings({ email, language }).catch(() => {});
+    }
     // Keep the same current day id when switching languages
     const newData = getCourseData(language);
     const sameId = currentDay?.id || 'intro';
     const updatedDay = newData.find(d => d.id === sameId) || newData[0];
     currentDay = updatedDay;
+  }
+
+  function handleChangeLanguage(event: CustomEvent<{ language: Language }>) {
+    const { language } = event.detail;
+    changeLanguage(language);
   }
 
   function getDayNumber(id: string): number {
@@ -254,7 +437,7 @@
   }
 </script>
 
-<main class="min-h-screen">
+  <main class="min-h-screen">
   <!-- Navigation Header -->
   {#if currentView !== 'login'}
     <nav 
@@ -277,6 +460,31 @@
           
           <!-- User Account Section -->
           <div class="flex items-center gap-3 ml-auto">
+            <div class="relative hidden sm:block">
+              <button
+                class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
+                on:click={() => (languageMenuOpen = !languageMenuOpen)}
+                bind:this={languageMenuButtonEl}
+                aria-haspopup="menu"
+                aria-expanded={languageMenuOpen}
+                title="Change language"
+              >
+                {currentLanguage.toUpperCase()}
+              </button>
+              {#if languageMenuOpen}
+                <div class="absolute right-0 mt-2 w-36 bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1" bind:this={languageMenuEl}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
+                    English
+                  </button>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
+                    Deutsch
+                  </button>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
+                    Polski
+                  </button>
+                </div>
+              {/if}
+            </div>
             <span class="text-white/80 text-sm font-medium hidden sm:block">{username}</span>
             <div class="flex items-center">
               <button 
@@ -322,7 +530,7 @@
                     <div class="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 shadow-lg">
                       <div class="text-center">
                         <div class="text-2xl font-bold text-white">{calculateCompletionRate(currentDay.id)}%</div>
--                        <div class="text-xs text-white/80 font-medium">Complete</div>
+                        <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
 +                        <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
                       </div>
                     </div>
@@ -495,6 +703,7 @@
           <Questionnaire 
             {answersStore}
             {username}
+            {profileId}
             {currentDay}
             {currentLanguage}
             onDayComplete={handleDayComplete}
@@ -507,9 +716,7 @@
             {currentDay}
             {currentLanguage}
             onBack={backToQuestionnaire}
-            onUpdateAnswer={(index, answer) => {
-              handleUpdateAnswer(currentDay.id, index, answer);
-            }}
+            onUpdateAnswer={(index, answer) => handleUpdateAnswer(currentDay.id, index, answer)}
           />
           {/if}
         <footer class="px-4 sm:px-6 lg:px-8 mt-8 mb-6 pt-4 border-t border-white/10 text-center">

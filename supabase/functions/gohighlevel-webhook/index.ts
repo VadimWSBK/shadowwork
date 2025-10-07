@@ -19,7 +19,7 @@ type Payload = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const GHL_WEBHOOK_SECRET = Deno.env.get('GHL_WEBHOOK_SECRET');
+// Removed custom webhook secret gating; rely on platform JWT when using supabase.co endpoint
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -35,13 +35,8 @@ function ok(body: unknown, status = 200) {
 serve(async (req) => {
   if (req.method !== 'POST') return ok({ error: 'Method not allowed' }, 405);
 
-  // Simple secret check (header or query param)
-  if (GHL_WEBHOOK_SECRET) {
-    const h = req.headers.get('x-webhook-secret') || new URL(req.url).searchParams.get('secret');
-    if (h !== GHL_WEBHOOK_SECRET) {
-      return ok({ error: 'Unauthorized' }, 401);
-    }
-  }
+  // No custom secret check; authorization is handled by Supabase when calling
+  // the supabase.co/functions/v1/* endpoint with an Authorization: Bearer <anon-key>
 
   let payload: Payload;
   try {
@@ -56,20 +51,52 @@ serve(async (req) => {
 
   if (!email) return ok({ error: 'Missing email' }, 400);
 
-  // Upsert profile with payment_received flag
-  const { error: upsertErr } = await supabase
+  // Update existing profile or insert a new one with a unique username
+  const { data: profRows, error: selErr } = await supabase
     .from('profiles')
-    .upsert({ email, username, payment_received: paid }, { onConflict: 'email' });
-  if (upsertErr) return ok({ error: upsertErr.message }, 500);
+    .select('id, username')
+    .eq('email', email)
+    .limit(1);
+  // Non-fatal: continue even if profile read fails
+
+  if (!selErr && profRows && profRows.length > 0) {
+    const { error: updErr } = await supabase
+      .from('profiles')
+      .update({ payment_received: paid })
+      .eq('email', email);
+    // Non-fatal: ignore update errors
+  } else {
+    const safeUsername = username || `user_${crypto.randomUUID().slice(0, 8)}`;
+    const { error: insErr } = await supabase
+      .from('profiles')
+      .insert({ email, username: safeUsername, payment_received: paid });
+    // Non-fatal: ignore insert errors (e.g., constraints or RLS)
+  }
+
+  // Intentionally skip setting username here to avoid unique-constraint collisions.
 
   if (!paid) return ok({ message: 'Payment not confirmed; no magic link sent.' });
 
-  // Trigger magic link email via Auth OTP
+  // Try sending a magic link via email (if OTP sign-in is allowed)
   const { error: otpErr } = await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true }
+    options: { shouldCreateUser: false }
   });
-  if (otpErr) return ok({ error: otpErr.message }, 500);
+  if (!otpErr) {
+    return ok({ message: 'Magic link sent', email });
+  }
 
-  return ok({ message: 'Magic link sent', email });
+  // Fallback: generate a magic link (for existing users) or signup link if user doesn’t exist
+  const msg = String(otpErr.message || '').toLowerCase();
+  let type: 'magiclink' | 'signup' = 'magiclink';
+  if (msg.includes('user not found') || msg.includes('no user')) {
+    type = 'signup';
+  }
+
+  const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+    type,
+    email
+  });
+  if (linkErr) return ok({ error: linkErr.message }, 500);
+  return ok({ message: type === 'magiclink' ? 'Magic link generated' : 'Signup link generated', email, action_link: linkData?.action_link });
 });

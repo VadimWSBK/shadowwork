@@ -154,62 +154,7 @@
     <!-- Settings Options -->
     <div class="p-6 space-y-4">
       
-      <!-- Change Language -->
-      {#if !showChangeLanguage}
-        <button 
-          on:click={() => { showChangeLanguage = true; selectedLanguage = currentLanguage; }}
-          class="w-full p-4 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl transition-all duration-200 text-left group"
-        >
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/25 transition-colors duration-200">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.657-6.657l-1.414 1.414M7.757 16.243l-1.414 1.414m10.314 0l-1.414-1.414M7.757 7.757L6.343 6.343"></path>
-              </svg>
-            </div>
-            <div>
-              <h3 class="text-white font-medium">Change Language</h3>
-              <p class="text-white/60 text-sm">Set app language for questions</p>
-            </div>
-          </div>
-        </button>
-      {:else}
-        <div class="p-4 bg-white/10 border border-white/20 rounded-xl">
-          <h3 class="text-white font-medium mb-3">Change Language</h3>
-          <div class="space-y-3">
-            <label class="block text-white/80 text-sm mb-1">Language</label>
-            <select
-              bind:value={selectedLanguage}
-              class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200"
-            >
-              <option value="en">English</option>
-              <option value="de">Deutsch</option>
-              <option value="pl">Polski</option>
-            </select>
-            {#if languageSuccess}
-              <div class="flex items-center gap-2 text-green-300 text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                Language updated!
-              </div>
-            {/if}
-            <div class="flex gap-2">
-              <button 
-                on:click={handleChangeLanguage}
-                class="px-4 py-2 bg-[#0C6E78] hover:bg-[#0A5A63] text-white rounded-lg transition-colors duration-200 text-sm font-medium"
-              >
-                Save
-              </button>
-              <button 
-                on:click={resetLanguageForm}
-                class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors duration-200 text-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      {/if}
+      <!-- Change Language moved to header dropdown -->
       
       <!-- Change Name -->
       {#if !showChangeName}

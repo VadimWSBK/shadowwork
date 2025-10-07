@@ -6,11 +6,13 @@
   export let username: string;
   export let currentDay: DayData;
   export let onBack = () => {};
-  export let onUpdateAnswer: (index: number, answer: string) => void = () => {};
+  export let onUpdateAnswer: (index: number, answer: string) => Promise<{ success: boolean; error?: any }> = async () => ({ success: false });
   export let currentLanguage: Language = 'en';
 
   let editingIndex: number | null = null;
   let editingText = '';
+  let isSaving = false;
+  let saveError = '';
 
   // Use currentDay.questions instead of importing questions
   $: questions = currentDay.questions;
@@ -18,19 +20,27 @@
   function startEditing(index: number) {
     editingIndex = index;
     editingText = answers[index] || '';
+    saveError = '';
   }
 
-  function saveEdit() {
-    if (editingIndex !== null) {
-      onUpdateAnswer(editingIndex, editingText);
+  async function saveEdit() {
+    if (editingIndex === null) return;
+    isSaving = true;
+    saveError = '';
+    const result = await onUpdateAnswer(editingIndex, editingText);
+    isSaving = false;
+    if (result.success) {
       editingIndex = null;
       editingText = '';
+    } else {
+      saveError = 'Save failed. Please try again.';
     }
   }
 
   function cancelEdit() {
     editingIndex = null;
     editingText = '';
+    saveError = '';
   }
 </script>
 
@@ -104,13 +114,17 @@
               </button>
               <button
                 on:click={saveEdit}
+                disabled={isSaving}
                 class="px-6 py-2 text-sm font-bold text-white rounded-lg shadow-md transition-all duration-200 relative overflow-hidden group"
                 style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
               >
                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span class="relative z-10">{t(currentLanguage, 'answers.saveChanges')}</span>
+                <span class="relative z-10">{isSaving ? 'Saving...' : t(currentLanguage, 'answers.saveChanges')}</span>
               </button>
             </div>
+            {#if saveError}
+              <p class="text-red-300 text-sm mt-2">{saveError}</p>
+            {/if}
           </div>
         {:else}
           <!-- View Mode -->

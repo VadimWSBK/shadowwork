@@ -56,7 +56,8 @@ Run this SQL in Supabase (SQL editor):
 ```
 alter table public.profiles
   add column if not exists email text unique,
-  add column if not exists payment_received boolean not null default false;
+  add column if not exists payment_received boolean not null default false,
+  add column if not exists language text check (language in ('en','de','pl')) default 'en';
 ```
 
 ### Edge Function (webhook)
