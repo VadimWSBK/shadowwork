@@ -457,6 +457,9 @@
             </div>
           </div>
         </div>
+        {#if typeof window !== 'undefined'}
+          {@const autoCloseTimer = setTimeout(() => dispatch('close'), 2000)}
+        {/if}
       {:else if !showDeleteProfileConfirm}
         <button 
           on:click={() => showDeleteProfileConfirm = true}

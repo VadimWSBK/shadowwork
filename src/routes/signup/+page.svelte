@@ -3,6 +3,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { updateProfileSettings } from '$lib/supabaseHelpers';
+  import { t } from '$lib/i18n';
+  import { browser } from '$app/environment';
 
   let ready = false;
   let loading = false;
@@ -12,8 +14,57 @@
   let password = '';
   let confirm = '';
   let unsub: { data?: { subscription?: { unsubscribe?: () => void } } } | null = null;
+  let currentLanguage: 'en' | 'de' | 'pl' = 'en';
+  let mounted = false;
+  let languageMenuOpen = false;
+
+  // Cookie helpers for language persistence
+  const LANGUAGE_COOKIE = 'shadowwork_language';
+  function setLanguageCookie(lang: 'en' | 'de' | 'pl') {
+    try {
+      const days = 365 * 2; // 2 years
+      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+      const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${LANGUAGE_COOKIE}=${encodeURIComponent(lang)}; Expires=${expires}; Path=/; SameSite=Lax${secure}`;
+    } catch {}
+  }
+  function getLanguageCookie(): 'en' | 'de' | 'pl' | null {
+    try {
+      const m = document.cookie.match(/(?:^|;\s*)shadowwork_language=([^;]+)/);
+      const val = m ? decodeURIComponent(m[1]) : null;
+      if (val === 'en' || val === 'de' || val === 'pl') return val as any;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function changeLanguage(language: 'en' | 'de' | 'pl') {
+    currentLanguage = language;
+    try { 
+      if (browser) {
+        localStorage.setItem('shadowwork_language', language);
+        setLanguageCookie(language);
+        document.documentElement.lang = language;
+      }
+    } catch {}
+  }
 
   onMount(async () => {
+    mounted = true;
+    
+    // Initialize language
+    try {
+      let saved: string | null = null;
+      if (browser) {
+        const fromCookie = getLanguageCookie();
+        saved = (fromCookie ?? localStorage.getItem('shadowwork_language'));
+      }
+      if (saved === 'en' || saved === 'de' || saved === 'pl') {
+        currentLanguage = saved;
+      }
+    } catch {}
+    
     try {
       if (typeof window !== 'undefined') {
         const searchParams = new URLSearchParams(window.location.search);
@@ -76,7 +127,7 @@
       ready = true;
     } catch (e: any) {
       console.error('Invite processing error:', e);
-      errorMessage = 'Invalid or expired invite link. Please request a new one.';
+      errorMessage = t(currentLanguage, 'signup.invalidInvite');
       ready = true; // Still show the form so user can see the error
     }
   });
@@ -90,15 +141,15 @@
     errorMessage = '';
     infoMessage = '';
     if (!username || username.trim().length < 2) {
-      errorMessage = 'Please enter a valid username (min 2 characters).';
+      errorMessage = t(currentLanguage, 'signup.usernameRequired');
       return;
     }
     if (password.length < 8) {
-      errorMessage = 'Password must be at least 8 characters.';
+      errorMessage = t(currentLanguage, 'signup.passwordTooShort');
       return;
     }
     if (password !== confirm) {
-      errorMessage = 'Passwords do not match.';
+      errorMessage = t(currentLanguage, 'signup.passwordsMismatch');
       return;
     }
 
@@ -121,7 +172,7 @@
         }
       }
 
-      infoMessage = 'Account created successfully. Redirecting...';
+      infoMessage = t(currentLanguage, 'signup.success');
       // Ensure server cookies are set
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -136,7 +187,7 @@
 
       setTimeout(() => goto('/dashboard'), 800);
     } catch (e: any) {
-      errorMessage = e?.message || 'Could not complete sign up. Please try again.';
+      errorMessage = e?.message || t(currentLanguage, 'signup.setupFailed');
     } finally {
       loading = false;
     }
@@ -144,11 +195,44 @@
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+  <!-- Language Switcher (top-right) -->
+  <div class="fixed top-4 right-4 z-50">
+    <div class="relative">
+      <button
+        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
+        on:click={() => (languageMenuOpen = !languageMenuOpen)}
+        aria-haspopup="menu"
+        aria-expanded={languageMenuOpen}
+        title="Change language"
+      >
+        {currentLanguage.toUpperCase()}
+      </button>
+      {#if languageMenuOpen}
+        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1">
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
+            English
+          </button>
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
+            Deutsch
+          </button>
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
+            Polski
+          </button>
+        </div>
+      {/if}
+    </div>
+  </div>
   <div class="w-full max-w-md">
     <div class="p-8">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-white mb-2">Complete Your Account</h1>
-        <p class="text-white/80">Set a username and password to finish sign up.</p>
+        <div class="w-16 h-16 bg-white/20 border border-white/30 rounded-full mx-auto mb-4 flex items-center justify-center shadow-md backdrop-blur-sm">
+          <svg class="w-8 h-8 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-1">{t(currentLanguage, 'login.title')}</h1>
+        <h2 class="text-3xl font-bold text-white mb-2">{t(currentLanguage, 'signup.title')}</h2>
+        <p class="text-white/80">{t(currentLanguage, 'signup.subtitle')}</p>
       </div>
       <form class="space-y-6" on:submit|preventDefault={handleSignup}>
         {#if !ready}
@@ -161,18 +245,18 @@
             <p class="text-sm text-green-300">{infoMessage}</p>
           {/if}
           <div>
-            <label class="block text-sm font-medium text-white/80 mb-2">Username</label>
-            <input type="text" bind:value={username} placeholder="Your name"
+            <label class="block text-sm font-medium text-white/80 mb-2">{t(currentLanguage, 'signup.usernameLabel')}</label>
+            <input type="text" bind:value={username} placeholder={t(currentLanguage, 'signup.usernamePlaceholder')}
                    class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-white/80 mb-2">Password</label>
-            <input type="password" bind:value={password} placeholder="••••••••" autocomplete="new-password"
+            <label class="block text-sm font-medium text-white/80 mb-2">{t(currentLanguage, 'signup.passwordLabel')}</label>
+            <input type="password" bind:value={password} placeholder={t(currentLanguage, 'signup.passwordPlaceholder')} autocomplete="new-password"
                    class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-white/80 mb-2">Confirm Password</label>
-            <input type="password" bind:value={confirm} placeholder="••••••••" autocomplete="new-password"
+            <label class="block text-sm font-medium text-white/80 mb-2">{t(currentLanguage, 'signup.confirmPasswordLabel')}</label>
+            <input type="password" bind:value={confirm} placeholder={t(currentLanguage, 'signup.confirmPasswordPlaceholder')} autocomplete="new-password"
                    class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
           <button class="w-full px-6 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2"
@@ -181,11 +265,16 @@
             {#if loading}
               <svg class="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-width="2" opacity="0.75"/></svg>
             {/if}
-            <span class="relative z-10">{loading ? 'Setting up…' : 'Finish Sign Up'}</span>
+            <span class="relative z-10">{loading ? t(currentLanguage, 'signup.settingUp') : t(currentLanguage, 'signup.finishButton')}</span>
           </button>
         {/if}
       </form>
       
+      <div class="mt-8 pt-6 border-t border-white/20">
+        <p class="text-xs text-white/70 text-center leading-relaxed">
+          {t(currentLanguage, 'signup.disclaimer')}
+        </p>
+      </div>
     </div>
   </div>
 </div>

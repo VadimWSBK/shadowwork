@@ -10,8 +10,14 @@
   let loading = false;
   let ready = false;
   let unsub: any;
+  let initialLoad = true;
 
   onMount(async () => {
+    // Set a small timeout to prevent showing error on initial load
+    setTimeout(() => {
+      initialLoad = false;
+    }, 500);
+    
     // Listen for auth state changes in case Supabase auto-exchanges the code asynchronously
     try {
       unsub = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -117,7 +123,7 @@
   <div class="w-full max-w-md">
     <div class="p-8">
       <h1 class="text-2xl font-bold text-white mb-4">Reset your password</h1>
-      {#if errorMessage && !ready}
+      {#if errorMessage && !ready && !initialLoad}
         <p class="text-sm text-red-300 mb-6">{errorMessage}</p>
       {/if}
       {#if ready}
