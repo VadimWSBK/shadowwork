@@ -10,13 +10,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     // Use the server Supabase client wired to cookies to persist the session
-    const { data, error } = await locals.supabase.auth.setSession({
+    const { error } = await locals.supabase.auth.setSession({
       access_token,
       refresh_token
     });
     if (error) return json({ error: error.message }, { status: 400 });
 
-    return json({ ok: true, user: data.user ? { id: data.user.id, email: data.user.email } : null });
+    // Get authenticated user data securely
+    const { data: { user } } = await locals.supabase.auth.getUser();
+    return json({ ok: true, user: user ? { id: user.id, email: user.email } : null });
   } catch (e: any) {
     return json({ error: e?.message || 'Bad request' }, { status: 400 });
   }

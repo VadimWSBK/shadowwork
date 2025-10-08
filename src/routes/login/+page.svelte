@@ -1,8 +1,10 @@
 <script lang="ts">
   import Login from '$lib/Login.svelte';
   import { supabase } from '$lib/supabaseClient';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
+
+  let unsub: { data?: { subscription?: { unsubscribe?: () => void } } } | null = null;
 
   onMount(async () => {
     try {
@@ -21,8 +23,10 @@
     } catch {}
 
     // Bridge client session to server cookies so server-side guards allow app routes
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       try {
         await fetch('/auth/cookie', {
           method: 'POST',
@@ -32,6 +36,25 @@
       } catch {}
       goto('/dashboard');
     }
+
+    // Also listen for auth changes initiated from the login form (password sign-in)
+    try {
+      unsub = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!session) return;
+        try {
+          await fetch('/auth/cookie', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
+          });
+        } catch {}
+        goto('/dashboard');
+      });
+    } catch {}
+  });
+
+  onDestroy(() => {
+    try { unsub?.data?.subscription?.unsubscribe?.(); } catch {}
   });
 </script>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t, type Language } from './i18n';
   
   const dispatch = createEventDispatcher<{
     close: void;
@@ -11,7 +12,8 @@
   }>();
 
   export let username: string;
-  export let currentLanguage: 'en' | 'de' | 'pl';
+  export let currentLanguage: Language;
+  export let nameSaveStatus: { success: boolean; message?: string } | null = null;
   
   let showChangePassword = false;
   let showChangeName = false;
@@ -29,22 +31,26 @@
   let nameSuccess = false;
   let deleteSuccess = false;
   let languageSuccess = false;
+  let nameChangeSuccess = false;
+  let nameChangeError = '';
+
+  // Encryption passphrase UI removed — encryption is automatic now
 
   function handleChangePassword() {
     passwordError = '';
     
     if (!oldPassword || !newPassword || !confirmPassword) {
-      passwordError = 'All password fields are required';
+      passwordError = t(currentLanguage, 'settings.passwordFieldsRequired');
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      passwordError = 'New passwords do not match';
+      passwordError = t(currentLanguage, 'settings.passwordsMismatch');
       return;
     }
     
     if (newPassword.length < 6) {
-      passwordError = 'Password must be at least 6 characters';
+      passwordError = t(currentLanguage, 'settings.passwordTooShort');
       return;
     }
     
@@ -56,17 +62,27 @@
     nameError = '';
     
     if (!newName.trim()) {
-      nameError = 'Name cannot be empty';
+      nameError = t(currentLanguage, 'settings.changeNameInputPlaceholder');
       return;
     }
     
     dispatch('changeName', { newName: newName.trim() });
-    nameSuccess = true;
-    
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      nameSuccess = false;
-    }, 3000);
+  }
+
+  // React to save status from parent and show success/error banners
+  $: if (nameSaveStatus) {
+    if (nameSaveStatus.success) {
+      nameChangeSuccess = true;
+      nameChangeError = '';
+      // Hide form and show success banner like delete flow
+      showChangeName = false;
+      setTimeout(() => { nameChangeSuccess = false; }, 2000);
+    } else {
+      nameChangeError = nameSaveStatus.message || t(currentLanguage, 'settings.changeNameErrorTitle');
+      nameChangeSuccess = false;
+      // Keep form open so user can correct and retry
+      showChangeName = true;
+    }
   }
 
   function handleDeleteAllData() {
@@ -119,6 +135,8 @@
     deleteSuccess = false;
     dispatch('close');
   }
+
+  // No handlers; encryption uses automatic project key.
 </script>
 
 <!-- Settings Modal -->
@@ -135,14 +153,14 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white">Settings</h2>
+            <h2 class="text-xl font-bold text-white">{t(currentLanguage, 'settings.title')}</h2>
             <p class="text-white/70 text-sm">{username}</p>
           </div>
         </div>
         <button 
           on:click={handleClose}
           class="p-2 text-white/60 hover:text-white/80 hover:bg-white/10 rounded-lg transition-all duration-200"
-          aria-label="Close settings"
+          aria-label={t(currentLanguage, 'settings.closeAria')}
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -156,8 +174,69 @@
       
       <!-- Change Language moved to header dropdown -->
       
-      <!-- Change Name -->
-      {#if !showChangeName}
+      <!-- Change Name Section -->
+      {#if nameChangeSuccess}
+        <!-- Success banner replaces the Change Name container -->
+        <div class="p-4 bg-green-500/20 border border-green-400/30 rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-500/30 rounded-lg flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-green-200 font-medium">{t(currentLanguage, 'settings.changeNameSuccessTitle')}</h3>
+              <p class="text-green-300/70 text-sm">{t(currentLanguage, 'settings.changeNameSuccessBody')}</p>
+            </div>
+          </div>
+        </div>
+      {:else if nameChangeError}
+        <!-- Error banner with Change Name form still visible -->
+        <div class="space-y-4">
+          <div class="p-4 bg-red-500/20 border border-red-400/30 rounded-xl">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-red-500/30 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-red-200 font-medium">{t(currentLanguage, 'settings.changeNameErrorTitle')}</h3>
+                <p class="text-red-300/70 text-sm">{nameChangeError}</p>
+              </div>
+            </div>
+          </div>
+          <!-- Show Change Name form for retry -->
+          <div class="p-4 bg-white/10 border border-white/20 rounded-xl">
+            <h3 class="text-white font-medium mb-3">{t(currentLanguage, 'settings.changeName')}</h3>
+            <div class="space-y-3">
+              <input
+                type="text"
+                bind:value={newName}
+                class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200"
+              />
+              {#if nameError}
+                <p class="text-red-300 text-sm">{nameError}</p>
+              {/if}
+              <div class="flex gap-2">
+                <button 
+                  on:click={handleChangeName}
+                  class="px-4 py-2 bg-[#0C6E78] hover:bg-[#0A5A63] text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                >
+                  {t(currentLanguage, 'settings.save')}
+                </button>
+                <button 
+                  on:click={resetNameForm}
+                  class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors duration-200 text-sm"
+                >
+                  {t(currentLanguage, 'settings.cancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if !showChangeName}
+        <!-- Default Change Name button -->
         <button 
           on:click={() => { showChangeName = true; newName = username; }}
           class="w-full p-4 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl transition-all duration-200 text-left group"
@@ -169,44 +248,37 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-white font-medium">Change Name</h3>
-              <p class="text-white/60 text-sm">Update your display name</p>
+              <h3 class="text-white font-medium">{t(currentLanguage, 'settings.changeName')}</h3>
+              <p class="text-white/60 text-sm">{t(currentLanguage, 'settings.changeNameSubtitle')}</p>
             </div>
           </div>
         </button>
       {:else}
+        <!-- Change Name form when editing -->
         <div class="p-4 bg-white/10 border border-white/20 rounded-xl">
-          <h3 class="text-white font-medium mb-3">Change Name</h3>
+          <h3 class="text-white font-medium mb-3">{t(currentLanguage, 'settings.changeName')}</h3>
           <div class="space-y-3">
             <input
               type="text"
               bind:value={newName}
-              placeholder="Enter new name"
+              placeholder={t(currentLanguage, 'settings.changeNameInputPlaceholder')}
               class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200"
             />
             {#if nameError}
               <p class="text-red-300 text-sm">{nameError}</p>
-            {/if}
-            {#if nameSuccess}
-              <div class="flex items-center gap-2 text-green-300 text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                Name updated successfully!
-              </div>
             {/if}
             <div class="flex gap-2">
               <button 
                 on:click={handleChangeName}
                 class="px-4 py-2 bg-[#0C6E78] hover:bg-[#0A5A63] text-white rounded-lg transition-colors duration-200 text-sm font-medium"
               >
-                Save
+                {t(currentLanguage, 'settings.save')}
               </button>
               <button 
                 on:click={resetNameForm}
                 class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors duration-200 text-sm"
               >
-                Cancel
+                {t(currentLanguage, 'settings.cancel')}
               </button>
             </div>
           </div>
@@ -226,31 +298,31 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-white font-medium">Change Password</h3>
-              <p class="text-white/60 text-sm">Update your account password</p>
+              <h3 class="text-white font-medium">{t(currentLanguage, 'settings.changePassword')}</h3>
+              <p class="text-white/60 text-sm">{t(currentLanguage, 'settings.changePasswordSubtitle')}</p>
             </div>
           </div>
         </button>
       {:else}
         <div class="p-4 bg-white/10 border border-white/20 rounded-xl">
-          <h3 class="text-white font-medium mb-3">Change Password</h3>
+          <h3 class="text-white font-medium mb-3">{t(currentLanguage, 'settings.changePassword')}</h3>
           <div class="space-y-3">
             <input
               type="password"
               bind:value={oldPassword}
-              placeholder="Current password"
+              placeholder={t(currentLanguage, 'settings.currentPasswordPlaceholder')}
               class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200"
             />
             <input
               type="password"
               bind:value={newPassword}
-              placeholder="New password"
+              placeholder={t(currentLanguage, 'settings.newPasswordPlaceholder')}
               class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200"
             />
             <input
               type="password"
               bind:value={confirmPassword}
-              placeholder="Confirm new password"
+              placeholder={t(currentLanguage, 'settings.confirmNewPasswordPlaceholder')}
               class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200"
             />
             {#if passwordError}
@@ -261,18 +333,20 @@
                 on:click={handleChangePassword}
                 class="px-4 py-2 bg-[#0C6E78] hover:bg-[#0A5A63] text-white rounded-lg transition-colors duration-200 text-sm font-medium"
               >
-                Update
+                {t(currentLanguage, 'settings.update')}
               </button>
               <button 
                 on:click={resetPasswordForm}
                 class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors duration-200 text-sm"
               >
-                Cancel
+                {t(currentLanguage, 'settings.cancel')}
               </button>
             </div>
           </div>
         </div>
       {/if}
+
+      <!-- Encryption UI removed; answers are encrypted automatically. -->
 
       <!-- Delete All Data -->
       {#if deleteSuccess}
@@ -284,8 +358,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-green-200 font-medium">Data Deleted Successfully</h3>
-              <p class="text-green-300/70 text-sm">All your answers have been removed</p>
+              <h3 class="text-green-200 font-medium">{t(currentLanguage, 'settings.deleteSuccessTitle')}</h3>
+              <p class="text-green-300/70 text-sm">{t(currentLanguage, 'settings.deleteSuccessBody')}</p>
             </div>
           </div>
         </div>
@@ -301,8 +375,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-red-200 font-medium">Delete All Data</h3>
-              <p class="text-red-300/70 text-sm">Permanently remove all your answers</p>
+              <h3 class="text-red-200 font-medium">{t(currentLanguage, 'settings.deleteAllData')}</h3>
+              <p class="text-red-300/70 text-sm">{t(currentLanguage, 'settings.deleteAllDataSubtitle')}</p>
             </div>
           </div>
         </button>
@@ -315,8 +389,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-red-200 font-medium">Are you sure?</h3>
-              <p class="text-red-300/70 text-sm">This action cannot be undone</p>
+              <h3 class="text-red-200 font-medium">{t(currentLanguage, 'settings.deleteConfirmTitle')}</h3>
+              <p class="text-red-300/70 text-sm">{t(currentLanguage, 'settings.deleteConfirmBody')}</p>
             </div>
           </div>
           <div class="flex gap-2">
@@ -324,13 +398,13 @@
               on:click={handleDeleteAllData}
               class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
             >
-              Delete All
+              {t(currentLanguage, 'settings.deleteAllAction')}
             </button>
             <button 
               on:click={() => showDeleteConfirm = false}
               class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors duration-200 text-sm"
             >
-              Cancel
+              {t(currentLanguage, 'settings.cancel')}
             </button>
           </div>
         </div>
@@ -348,8 +422,8 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-white font-medium">Logout</h3>
-            <p class="text-white/60 text-sm">Sign out of your account</p>
+            <h3 class="text-white font-medium">{t(currentLanguage, 'settings.logout')}</h3>
+            <p class="text-white/60 text-sm">{t(currentLanguage, 'settings.logoutSubtitle')}</p>
           </div>
         </div>
       </button>

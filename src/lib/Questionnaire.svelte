@@ -5,7 +5,8 @@
   import { fade, fly, slide } from 'svelte/transition';
   import { cubicInOut, quintOut } from 'svelte/easing';
   import { t } from './i18n';
-  import { persistAnswer } from './supabaseHelpers';
+  import { answerStorage } from './simpleAnswerStorage';
+  import { supabase } from './supabaseClient';
 
   export let answersStore: Writable<Record<string, string[]>>;
   export let onDayComplete = (dayId: string) => {};
@@ -17,7 +18,7 @@
 
   let currentIndex = 0;
   let answerEl: HTMLTextAreaElement;
-  let saveTimer: number;
+  // removed: short debounce timer in favor of 10s autosave
   let isTransitioning = false;
   let direction: 'forward' | 'backward' = 'forward';
   let displayIndex = 0; // Separate display index for smoother transitions
@@ -26,6 +27,7 @@
 
   // Autosave state
   let autosaveTimer: number;
+  let autosaveTimeout: number;
   // Track last-saved answers to avoid redundant remote writes
   let lastSavedAnswers: Record<string, string[]> = {};
   // Saving state for animated indicator
@@ -33,6 +35,12 @@
   let saveError = '';
   let saveSlow = false;
   let saveRetryAttempts = 0;
+  // Saving indicator only for Next-button initiated saves
+  let nextSaving = false;
+  // Track saving per question to avoid cross-day blocking
+  let savingKey: string | null = null;
+  // Track previous day to flush changes on day switch
+  let previousDayId: string | null = null;
 
   // Reset currentIndex when day changes
   $: if (currentDay) {
@@ -55,16 +63,39 @@
     displayIndex = currentIndex;
   }
 
-  // Ensure lastSavedAnswers has an array for the current day
+  // Initialize lastSavedAnswers for the current day once; don't overwrite on every input
   $: if (currentDay) {
     if (!lastSavedAnswers[currentDay.id]) {
       lastSavedAnswers[currentDay.id] = [...($answersStore[currentDay.id] || [])];
     }
+    if (!previousDayId) {
+      previousDayId = currentDay.id;
+    }
+  }
+
+  // Flush changes when switching to a different day
+  $: if (currentDay && previousDayId && currentDay.id !== previousDayId) {
+    void flushAllDay(previousDayId);
+    previousDayId = currentDay.id;
   }
 
   async function next() {
     if (isTransitioning) return;
-    await maybeSaveCurrentAnswer();
+    const dayId = currentDay.id;
+    const idx = currentIndex;
+    nextSaving = true;
+    
+    // For Next button, try to save but don't wait too long
+    try {
+      await Promise.race([
+        maybeSaveCurrentAnswer(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Next button timeout')), 6000))
+      ]);
+    } catch (e) {
+      console.warn('Next button save timeout or failed, but continuing:', e);
+    } finally {
+      nextSaving = false;
+    }
     
     if (currentIndex < questions.length - 1) {
       currentIndex++;
@@ -91,7 +122,7 @@
 
   async function prev() {
     if (isTransitioning) return;
-    
+    await maybeSaveCurrentAnswer();
     if (currentIndex > 0) {
       currentIndex--;
       tick().then(() => answerEl?.focus());
@@ -108,12 +139,12 @@
       allAnswers[currentDay.id][currentIndex] = value;
       return allAnswers;
     });
-    if (typeof window !== 'undefined' && username) {
-      clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {
-        // Persist to localStorage only; remote persistence handled by autosave/Next
-        localStorage.setItem(`answers_${username}`, JSON.stringify($answersStore));
-      }, 300);
+    // Idle-based autosave: 10s after last keystroke
+    if (typeof window !== 'undefined') {
+      if (autosaveTimeout) clearTimeout(autosaveTimeout);
+      autosaveTimeout = window.setTimeout(() => {
+        void maybeSaveCurrentAnswer();
+      }, 10000);
     }
   }
 
@@ -124,11 +155,44 @@
     const lastSavedValue = (lastSavedAnswers[dayId]?.[idx] || '');
     const currentTrim = currentValue.trim();
     const lastTrim = lastSavedValue.trim();
+    const key = `${dayId}:${idx}`;
+    
+    console.log('💾 maybeSaveCurrentAnswer called:', { dayId, idx, currentLength: currentValue.length, lastSavedLength: lastSavedValue.length, profileId, username });
+    
     // Only save if something was entered and content changed
     if (currentTrim.length === 0 && lastTrim.length === 0) return;
-    if (currentValue === lastSavedValue) return;
-    if (isSaving) return;
+    if (currentValue === lastSavedValue) {
+      console.log('📝 No changes detected - skipping save');
+      return;
+    }
+    if (savingKey === key) {
+      console.log('⏳ Already saving this question - skipping');
+      return;
+    }
 
+    // Wait for profileId to be available if it's not ready yet
+    if (!profileId) {
+      console.log('⏳ Waiting for profileId to be loaded...');
+      let attempts = 0;
+      const maxAttempts = 10; // Wait up to 5 seconds
+      while (!profileId && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+        console.log(`🔄 Attempt ${attempts}: profileId = ${profileId || 'still missing'}`);
+      }
+      
+      if (!profileId) {
+        console.error('❌ profileId still not available after waiting - save may fail');
+        saveError = 'Profile not loaded. Please refresh the page.';
+        return;
+      } else {
+        console.log('✅ profileId loaded after waiting:', profileId);
+      }
+    }
+
+    console.log('🚀 Starting save process...');
+    savingKey = key;
+    // Always show saving indicator; clear it in finally regardless of index changes
     isSaving = true;
     saveError = '';
     saveSlow = false;
@@ -138,7 +202,7 @@
         saveSlow = true;
       }
     }, 6000) : 0;
-    // Hard-fail after 20s to avoid indefinite spinner if the network hangs
+    // Hard-fail after 12s to avoid indefinite spinner if the network hangs
     const failAfterId = typeof window !== 'undefined' ? window.setTimeout(() => {
       if (!completed) {
         saveError = 'Save failed. Will retry.';
@@ -146,35 +210,37 @@
         isSaving = false;
         scheduleRetry(dayId, idx);
       }
-    }, 20000) : 0;
+    }, 12000) : 0;
 
     try {
-      const { error } = await persistAnswer({
-        profileId,
-        username,
-        dayId,
-        questionIndex: idx,
-        answer: currentValue,
-      });
+      console.log('📞 Saving answer:', { dayId, questionIndex: idx, answerLength: currentValue.length });
+      
+      const result = await answerStorage.saveAnswer(dayId, idx, currentValue);
+      
+      console.log('📥 Save result:', result);
+      
       completed = true;
-      if (!error) {
+      if (result.success) {
+        console.log('✅ Save successful');
         if (!lastSavedAnswers[dayId]) lastSavedAnswers[dayId] = [];
         lastSavedAnswers[dayId][idx] = currentValue;
         saveError = '';
         saveRetryAttempts = 0;
       } else {
+        console.error('❌ Save failed:', result.error);
         saveError = 'Save failed. Will retry.';
-        console.warn('Persist answer failed:', error);
         scheduleRetry(dayId, idx);
       }
     } catch (e) {
+      console.error('💥 Save threw exception:', e);
       completed = true;
       saveError = 'Save failed. Will retry.';
-      console.warn('Persist answer threw:', e);
       scheduleRetry(dayId, idx);
     } finally {
+      // Ensure spinner clears even if the user navigated to next question
       isSaving = false;
       saveSlow = false;
+      if (savingKey === key) savingKey = null;
       if (timerId) clearTimeout(timerId);
       if (failAfterId) clearTimeout(failAfterId);
     }
@@ -191,51 +257,81 @@
       if (currentValue.trim().length === 0) return;
       if (currentValue === lastSavedValue) return; // already saved meanwhile
 
-      isSaving = true;
-      saveSlow = false;
-      saveError = '';
+      const key = `${dayId}:${idx}`;
+      savingKey = key;
+      if (currentDay.id === dayId && currentIndex === idx) {
+        isSaving = true;
+        saveSlow = false;
+        saveError = '';
+      }
       try {
-        const { error } = await persistAnswer({
-          profileId,
-          username,
-          dayId,
-          questionIndex: idx,
-          answer: currentValue,
-        });
-        if (!error) {
+        const result = await answerStorage.saveAnswer(dayId, idx, currentValue);
+        if (result.success) {
           if (!lastSavedAnswers[dayId]) lastSavedAnswers[dayId] = [];
           lastSavedAnswers[dayId][idx] = currentValue;
           saveError = '';
           saveRetryAttempts = 0;
         } else {
           saveError = 'Save failed.';
-          console.warn('Persist answer failed on retry:', error);
+          console.warn('Save failed on retry:', result.error);
         }
       } catch (e) {
         saveError = 'Save failed.';
-        console.warn('Persist answer threw on retry:', e);
+        console.warn('Save threw on retry:', e);
       } finally {
+        // Clear spinner even if index changed during retry
         isSaving = false;
+        if (savingKey === key) savingKey = null;
       }
     }, delay);
   }
 
   function autosaveTick() {
     if (typeof window === 'undefined') return;
-    if (!username && !profileId) return;
+    const dayId = currentDay.id;
+    const idx = currentIndex;
+    const currentValue = ($answersStore[dayId]?.[idx] || '');
+    const lastSavedValue = (lastSavedAnswers[dayId]?.[idx] || '');
+    const currentTrim = currentValue.trim();
+    const lastTrim = lastSavedValue.trim();
+    // Only attempt save if something is entered and content changed
+    if (currentTrim.length === 0 && lastTrim.length === 0) return;
+    if (currentValue === lastSavedValue) return;
     void maybeSaveCurrentAnswer();
   }
 
   onMount(() => {
     if (typeof window !== 'undefined') {
-      autosaveTimer = window.setInterval(autosaveTick, 10000);
+      // No fixed interval; autosave is now triggered via idle timeout in updateAnswer
     }
   });
 
   onDestroy(() => {
     if (autosaveTimer) clearInterval(autosaveTimer);
-    if (saveTimer) clearTimeout(saveTimer);
+    if (autosaveTimeout) clearTimeout(autosaveTimeout);
   });
+
+  async function flushAllDay(dayId: string) {
+    const answers = $answersStore[dayId] || [];
+    const last = lastSavedAnswers[dayId] || [];
+    for (let i = 0; i < answers.length; i++) {
+      const currentValue = answers[i] || '';
+      const lastSavedValue = last[i] || '';
+      if (currentValue.trim().length === 0 && (lastSavedValue || '').trim().length === 0) continue;
+      if (currentValue === lastSavedValue) continue;
+      try {
+        const result = await answerStorage.saveAnswer(dayId, i, currentValue);
+        if (result.success) {
+          if (!lastSavedAnswers[dayId]) lastSavedAnswers[dayId] = [];
+          lastSavedAnswers[dayId][i] = currentValue;
+        } else {
+          console.warn('Flush save failed:', result.error);
+        }
+      } catch (e) {
+        console.warn('Flush save threw:', e);
+      }
+    }
+  }
 </script>
 
 <style>
@@ -296,9 +392,10 @@
       
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div class="text-center sm:text-left">
-          <h2 class="text-xl lg:text-2xl font-bold text-white mb-2 bounce-in">{currentDay.title}</h2>
-          <p class="text-white/80 text-base lg:text-lg transition-all duration-300">{currentDay.subtitle}</p>
-          <p class="text-white/60 text-sm lg:text-base mt-1">{t(currentLanguage, 'questionnaire.questionXofY', { x: currentIndex + 1, y: questions.length })}</p>
+          <div class="flex items-baseline justify-center sm:justify-start gap-3">
+            <h2 class="text-xl lg:text-2xl font-bold text-white bounce-in">{currentDay.title}</h2>
+          </div>
+          <p class="text-white/80 text-base lg:text-lg transition-all duration-300 mt-1">{currentDay.subtitle}</p>
         </div>
         <div class="text-center sm:text-right">
           <div class="text-xl lg:text-2xl font-bold text-white transition-all duration-500 bounce-in" style="animation-delay: 0.2s;">{completionRate}%</div>
@@ -327,7 +424,10 @@
           >
             <div class="mb-2 sm:mb-4 lg:mb-2 xl:mb-6">
               <div class="flex-1">
-                <h2 class="text-lg lg:text-xl font-bold text-white leading-tight mb-3 bounce-in" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
+                <div class="text-white text-base lg:text-lg font-semibold mb-2 bounce-in" style="animation-delay: 0.08s;">
+                  {t(currentLanguage, 'questionnaire.questionXofY', { x: displayIndex + 1, y: questions.length })}
+                </div>
+                <h2 class="text-lg lg:text-xl font-bold text-white leading-tight mb-5 bounce-in" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
                 <p class="text-white/70 text-sm mt-2 italic">{questions[displayIndex].explanation}</p>
               </div>
             </div>
@@ -340,7 +440,7 @@
                 value={dayAnswers[displayIndex] || ''} 
                 on:input={updateAnswer}
                 on:focus={() => answerEl?.classList.add('textarea-focus')}
-                on:blur={() => answerEl?.classList.remove('textarea-focus')}
+                on:blur={() => { answerEl?.classList.remove('textarea-focus'); void maybeSaveCurrentAnswer(); }}
                 on:keydown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); next(); }
                   else if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); prev(); }
@@ -453,7 +553,7 @@
               <div class="relative group">
                 <button
                   class="w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 {i === currentIndex ? 'border-white/60 bg-white/20 shadow-lg' : isAnswered ? 'border-white/40 bg-white/10' : 'border-white/20 bg-transparent'}"
-                  on:click={() => { if (!isTransitioning) { currentIndex = i; } }}
+                  on:click={() => { if (!isTransitioning) { void maybeSaveCurrentAnswer(); currentIndex = i; } }}
                   aria-label="Go to question {i + 1}"
                 >
                   {#if isAnswered}
@@ -471,15 +571,23 @@
           
           <button 
             on:click={next} 
-            disabled={isTransitioning}
+            disabled={isTransitioning || nextSaving}
             class="order-2 w-auto flex-1 sm:flex-none px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             style="background-color: #0C6E78;"
           >
             <span class="flex items-center justify-center gap-2">
-              {currentIndex === questions.length - 1 ? `Complete ${currentDay.title}` : 'Next'}
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
+              {#if nextSaving}
+                <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                Saving…
+              {:else}
+                {currentIndex === questions.length - 1 ? `Complete ${currentDay.title}` : 'Next'}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              {/if}
             </span>
           </button>
         </div>

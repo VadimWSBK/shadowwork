@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabaseClient';
 
@@ -9,25 +9,58 @@
   let infoMessage = '';
   let loading = false;
   let ready = false;
+  let unsub: any;
 
   onMount(async () => {
-    // Support both PKCE (?code=...) and token_hash (?token_hash=...&type=recovery)
+    // Listen for auth state changes in case Supabase auto-exchanges the code asynchronously
     try {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      // Some custom email templates may use alternate names; support a few fallbacks
-      const token_hash = params.get('token_hash') || params.get('token') || params.get('hash');
-      const typeParam = params.get('type') || 'recovery';
+      unsub = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session) {
+          try {
+            await fetch('/auth/cookie', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
+            });
+          } catch {}
+          ready = true;
+        }
+      });
+    } catch {}
+    // Support PKCE (?code=...) and recovery tokens in search or hash
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const code = searchParams.get('code');
+      // Support a few fallbacks and hash-based parameters
+      const token_hash = (searchParams.get('token_hash') || searchParams.get('token') || searchParams.get('hash')
+        || hashParams.get('token_hash') || hashParams.get('token') || hashParams.get('hash'));
+      const typeParam = ((searchParams.get('type') || hashParams.get('type')) || 'recovery') as any;
+      const access_token = hashParams.get('access_token');
+      const refresh_token = hashParams.get('refresh_token');
 
-      if (code) {
+      let processed = false;
+      // If tokens are present, process them explicitly
+      if (token_hash) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type: typeParam });
+        if (error) throw error;
+        processed = true;
+      } else if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(window.location.search);
         if (error) throw error;
-      } else if (token_hash) {
-        // Password-reset links are email-based recovery; use the EmailOtpType 'recovery' by default
-        const { error } = await supabase.auth.verifyOtp({ token_hash, type: typeParam as any });
+        processed = true;
+      } else if (access_token && refresh_token) {
+        // Hash-based recovery tokens: explicitly set session when present
+        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
         if (error) throw error;
-      } else {
-        throw new Error('Missing code or token in URL');
+        processed = true;
+      }
+
+      // With detectSessionInUrl enabled, Supabase may have already exchanged the code.
+      // If nothing was processed, ensure a session exists before proceeding.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!processed && !session) {
+        throw new Error('Missing or invalid reset parameters');
       }
     } catch (e: any) {
       errorMessage = 'Invalid or expired reset link. Please request a new one.';
@@ -36,16 +69,24 @@
 
     // Persist session cookies on the server so guarded routes work
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetch('/auth/cookie', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
-        });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await fetch('/auth/cookie', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
+          });
+        }
       }
     } catch {}
     ready = true;
+  });
+
+  // Cleanup listener
+  onDestroy(() => {
+    try { unsub?.data?.subscription?.unsubscribe?.(); } catch {}
   });
 
   async function handleReset(event: Event) {

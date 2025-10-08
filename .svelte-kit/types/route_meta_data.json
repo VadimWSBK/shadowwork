@@ -11,6 +11,9 @@
 	"/auth/cookie": [
 		"src/routes/auth/cookie/+server.ts"
 	],
+	"/auth/logout": [
+		"src/routes/auth/logout/+server.ts"
+	],
 	"/(app)/dashboard": [
 		"src/routes/(app)/+layout.server.ts",
 		"src/routes/+layout.server.ts"

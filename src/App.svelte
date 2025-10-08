@@ -8,6 +8,7 @@
   import type { DayData } from './lib/questions';
   import type { Language } from './lib/questions';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { writable } from 'svelte/store';
   import { quintOut } from 'svelte/easing';
   import { slide } from 'svelte/transition';
@@ -21,7 +22,9 @@
   import day7Img from './assets/shadow_work_day_7.png';
   import { t, getDaySummary, getDayIntro } from './lib/i18n';
   import { supabase } from './lib/supabaseClient';
-  import { isAuthorizedUser, getProfileByEmail, updateProfileSettings, deleteAllAnswers, deleteAllAnswersForUser, deleteUserAnswersRpc, persistAnswer, fetchAnswersForUser, type AnswerRow } from './lib/supabaseHelpers';
+  import { isAuthorizedUser, getProfileByEmail, updateProfileSettings } from './lib/supabaseHelpers';
+  import { answerStorage, type AnswerRow } from './lib/simpleAnswerStorage';
+  import { getAuthenticatedUser, type AuthUserInfo } from './lib/auth';
   
 
   let currentView: 'login' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
@@ -33,8 +36,9 @@
   $: courseData = getCourseData(currentLanguage);
   let answers: Record<string, string[]> = {};
   let answersStore = writable<Record<string, string[]>>({});
+  let nameSaveStatus: { success: boolean; message?: string } | null = null;
 
-  let session: any = null;
+  let currentUser: any = null;
   let authorized = false;
   let navElement: HTMLElement;
   let languageMenuEl: HTMLElement | null = null;
@@ -44,6 +48,27 @@
   let currentDay: DayData = courseData[0]; // Start with Intro
   let sidebarOpen = false;
   let showSettings = false;
+
+  // Cookie helpers for language persistence
+  const LANGUAGE_COOKIE = 'shadowwork_language';
+  function setLanguageCookie(lang: Language) {
+    try {
+      const days = 365 * 2; // 2 years
+      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+      const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${LANGUAGE_COOKIE}=${encodeURIComponent(lang)}; Expires=${expires}; Path=/; SameSite=Lax${secure}`;
+    } catch {}
+  }
+  function getLanguageCookie(): Language | null {
+    try {
+      const m = document.cookie.match(/(?:^|;\s*)shadowwork_language=([^;]+)/);
+      const val = m ? decodeURIComponent(m[1]) : null;
+      if (val === 'en' || val === 'de' || val === 'pl') return val as Language;
+      return null;
+    } catch {
+      return null;
+    }
+  }
 
   const daySummaries: Record<string, string> = {
     day1: 'Grounding and emotional awareness. Notice, name, and normalize feelings.',
@@ -90,7 +115,8 @@
 
   onMount(() => {
     // Load saved language
-    const savedLanguage = localStorage.getItem('shadowwork_language') as Language | null;
+    const cookieLang = getLanguageCookie();
+    const savedLanguage = (cookieLang ?? (localStorage.getItem('shadowwork_language') as Language | null));
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
       currentLanguage = savedLanguage;
     }
@@ -133,23 +159,45 @@
     };
   });
 
-  onMount(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    session = user ? { user } : null; // Minimal session-like object
-    await checkAuthAndRedirect();
+  onMount(() => {
+    // Restore profileId from localStorage on app initialization
+    try {
+      const storedProfileId = localStorage.getItem('shadowwork_profile_id');
+      if (storedProfileId) {
+        profileId = storedProfileId;
+        console.log('🔄 Restored profileId from localStorage:', profileId);
+      }
+    } catch (e) {
+      console.warn('Could not restore profileId from localStorage:', e);
+    }
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      session = user ? { user } : null;
+    (async () => {
+      const userInfo = await getAuthenticatedUser();
+      currentUser = userInfo as any;
+      await checkAuthAndRedirect();
+    })();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, _newSession) => {
+      const userInfo = await getAuthenticatedUser();
+      currentUser = userInfo as any;
       await checkAuthAndRedirect();
     });
-    // Optional: you could store authListener.subscription to unsubscribe later
+    // Ensure we clean up the subscription when component is destroyed
+    return () => {
+      try {
+        authListener?.subscription?.unsubscribe();
+      } catch {}
+    };
   });
 
   async function checkAuthAndRedirect() {
-    if (!session?.user) {
+    if (!currentUser) {
       authorized = false;
       currentView = 'login';
+      // Ensure we're on the login page when not authenticated
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        goto('/login');
+      }
       return;
     }
     authorized = await isAuthorizedUser();
@@ -157,14 +205,18 @@
       // Sign out unauthorized users to avoid lingering sessions
       await supabase.auth.signOut();
       currentView = 'login';
+      goto('/login');
       return;
     }
     // Load profile settings when authorized
-    const email = session.user.email as string | undefined;
+    const email = currentUser?.email as string | undefined;
+    console.log('🔍 Loading profile for email:', email, 'Current profileId:', profileId);
     if (email) {
       const { data } = await getProfileByEmail(email);
       if (data) {
-        profileId = (data.id as string) || '';
+        const newProfileId = (data.id as string) || '';
+        console.log('📥 Profile loaded from database:', { id: newProfileId, username: data.username });
+        profileId = newProfileId;
         username = (data.username as string) || email;
         const lang = (data.language as Language) || (localStorage.getItem('shadowwork_language') as Language) || 'en';
         if (lang === 'en' || lang === 'de' || lang === 'pl') {
@@ -174,6 +226,9 @@
         localStorage.setItem('shadowwork_language', currentLanguage);
         if (profileId) {
           localStorage.setItem('shadowwork_profile_id', profileId);
+          console.log('💾 ProfileId saved to localStorage:', profileId);
+        } else {
+          console.warn('⚠️ ProfileId is empty, not saving to localStorage');
         }
         // Hydrate answers from remote after profile is known
         await hydrateAnswersFromRemote();
@@ -196,24 +251,31 @@
 
   async function hydrateAnswersFromRemote() {
     try {
-      const { data } = await fetchAnswersForUser({ profileId, username });
-      if (!data || data.length === 0) return;
-      // Build the in-memory structure: Record<dayId, string[]> with proper lengths
+      const { data } = await answerStorage.getAnswers();
+      
+      // Always build the in-memory structure: Record<dayId, string[]> with proper lengths
       const next: Record<string, string[]> = {};
       courseData.forEach(day => {
         next[day.id] = new Array(day.questions.length).fill('');
       });
-      for (const row of data as AnswerRow[]) {
-        const d = row.day_id;
-        const i = Number(row.question_index ?? 0);
-        if (next[d] && i >= 0 && i < next[d].length) {
-          next[d][i] = row.answer_text || '';
+      
+      // If we have data, populate it
+      if (data && data.length > 0) {
+        for (const row of data) {
+          const d = row.day_id;
+          const i = Number(row.question_index ?? 0);
+          if (next[d] && i >= 0 && i < next[d].length) {
+            next[d][i] = row.answer_text || '';
+          }
         }
       }
+      
       answers = next;
       answersStore.set(next);
-      if (username) localStorage.setItem(`answers_${username}`, JSON.stringify(next));
-    } catch {}
+      console.log('✅ Loaded answers from remote:', data?.length || 0, 'rows');
+    } catch (error) {
+      console.error('Failed to load answers:', error);
+    }
   }
 
   function getBrightness(color: string): number {
@@ -229,10 +291,10 @@
   async function handleLogin(event: CustomEvent<{ username: string }>) {
     username = event.detail.username;
     localStorage.setItem('shadowwork_username', username);
-    // Enforce auth guard: only proceed if session exists and user is authorized
+    // Enforce auth guard: only proceed if currentUser exists and user is authorized
     const { data: { user } } = await supabase.auth.getUser();
-    session = user ? { user } : null;
-    const ok = session?.user ? await isAuthorizedUser() : false;
+    currentUser = user || null;
+    const ok = currentUser ? await isAuthorizedUser() : false;
     if (!ok) {
       currentView = 'login';
       return;
@@ -278,27 +340,45 @@
   }
   answers[dayId][index] = newAnswer;
   answersStore.set(answers);
-  // Save to localStorage
-  localStorage.setItem(`answers_${username}`, JSON.stringify(answers));
+  // No longer saving to localStorage - Supabase is our source of truth
 
-  // Persist to Supabase using RPC-first upsert
-  try {
-    const { error } = await persistAnswer({
-      profileId,
-      username,
-      dayId,
-      questionIndex: index,
-      answer: newAnswer,
-    });
-    if (error) {
-      console.warn('Save from ViewAnswers failed:', error);
-      return { success: false, error };
+  // Persist to Supabase using simple storage with retry logic
+  const maxRetries = 3;
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`💾 handleUpdateAnswer attempt ${attempt}/${maxRetries}:`, { dayId, index, profileId });
+      
+      const result = await answerStorage.saveAnswer(dayId, index, newAnswer);
+      if (result.success) {
+        console.log('✅ handleUpdateAnswer successful on attempt', attempt);
+        return { success: true };
+      } else {
+        lastError = result.error;
+        console.warn(`❌ handleUpdateAnswer failed on attempt ${attempt}:`, result.error);
+        
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`⏳ Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn(`💥 handleUpdateAnswer threw on attempt ${attempt}:`, e);
+      
+      // Wait before retry
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
-    return { success: true };
-  } catch (e) {
-    console.warn('Save from ViewAnswers threw:', e);
-    return { success: false, error: e };
   }
+  
+  console.error('❌ handleUpdateAnswer failed after all retries:', lastError);
+  return { success: false, error: lastError };
 }
 
   function calculateCompletionRate(dayId: string): number {
@@ -335,19 +415,37 @@
   }
 
   async function logout() {
+    console.log('🚪 Logging out, clearing profileId:', profileId);
+    
+    // Clear local state first
     localStorage.removeItem('shadowwork_username');
-    localStorage.removeItem(`answers_${username}`);
+    localStorage.removeItem('shadowwork_profile_id');
     username = '';
+    profileId = '';
+    console.log('🧹 ProfileId cleared during logout');
     answers = {};
     answersStore.set({});
-    currentView = 'login';
     showSettings = false;
+    
+    // Set view to login immediately to prevent UI flicker
+    currentView = 'login';
+    currentUser = null;
+    authorized = false;
+    
+    // Sign out from Supabase
     await supabase.auth.signOut();
+    // Clear server-side auth cookies to fully invalidate session
+    try {
+      await fetch('/auth/logout', { method: 'POST' });
+    } catch {}
+    
+    // Navigate to login page
+    goto('/login');
   }
 
   async function handleChangePassword(event: CustomEvent<{ oldPassword: string; newPassword: string }>) {
     const { oldPassword, newPassword } = event.detail;
-    const email = session?.user?.email as string | undefined;
+    const email = currentUser?.email as string | undefined;
     if (!email) {
       alert('You need to be logged in to change your password.');
       return;
@@ -378,44 +476,52 @@
     }
   }
 
-  function handleChangeName(event: CustomEvent<{ newName: string }>) {
+  async function handleChangeName(event: CustomEvent<{ newName: string }>) {
     const { newName } = event.detail;
     username = newName;
     localStorage.setItem('shadowwork_username', newName);
-    const email = session?.user?.email as string | undefined;
+    
+    // Update profile in Supabase and notify Settings of result
+    const email = currentUser?.email as string | undefined;
     if (email) {
-      updateProfileSettings({ email, username: newName }).catch(() => {});
+      const { error } = await updateProfileSettings({ email, username: newName });
+      if (error) {
+        nameSaveStatus = { success: false, message: error.message || 'Could not save name' };
+        return;
+      }
     }
-    // No alert popup - the Settings component will show subtle success feedback
+    nameSaveStatus = { success: true };
   }
 
   async function handleDeleteAllData() {
-    // Clear all stored data
-    localStorage.removeItem(`answers_${username}`);
+    // Clear in-memory state
     answers = {};
     answersStore.set({});
-    // Server-side deletion for both profile_id and legacy username rows
-    const pid = profileId || (localStorage.getItem('shadowwork_profile_id') || '');
-    const uname = username || (localStorage.getItem('shadowwork_username') || '');
-    // Try RPC first (atomic; respects RLS). Fallback to client-side delete.
+    
+    // Clear user preferences from localStorage (keep language and username for UX)
+    // No need to clear answers from localStorage since we don't store them there anymore
+    
+    // Delete from Supabase
     try {
-      const { error: rpcError } = await deleteUserAnswersRpc();
-      if (rpcError) {
-        const { error } = await deleteAllAnswersForUser({ profileId: pid || undefined, username: uname || undefined });
-        if (error) console.error('Client delete failed:', error.message || error);
+      const result = await answerStorage.deleteAllAnswers();
+      if (!result.success) {
+        console.warn('Delete operation failed:', result.error);
+      } else {
+        console.log('✅ All answers deleted successfully');
       }
-    } catch (e) {
-      console.error('Delete all answers error:', e);
-      const { error } = await deleteAllAnswersForUser({ profileId: pid || undefined, username: uname || undefined });
-      if (error) console.error('Client delete failed:', error.message || error);
+    } catch (error) {
+      console.warn('Delete operation failed:', error);
     }
-    // No alert popup - the Settings component will show subtle success feedback
+    
+    // Reinitialize empty state
+    await hydrateAnswersFromRemote();
   }
 
   function changeLanguage(language: Language) {
     currentLanguage = language;
     localStorage.setItem('shadowwork_language', language);
-    const email = session?.user?.email as string | undefined;
+    setLanguageCookie(language);
+    const email = currentUser?.email as string | undefined;
     if (email && (language === 'en' || language === 'de' || language === 'pl')) {
       updateProfileSettings({ email, language }).catch(() => {});
     }
@@ -435,6 +541,8 @@
     const m = id.match(/day(\d+)/);
     return m ? Number(m[1]) : 0;
   }
+
+  // Passphrase handlers removed — encryption is automatic now.
 </script>
 
   <main class="min-h-screen">
@@ -460,7 +568,7 @@
           
           <!-- User Account Section -->
           <div class="flex items-center gap-3 ml-auto">
-            <div class="relative hidden sm:block">
+            <div class="relative">
               <button
                 class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
                 on:click={() => (languageMenuOpen = !languageMenuOpen)}
@@ -531,7 +639,6 @@
                       <div class="text-center">
                         <div class="text-2xl font-bold text-white">{calculateCompletionRate(currentDay.id)}%</div>
                         <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
-+                        <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
                       </div>
                     </div>
                   </div>
@@ -732,6 +839,7 @@
     <Settings 
       {username}
       {currentLanguage}
+      nameSaveStatus={nameSaveStatus}
       on:close={() => showSettings = false}
       on:logout={logout}
       on:changePassword={handleChangePassword}

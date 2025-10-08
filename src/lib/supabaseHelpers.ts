@@ -10,7 +10,7 @@ export type AnswerRow = {
 };
 
 export async function fetchAnswersForUser(params: { profileId?: string; username?: string }) {
-  const { profileId, username } = params;
+  const { profileId } = params;
   try {
     // Prefer stable profile_id
     if (profileId) {
@@ -26,19 +26,7 @@ export async function fetchAnswersForUser(params: { profileId?: string; username
       }
     }
 
-    // Legacy username path
-    if (username) {
-      const { data, error } = await supabase
-        .from('answers')
-        .select('day_id, question_index, answer_text, updated_at')
-        .eq('username', username)
-        .order('day_id', { ascending: true })
-        .order('question_index', { ascending: true });
-      if (!error && data && data.length > 0) return { data: data as AnswerRow[], error: null };
-      if (error) {
-        // Fall through to RPC
-      }
-    }
+    // No username fallback: rely on RPC if profile_id isn’t known
 
     // RPC fallback: expects a server-side function that returns rows for current auth user
     try {
@@ -116,125 +104,85 @@ export async function persistAnswer(params: {
   questionIndex: number;
   answer: string;
 }) {
-  const { profileId, username, dayId, questionIndex, answer } = params;
+  const { profileId, dayId, questionIndex, answer } = params;
   if (!dayId) return { error: new Error('Missing dayId') };
-  try {
-    // Use client-side upsert/update paths directly. RPC may not exist in some deployments.
-    if (profileId) {
-        // 1) Try by (profile_id, day_id, question_index)
-        console.log('Checking for existing by profile_id');
-        const byProfile = await supabase
-          .from('answers')
-          .select('id')
-          .eq('profile_id', profileId)
-          .eq('day_id', dayId)
-          .eq('question_index', questionIndex)
-          .limit(1)
-          .maybeSingle();
+  // Small utility to prevent hanging requests causing the UI to feel stuck
+  // Accept any thenable (Supabase builders are awaitable but not typed as Promise)
+  const withTimeout = <T>(fn: () => any, ms = 4000): Promise<T> =>
+    Promise.race<T>([
+      Promise.resolve(fn()),
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Timeout during persistAnswer')), ms))
+    ]);
 
-        if (byProfile.data?.id) {
-          console.log('Found existing by profile_id, updating');
-          const { error } = await supabase
-            .from('answers')
-            .update({
-              username: typeof username === 'string' ? username : undefined,
-              answer_text: answer,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', byProfile.data.id);
-          if (!error) console.log('Client-side update succeeded');
-          else console.error('Client-side update failed:', error);
-          return { error };
-        }
-
-        // 2) Not found by profile_id, try legacy (username, day_id, question_index)
-        console.log('Checking for existing by username');
-        const byUsername = username
-          ? await supabase
-              .from('answers')
-              .select('id')
-              .eq('username', username)
-              .eq('day_id', dayId)
-              .eq('question_index', questionIndex)
-              .limit(1)
-              .maybeSingle()
-          : { data: null, error: null };
-
-        if (byUsername.data?.id) {
-          console.log('Found existing by username, updating');
-          const { error } = await supabase
-            .from('answers')
-            .update({
-              profile_id: profileId,
-              answer_text: answer,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', byUsername.data.id);
-          if (!error) console.log('Client-side update succeeded');
-          else console.error('Client-side update failed:', error);
-          return { error };
-        }
-
-        // 3) Insert a fresh row
-        console.log('No existing row found, inserting new');
-        const { error } = await supabase
-          .from('answers')
-          .insert({
-            username: username ?? '',
-            profile_id: profileId,
-            day_id: dayId,
-            question_index: questionIndex,
-            answer_text: answer,
-            updated_at: new Date().toISOString(),
-          });
-        if (!error) console.log('Client-side insert succeeded');
-        else console.error('Client-side insert failed:', error);
-        return { error };
-      } else if (username) {
-        // Keep legacy path by username
-        console.log('Using legacy username path');
-        const existing = await supabase
-          .from('answers')
-          .select('id')
-          .eq('username', username)
-          .eq('day_id', dayId)
-          .eq('question_index', questionIndex)
-          .limit(1)
-          .maybeSingle();
-
-        if (existing.data?.id) {
-          console.log('Found existing by username (legacy), updating');
-          const { error } = await supabase
-            .from('answers')
-            .update({
-              answer_text: answer,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existing.data.id);
-          if (!error) console.log('Client-side update succeeded (legacy)');
-          else console.error('Client-side update failed (legacy):', error);
-          return { error };
-        } else {
-          console.log('No existing row found (legacy), inserting new');
-          const { error } = await supabase
-            .from('answers')
-            .insert({
-              username,
-              day_id: dayId,
-              question_index: questionIndex,
-              answer_text: answer,
-              updated_at: new Date().toISOString(),
-            });
-          if (!error) console.log('Client-side insert succeeded (legacy)');
-          else console.error('Client-side insert failed (legacy):', error);
-          return { error };
-        }
-      } else {
-        return { error: new Error('Missing identifiers (profileId or username)') };
+  // Preferred path: server-side upsert using explicit profile_id (fast, avoids auth stalls)
+  if (profileId) {
+    try {
+      const rpcProfileResp: any = await withTimeout(
+        () =>
+          supabase.rpc('upsert_answer_profile', {
+            p_profile_id: profileId,
+            p_day_id: dayId,
+            p_question_index: questionIndex,
+            p_answer_text: answer,
+          })
+      );
+      if (!rpcProfileResp?.error) {
+        console.log('RPC upsert via profile_id succeeded');
+        return { error: null };
       }
+      console.warn('RPC upsert via profile_id failed; falling back:', rpcProfileResp?.error);
+    } catch (e) {
+      console.warn('RPC upsert via profile_id threw; falling back:', e);
+    }
+  }
+
+  // Secondary path: server-side upsert with server-resolved profile via auth.uid()
+  try {
+    const rpcResp: any = await withTimeout(
+      () =>
+        supabase.rpc('upsert_answer_v2', {
+          p_day_id: dayId,
+          p_question_index: questionIndex,
+          p_answer_text: answer,
+        })
+    );
+    if (!rpcResp?.error) {
+      console.log('RPC upsert via v2 succeeded');
+      return { error: null };
+    }
+    console.warn('RPC upsert via v2 failed; falling back:', rpcResp?.error);
+  } catch (e) {
+    console.warn('RPC upsert via v2 threw; falling back:', e);
+  }
+
+  // Single atomic upsert via a unique constraint on (profile_id, day_id, question_index)
+  const payload = {
+    profile_id: profileId,
+    day_id: dayId,
+    question_index: questionIndex,
+    answer_text: answer,
+    // Let DB set updated_at default (server time) if available
+  };
+  try {
+    if (!profileId) {
+      return { error: new Error('Missing profileId for client upsert') };
+    }
+    const upsertResp: any = await withTimeout(
+      () =>
+        supabase
+          .from('answers')
+          .upsert(payload, { onConflict: 'profile_id,day_id,question_index' })
+    );
+    const { error } = upsertResp || {};
+    if (!error) {
+      console.log('Atomic upsert succeeded');
+      return { error: null };
+    }
+    console.error('Atomic upsert failed:', error);
+    return { error };
   } catch (e) {
     console.error('Persist answer failed:', e);
-    return { error: e as any };
+    return { error: e as Error };
   }
 }
 
@@ -254,25 +202,21 @@ export async function deleteAllAnswers(profileId: string) {
 
 // Delete all answers for a user, covering legacy rows keyed by username
 export async function deleteAllAnswersForUser(params: { profileId?: string; username?: string }) {
-  const { profileId, username } = params;
-  if (!profileId && !username) return { error: new Error('Missing identifiers (profileId or username)') };
+  const { profileId } = params;
+  if (!profileId) return { error: new Error('Missing profile_id') };
   try {
-    let lastError: Error | null = null;
-    if (profileId) {
-      const { error } = await supabase
-        .from('answers')
-        .delete()
-        .eq('profile_id', profileId);
-      if (error) lastError = error as Error;
-    }
-    if (username) {
-      const { error } = await supabase
-        .from('answers')
-        .delete()
-        .eq('username', username);
-      if (error) lastError = error as Error;
-    }
-    return { error: lastError };
+    // Delete strictly by profile_id; wraps in timeout to avoid hangs
+    const resp: any = await Promise.race([
+      Promise.resolve(
+        supabase
+          .from('answers')
+          .delete()
+          .eq('profile_id', profileId)
+      ),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout during deleteAllAnswersForUser')), 6000))
+    ]);
+    const { error } = resp;
+    return { error: error || null };
   } catch (e) {
     return { error: e as Error };
   }

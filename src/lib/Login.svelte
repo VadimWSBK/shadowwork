@@ -13,13 +13,56 @@
   let errorMessage = '';
   let infoMessage = '';
   let loading = false;
+  let loadingAction: 'login' | 'link' | null = null;
   let showResetConfirm = false;
   export let currentLanguage: 'en' | 'de' | 'pl' = 'en';
   let mounted = false;
+  let languageMenuOpen = false;
+
+  // Cookie helpers for language persistence
+  const LANGUAGE_COOKIE = 'shadowwork_language';
+  function setLanguageCookie(lang: 'en' | 'de' | 'pl') {
+    try {
+      const days = 365 * 2; // 2 years
+      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+      const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${LANGUAGE_COOKIE}=${encodeURIComponent(lang)}; Expires=${expires}; Path=/; SameSite=Lax${secure}`;
+    } catch {}
+  }
+  function getLanguageCookie(): 'en' | 'de' | 'pl' | null {
+    try {
+      const m = document.cookie.match(/(?:^|;\s*)shadowwork_language=([^;]+)/);
+      const val = m ? decodeURIComponent(m[1]) : null;
+      if (val === 'en' || val === 'de' || val === 'pl') return val as any;
+      return null;
+    } catch {
+      return null;
+    }
+  }
 
   onMount(() => {
     mounted = true;
+    try {
+      let saved: string | null = null;
+      if (browser) {
+        const fromCookie = getLanguageCookie();
+        saved = (fromCookie ?? localStorage.getItem('shadowwork_language'));
+      }
+      if (saved === 'en' || saved === 'de' || saved === 'pl') {
+        currentLanguage = saved;
+      }
+    } catch {}
   });
+
+  function changeLanguage(language: 'en' | 'de' | 'pl') {
+    currentLanguage = language;
+    try { 
+      if (browser) {
+        localStorage.setItem('shadowwork_language', language);
+        setLanguageCookie(language);
+      }
+    } catch {}
+  }
   
   function isValidEmail(value: string): boolean {
     return /.+@.+\..+/.test(value);
@@ -50,12 +93,14 @@
     // Not authenticated: check if user exists by attempting OTP sign-in
     // without creating a new user. If the user exists, Supabase will send a Magic Link.
     loading = true;
+    loadingAction = 'link';
     const redirectTo = browser ? `${location.origin}/login` : undefined;
     const { error } = await supabase.auth.signInWithOtp({
       email: e,
       options: { shouldCreateUser: false, emailRedirectTo: redirectTo }
     });
     loading = false;
+    loadingAction = null;
 
     if (error) {
       const msg = (error.message || '').toLowerCase();
@@ -89,8 +134,8 @@
       return;
     }
     loading = true;
+    loadingAction = 'login';
     const { data, error } = await supabase.auth.signInWithPassword({ email: e, password: p });
-    loading = false;
     if (error) {
       const msg = (error.message || '').toLowerCase();
       if (msg.includes('invalid login credentials')) {
@@ -98,10 +143,16 @@
       } else {
         errorMessage = 'Login failed. Please try again.';
       }
+      loading = false;
+      loadingAction = null;
       return;
     }
-    const authedEmail = data.user?.email ?? e;
+    // Get authenticated user data securely
+    const { data: { user } } = await supabase.auth.getUser();
+    const authedEmail = user?.email ?? e;
     dispatch('login', { username: authedEmail });
+    // Keep loading while the page bridges cookies and redirects
+    infoMessage = t(currentLanguage, 'login.redirecting');
   }
 
   async function handleForgotPassword() {
@@ -156,6 +207,33 @@
 <svelte:window on:keydown={onKeyDown} />
 
 <div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+  <!-- Language Switcher (top-right) -->
+  <div class="fixed top-4 right-4 z-50">
+    <div class="relative">
+      <button
+        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
+        on:click={() => (languageMenuOpen = !languageMenuOpen)}
+        aria-haspopup="menu"
+        aria-expanded={languageMenuOpen}
+        title="Change language"
+      >
+        {currentLanguage.toUpperCase()}
+      </button>
+      {#if languageMenuOpen}
+        <div class="absolute right-0 mt-2 w-36 bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1">
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
+            English
+          </button>
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
+            Deutsch
+          </button>
+          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
+            Polski
+          </button>
+        </div>
+      {/if}
+    </div>
+  </div>
   <div class="w-full max-w-md">
     <!-- Removed box background, border and heavy shadow to fit app layout -->
     <div class="p-8">
@@ -173,13 +251,13 @@
       <form on:submit|preventDefault={handleLoginPassword} class="space-y-6">
         <div>
           <label for="email" class="block text-sm font-medium text-white/80 mb-2">
-            Email
+            {t(currentLanguage, 'login.emailLabel')}
           </label>
           <input
             type="email"
             id="email"
             bind:value={email}
-            placeholder="you@example.com"
+            placeholder={t(currentLanguage, 'login.emailPlaceholder')}
             required
             autocomplete="email"
             class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm"
@@ -187,7 +265,7 @@
         </div>
         <div>
           <label for="password" class="block text-sm font-medium text-white/80 mb-2">
-            Password
+            {t(currentLanguage, 'login.passwordLabel')}
           </label>
           <input
             type="password"
@@ -209,7 +287,7 @@
               on:click|preventDefault={openResetConfirm}
               class={`text-xs text-white/70 hover:text-white underline underline-offset-4 ${(!email.trim() || loading) ? 'pointer-events-none opacity-50' : ''}`}
             >
-              Forgot password?
+              {t(currentLanguage, 'login.forgotPasswordLink')}
             </a>
           </div>
         </div>
@@ -217,20 +295,26 @@
         <button
           type="submit"
           disabled={!email.trim() || loading}
-          class="w-full px-6 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+          class="w-full px-6 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2"
           style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
         >
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <span class="relative z-10">Log In</span>
+          {#if loading && loadingAction === 'login'}
+            <svg class="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-width="2" opacity="0.75"/></svg>
+          {/if}
+          <span class="relative z-10">{loading && loadingAction === 'login' ? t(currentLanguage, 'login.loggingIn') : t(currentLanguage, 'login.loginButton')}</span>
         </button>
 
         <button
           type="button"
           on:click|preventDefault={handleSendLink}
           disabled={!email.trim() || loading}
-          class="w-full px-6 py-3 text-sm font-bold text-[#0C6E78] bg-white/80 hover:bg-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full px-6 py-3 text-sm font-bold text-[#0C6E78] bg-white/80 hover:bg-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Send login link
+          {#if loading && loadingAction === 'link'}
+            <svg class="w-4 h-4 animate-spin text-[#0C6E78]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-width="2" opacity="0.75"/></svg>
+          {/if}
+          {loading && loadingAction === 'link' ? t(currentLanguage, 'login.sendingLink') : t(currentLanguage, 'login.sendLinkButton')}
         </button>
 
       </form>
@@ -243,16 +327,16 @@
                on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') showResetConfirm = false; }}
           ></div>
           <div class="relative z-10 w-full max-w-md mx-auto rounded-2xl shadow-xl p-6 text-white" style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);">
-            <h3 class="text-lg font-semibold mb-2">Send password reset?</h3>
+            <h3 class="text-lg font-semibold mb-2">{t(currentLanguage, 'login.resetConfirmTitle')}</h3>
             <p class="text-sm text-white/80 mb-4">
-              We’ll email a password reset link to <span class="font-medium">{email.trim().toLowerCase()}</span>.
+              {t(currentLanguage, 'login.resetConfirmBody', { email: email.trim().toLowerCase() })}
             </p>
             <div class="flex items-center gap-3 justify-end">
               <button type="button" class="px-4 py-2 text-sm rounded-xl bg-white/10 hover:bg-white/20 border border-white/20" on:click={() => (showResetConfirm = false)}>
-                Cancel
+                {t(currentLanguage, 'login.cancel')}
               </button>
               <button type="button" class="px-4 py-2 text-sm font-semibold rounded-xl text-[#0C6E78] bg-white hover:bg-white/90" on:click={confirmReset}>
-                Send reset email
+                {t(currentLanguage, 'login.sendResetEmail')}
               </button>
             </div>
           </div>

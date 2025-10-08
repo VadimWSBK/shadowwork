@@ -31,6 +31,7 @@ declare module '$env/static/private' {
 	export const VITE_SUPABASE_URL: string;
 	export const VITE_SUPABASE_ANON_KEY: string;
 	export const NVM_INC: string;
+	export const TRAE_AI_SHELL_ID: string;
 	export const TERM_PROGRAM: string;
 	export const NODE: string;
 	export const INIT_CWD: string;
@@ -58,6 +59,7 @@ declare module '$env/static/private' {
 	export const VSCODE_PROFILE_INITIALIZED: string;
 	export const __CF_USER_TEXT_ENCODING: string;
 	export const npm_execpath: string;
+	export const PAGER: string;
 	export const _CE_CONDA: string;
 	export const PATH: string;
 	export const npm_package_json: string;
@@ -99,6 +101,7 @@ declare module '$env/static/private' {
 	export const GIT_ASKPASS: string;
 	export const INFOPATH: string;
 	export const HOMEBREW_CELLAR: string;
+	export const GIT_PAGER: string;
 	export const npm_node_execpath: string;
 	export const npm_config_prefix: string;
 	export const COLORTERM: string;
@@ -117,6 +120,7 @@ declare module '$env/static/private' {
 declare module '$env/static/public' {
 	export const PUBLIC_SUPABASE_URL: string;
 	export const PUBLIC_SUPABASE_ANON_KEY: string;
+	export const PUBLIC_ANSWER_ENCRYPTION_KEY: string;
 }
 
 /**
@@ -138,6 +142,7 @@ declare module '$env/dynamic/private' {
 		VITE_SUPABASE_URL: string;
 		VITE_SUPABASE_ANON_KEY: string;
 		NVM_INC: string;
+		TRAE_AI_SHELL_ID: string;
 		TERM_PROGRAM: string;
 		NODE: string;
 		INIT_CWD: string;
@@ -165,6 +170,7 @@ declare module '$env/dynamic/private' {
 		VSCODE_PROFILE_INITIALIZED: string;
 		__CF_USER_TEXT_ENCODING: string;
 		npm_execpath: string;
+		PAGER: string;
 		_CE_CONDA: string;
 		PATH: string;
 		npm_package_json: string;
@@ -206,6 +212,7 @@ declare module '$env/dynamic/private' {
 		GIT_ASKPASS: string;
 		INFOPATH: string;
 		HOMEBREW_CELLAR: string;
+		GIT_PAGER: string;
 		npm_node_execpath: string;
 		npm_config_prefix: string;
 		COLORTERM: string;
@@ -229,6 +236,7 @@ declare module '$env/dynamic/public' {
 	export const env: {
 		PUBLIC_SUPABASE_URL: string;
 		PUBLIC_SUPABASE_ANON_KEY: string;
+		PUBLIC_ANSWER_ENCRYPTION_KEY: string;
 		[key: `PUBLIC_${string}`]: string | undefined;
 	}
 }
