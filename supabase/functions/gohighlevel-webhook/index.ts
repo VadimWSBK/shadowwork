@@ -80,7 +80,7 @@ serve(async (req) => {
   // Try sending a magic link via email (if OTP sign-in is allowed)
   const { error: otpErr } = await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false }
+    options: { shouldCreateUser: false, emailRedirectTo: `${SUPABASE_URL.replace(/\/$/, '')}/login` }
   });
   if (!otpErr) {
     return ok({ message: 'Magic link sent', email });
@@ -95,7 +95,8 @@ serve(async (req) => {
 
   const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
     type,
-    email
+    email,
+    options: { redirectTo: `${SUPABASE_URL.replace(/\/$/, '')}/signup` }
   });
   if (linkErr) return ok({ error: linkErr.message }, 500);
   return ok({ message: type === 'magiclink' ? 'Magic link generated' : 'Signup link generated', email, action_link: linkData?.action_link });
