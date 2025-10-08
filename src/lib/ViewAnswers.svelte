@@ -44,7 +44,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark py-4 px-3 sm:py-6 sm:px-4 lg:py-8 lg:px-8">
+<div class="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-primary-light via-primary to-secondary-dark py-4 px-3 sm:py-6 sm:px-4 lg:py-8 lg:px-8">
   <div class="max-w-5xl mx-auto">
 <!-- Header -->
 <div class="mb-6 sm:mb-8">

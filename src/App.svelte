@@ -629,7 +629,7 @@
         {#if currentView === 'login'}
           <Login {currentLanguage} on:login={handleLogin} />
         {:else if currentView === 'intro'}
-          <div class="min-h-screen flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
+          <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
               <!-- Day Title and Description -->
               <div class="mb-6 text-left relative">
@@ -654,9 +654,9 @@
                 <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
               </div>
               
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-center">
+              <div class="grid grid-cols-1 gap-8 lg:gap-12 items-center">
                 <!-- Copy -->
-                <div class="lg:col-span-2 border-l border-white/10 pl-6">
+                <div class="border-l border-white/10 pl-6">
                 <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded-full after:mt-3">
                   {t(currentLanguage, 'app.welcomeTitle')}
                 </h2>
@@ -705,10 +705,9 @@
                     <span class="relative z-10">{t(currentLanguage, 'app.startJourneyButton')}</span>
                   </button>
                 </div>
-              </div>
-    
+                </div>
                 <!-- Decorative Image / Illustration -->
-                <div class="lg:col-span-1">
+                <div>
                   <div class="relative">
                     <svg aria-hidden="true" class="w-full h-auto" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
                       <defs>
@@ -756,15 +755,15 @@
             </div>
           </div>
         {:else if currentView === 'day-intro'}
-          <div class="min-h-screen flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
+          <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
               <div class="mb-6 text-left">
                 <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
                 <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
               </div>
               
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
-                <div class="lg:col-span-2 border-l border-white/10 pl-6">
+              <div class="grid grid-cols-1 gap-8 lg:gap-12 items-start">
+                <div class="border-l border-white/10 pl-6">
                   <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
                     {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
                   </h2>
