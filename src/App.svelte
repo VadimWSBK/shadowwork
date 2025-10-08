@@ -623,6 +623,10 @@
           bind:isOpen={sidebarOpen}
           {currentLanguage}
         />
+        {#if sidebarOpen}
+          <!-- Overlay that closes sidebar when clicking outside (mobile only) -->
+          <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden" on:click={() => (sidebarOpen = false)}></div>
+        {/if}
       {/if}
  
       <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-300 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
@@ -705,22 +709,6 @@
                     <span class="relative z-10">{t(currentLanguage, 'app.startJourneyButton')}</span>
                   </button>
                 </div>
-                </div>
-                <!-- Decorative Image / Illustration -->
-                <div>
-                  <div class="relative">
-                    <svg aria-hidden="true" class="w-full h-auto" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="introGrad" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stop-color="#0C6E78" />
-                          <stop offset="50%" stop-color="#0A5A63" />
-                          <stop offset="100%" stop-color="#0C6E78" />
-                        </linearGradient>
-                      </defs>
-                      <path d="M200 30c60 0 120 40 140 100 20 60-10 140-70 170s-150 10-190-40c-40-50-40-120 0-170 40-50 100-60 120-60z" fill="url(#introGrad)" opacity="0.25"></path>
-                      
-                    </svg>
-                  </div>
                 </div>
               </div>
             <div class="mt-10 pt-6 border-t border-white/10">

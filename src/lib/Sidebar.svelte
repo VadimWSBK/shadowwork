@@ -36,6 +36,8 @@
   
   function selectDay(day: DayData) {
     onDayChange(day);
+    // Close sidebar on mobile after navigating
+    isOpen = false;
   }
 </script>
 

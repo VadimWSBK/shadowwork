@@ -27,7 +27,7 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/(app)" | "/" | "/auth" | "/auth/cookie" | "/auth/logout" | "/(app)/dashboard" | "/login" | "/reset";
+		RouteId(): "/(app)" | "/" | "/auth" | "/auth/cookie" | "/auth/logout" | "/(app)/dashboard" | "/login" | "/reset" | "/signup";
 		RouteParams(): {
 			
 		};
@@ -39,9 +39,10 @@ declare module "$app/types" {
 			"/auth/logout": Record<string, never>;
 			"/(app)/dashboard": Record<string, never>;
 			"/login": Record<string, never>;
-			"/reset": Record<string, never>
+			"/reset": Record<string, never>;
+			"/signup": Record<string, never>
 		};
-		Pathname(): "/" | "/auth" | "/auth/" | "/auth/cookie" | "/auth/cookie/" | "/auth/logout" | "/auth/logout/" | "/dashboard" | "/dashboard/" | "/login" | "/login/" | "/reset" | "/reset/";
+		Pathname(): "/" | "/auth" | "/auth/" | "/auth/cookie" | "/auth/cookie/" | "/auth/logout" | "/auth/logout/" | "/dashboard" | "/dashboard/" | "/login" | "/login/" | "/reset" | "/reset/" | "/signup" | "/signup/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/favicon-shadowwork.png" | "/favicon.svg" | string & {};
 	}

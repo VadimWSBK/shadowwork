@@ -24,5 +24,8 @@
 	],
 	"/reset": [
 		"src/routes/+layout.server.ts"
+	],
+	"/signup": [
+		"src/routes/+layout.server.ts"
 	]
 }
