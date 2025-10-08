@@ -259,10 +259,10 @@ const de: I18nBundle = {
       'login.sendLinkButton': 'Login‑Link senden',
       'login.sendingLink': 'Wird gesendet…',
       'login.redirecting': 'Angemeldet. Weiterleitung…',
-      'login.resetConfirmTitle': 'Passwort‑Reset senden?',
-      'login.resetConfirmBody': 'Wir senden einen Passwort‑Reset‑Link an {email}.',
+      'login.resetConfirmTitle': 'Passwort zurücksetzen?',
+      'login.resetConfirmBody': 'Wir senden einen Link zum Zurücksetzen des Passworts an {email}.',
       'login.cancel': 'Abbrechen',
-      'login.sendResetEmail': 'Reset‑E‑Mail senden',
+      'login.sendResetEmail': 'Link zum Zurücksetzen senden',
 
     'questionnaire.viewAnswers': 'Antworten ansehen',
     'questionnaire.questionXofY': 'Frage {x} von {y}',
@@ -302,8 +302,8 @@ const de: I18nBundle = {
     day2: { title: 'Trigger und Reflexionen', theme: 'Beziehungen', intro: 'Beziehungen sind Spiegel. Wenn dich etwas oder jemand aus der Fassung bringt, zeigt es dir einen Teil von dir, der gesehen werden möchte. Heute schaust du auf Trigger und was sie offenbaren.' },
     day3: { title: 'Scham, Schuld und Kernüberzeugungen', theme: 'Selbstüberzeugungen', intro: 'Verborgene Überzeugungen prägen deine Entscheidungen. Wenn du Scham und Schuld mit Freundlichkeit begegnest, entsteht Raum für eine wahrere Geschichte. Heute hörst du deiner inneren Stimme zu und aktualisierst sie.' },
     day4: { title: 'Frühe Muster und Familienregeln', theme: 'Ursprünge', intro: 'Viele Muster begannen in der Kindheit. Rollen, Regeln und unausgesprochene Botschaften klingen nach. Heute verfolgst du, wo sie herkamen, und entscheidest, welche du behalten willst.' },
-    day5: { title: 'Grenzen, Macht und Energie', theme: 'Handlungsfähigkeit', intro: 'Klarheit lebt in deutlichen Grenzen. Wenn du deine Limits ehrst, kehrt deine Energie zurück. Heute erkundest du Wut, Geldglaubenssätze und die Orte, an denen du größer stehen willst.' },
-    day6: { title: 'Wünsche und der goldene Schatten', theme: 'Authentizität', intro: 'Deine tiefsten Wünsche sind Signale. Eigenschaften, die du an anderen bewunderst, leben vielleicht schon in dir. Heute reclaimst du verborgene Stärken und sagst Ja zu dem, was du wirklich willst.' },
+    day5: { title: 'Grenzen, Macht und Energie', theme: 'Handlungsfähigkeit', intro: 'Klarheit lebt in deutlichen Grenzen. Wenn du deine Grenzen respektierst, kehrt deine Energie zurück. Heute erkundest du Wut, Überzeugungen zum Thema Geld und die Bereiche, in denen du selbstbewusster auftreten möchtest.' },
+    day6: { title: 'Wünsche und der goldene Schatten', theme: 'Authentizität', intro: 'Deine tiefsten Wünsche sind Signale. Eigenschaften, die du an anderen bewunderst, leben vielleicht schon in dir. Heute entdeckst du verborgene Stärken und sagst Ja zu dem, was du wirklich willst.' },
     day7: { title: 'Integration und nächste Schritte', theme: 'Ganzheit', intro: 'Ganzheit bedeutet, alle Teile von dir willkommen zu heißen. Heute sammelst du deine Einsichten, schenkst dir Vergebung und wählst kleine Handlungen, die dein Wachstum weitertragen.' }
   }
 };
@@ -312,12 +312,12 @@ const pl: I18nBundle = {
   strings: {
     'settings.title': 'Ustawienia',
     'settings.closeAria': 'Zamknij ustawienia',
-    'settings.changeName': 'Zmień imię',
+    'settings.changeName': 'Zmień nazwę',
     'settings.changeNameSubtitle': 'Zaktualizuj wyświetlaną nazwę',
-    'settings.changeNameSuccessTitle': 'Imię pomyślnie zmienione',
+    'settings.changeNameSuccessTitle': 'Nazwa pomyślnie zmieniona',
     'settings.changeNameSuccessBody': 'Twoja wyświetlana nazwa została zaktualizowana',
-    'settings.changeNameErrorTitle': 'Błąd zapisu imienia',
-    'settings.changeNameInputPlaceholder': 'Wpisz nowe imię',
+    'settings.changeNameErrorTitle': 'Błąd podczas zapisywania nazwy',
+    'settings.changeNameInputPlaceholder': 'Wpisz nową nazwę',
     'settings.save': 'Zapisz',
     'settings.cancel': 'Anuluj',
     'settings.changePassword': 'Zmień hasło',
@@ -344,10 +344,10 @@ const pl: I18nBundle = {
     'settings.logout': 'Wyloguj',
     'settings.logoutSubtitle': 'Wyloguj się ze swojego konta',
 
-    'app.welcomeTitle': 'Witamy na twojej drodze pracy z cieniem',
+    'app.welcomeTitle': 'Witaj w swojej podróży pracy z cieniem',
     'app.whatIsShadowWorkTitle': 'Czym jest praca z cieniem?'
-    , 'app.whatIsShadowWorkP1': 'Praca z cieniem to spotykanie ukrytych stron siebie z ciekawością i współczuciem. To emocje, które tłumisz, przekonania, które przejąłeś, oraz wzorce, które po cichu kierują twoimi wyborami. To nie są „złe” części — tylko niewidoczne.',
-    'app.whatIsShadowWorkP2': 'Gdy rzucisz na nie światło, przestajesz powtarzać stare schematy. Zaczynasz rozumieć, dlaczego reagujesz w określony sposób. Odkrywasz siły, pragnienia i części siebie, które dotąd zaprzeczałeś.',
+    , 'app.whatIsShadowWorkP1': 'Praca z cieniem to spotykanie ukrytych stron siebie z ciekawością i współczuciem. To emocje, które tłumisz, przekonania, które przejąłeś, oraz wzorce, które po cichu kierują twoimi wyborami. To nie są „złe" części — tylko niewidoczne.',
+    'app.whatIsShadowWorkP2': 'Gdy rzucisz na nie światło, przestajesz powtarzać stare schematy. Zaczynasz rozumieć, dlaczego reagujesz w określony sposób. Odkrywasz siły, pragnienia i części siebie, które dotąd wypierałeś.',
     'app.whatIsShadowWorkP3': 'Ta 7‑dniowa podróż została zaprojektowana, aby łagodnie przeprowadzić cię przez ten proces. Dzięki mocnym pytaniom i przestrzeni do szczerej refleksji odkryjesz, co cię powstrzymuje, uwolnisz stare historie i połączysz się na nowo z autentycznym sobą. Efekt: więcej klarowności, wolności i zaufania do siebie.',
 
     'app.overviewTitle': 'Przegląd 7 dni',
@@ -360,7 +360,7 @@ const pl: I18nBundle = {
     'app.disclaimer': 'To bezpieczna przestrzeń do autorefleksji. Twoje odpowiedzi są szyfrowane i widoczne tylko dla ciebie.',
     'app.howToUseTitle': 'Jak korzystać z tego kursu',
     'app.howTo1': 'Przeznacz codziennie 10–20 minut. Pisz swobodnie — szczerość ponad perfekcję.',
-    'app.howTo2': 'Gdy czujesz przeciążenie, zrób pauzę, oddychaj i wróć później. Wsparcie jest mile widziane.',
+    'app.howTo2': 'Gdy czujesz się przytłoczony, zrób przerwę, oddychaj i wróć później. Wsparcie jest mile widziane.',
     'app.howTo3': 'Zalecamy wracać do tej podróży dwa razy w roku lub podczas życiowych zmian.',
     'app.howTo4': 'Twoje dane są w pełni szyfrowane i bezpieczne. Tylko ty masz do nich dostęp.',
     'app.howTo5': 'Twoje dane nigdy nie będą nikomu udostępniane.',
@@ -371,7 +371,7 @@ const pl: I18nBundle = {
     'sidebar.close': 'Zamknij panel boczny',
     'sidebar.overallProgress': 'Postęp ogólny',
     'sidebar.questionsCount': '{count} pytań',
-    'sidebar.completedOf100': '{count} z 100 pytań ukończonych',
+    'sidebar.completedOf100': 'Ukończono {count} z 100 pytań',
     'sidebar.footerLine1': 'Poświęć czas na każde pytanie',
     'sidebar.footerLine2': 'Twoja podróż jest ważna',
 
@@ -407,10 +407,10 @@ const pl: I18nBundle = {
       'login.sendLinkButton': 'Wyślij link logowania',
       'login.sendingLink': 'Wysyłanie…',
       'login.redirecting': 'Zalogowano. Przekierowanie…',
-      'login.resetConfirmTitle': 'Wysłać reset hasła?',
+      'login.resetConfirmTitle': 'Wysłać link do resetu hasła?',
       'login.resetConfirmBody': 'Wyślemy link do resetu hasła na {email}.',
       'login.cancel': 'Anuluj',
-      'login.sendResetEmail': 'Wyślij email resetujący',
+      'login.sendResetEmail': 'Wyślij e‑mail resetujący hasło',
 
     'questionnaire.viewAnswers': 'Zobacz odpowiedzi',
     'questionnaire.questionXofY': 'Pytanie {x} z {y}',
@@ -423,7 +423,7 @@ const pl: I18nBundle = {
     'questionnaire.autoSaved': 'Zapisano automatycznie',
 
     'answers.byUser': 'Refleksje użytkownika {username}',
-    'answers.backToQuestionnaire': 'Przejdź do kwestionariusza',
+    'answers.backToQuestionnaire': 'Wróć do kwestionariusza',
     'answers.shareReflection': 'Podziel się refleksją...',
     'answers.cancel': 'Anuluj',
     'answers.saveChanges': 'Zapisz zmiany',
@@ -450,7 +450,7 @@ const pl: I18nBundle = {
     day2: { title: 'Wyzwalacze i refleksje', theme: 'Relacje', intro: 'Relacje są lustrami. Gdy coś lub ktoś cię uruchamia, pokazuje część ciebie, która prosi o uwagę. Dziś spojrzysz na wyzwalacze i to, co ujawniają.' },
     day3: { title: 'Wstyd, poczucie winy i przekonania', theme: 'Przekonania o sobie', intro: 'Ukryte przekonania kształtują wybory. Spotykając wstyd i winę z życzliwością, tworzysz przestrzeń dla prawdziwszej historii. Dziś posłuchasz swojego wewnętrznego głosu i go zaktualizujesz.' },
     day4: { title: 'Wczesne wzorce i rodzinne zasady', theme: 'Pochodzenie', intro: 'Wiele wzorców zaczęło się w dzieciństwie. Role, reguły i niewypowiedziane komunikaty wciąż wybrzmiewają. Dziś prześledzisz, skąd pochodzą, i zdecydujesz, które zachować.' },
-    day5: { title: 'Granice, moc i energia', theme: 'Sprawczość', intro: 'Moc mieszka w jasnych granicach. Gdy honorujesz swoje ograniczenia, powraca energia. Dziś zbadamy złość, przekonania dotyczące pieniędzy oraz miejsca, w których chcesz stanąć pewniej.' },
+    day5: { title: 'Granice, moc i energia', theme: 'Sprawczość', intro: 'Moc mieszka w jasnych granicach. Gdy szanujesz swoje ograniczenia, energia wraca. Dziś zbadamy złość, przekonania dotyczące pieniędzy oraz miejsca, w których chcesz stanąć pewniej.' },
     day6: { title: 'Pragnienia i złoty cień', theme: 'Autentyczność', intro: 'Twoje najgłębsze pragnienia są sygnałami. Cechy, które podziwiasz u innych, mogą już żyć w tobie. Dziś odzyskasz ukryte mocne strony i powiesz „tak” temu, czego naprawdę chcesz.' },
     day7: { title: 'Integracja i kolejne kroki', theme: 'Pełnia', intro: 'Pełnia to przyjęcie wszystkich części siebie. Dziś zbierzesz wglądy, obdarzysz siebie przebaczeniem i wybierzesz małe działania, które podtrzymają wzrost.' }
   }

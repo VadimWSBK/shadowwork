@@ -756,6 +756,22 @@
                 <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded-full after:mt-3">
                   {t(currentLanguage, 'app.welcomeTitle')}
                 </h2>
+                
+                <div class="mt-4 mb-6">
+                  <button
+                    on:click={() => handleDayChange(courseData[1])}
+                    class="px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border-2 border-white/30 animate-pulse"
+                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
+                  >
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+                    <span class="relative z-10 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                      {t(currentLanguage, 'app.startJourneyButton')}
+                    </span>
+                  </button>
+                </div>
 
                 <div class="mt-10 mb-12">
                   <div class="grid grid-cols-1 gap-8">
@@ -852,19 +868,19 @@
                     <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
                   </div>
                   {#if currentDay.id === 'day1'}
-                    <img src={introBg} alt="Day 1 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={introBg} alt="Day 1 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day2'}
-                    <img src={day2Img} alt="Day 2 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day2Img} alt="Day 2 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day3'}
-                    <img src={day3Img} alt="Day 3 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day3Img} alt="Day 3 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day4'}
-                    <img src={day4Img} alt="Day 4 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day4Img} alt="Day 4 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day5'}
-                    <img src={day5Img} alt="Day 5 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day5Img} alt="Day 5 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day6'}
-                    <img src={day6Img} alt="Day 6 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day6Img} alt="Day 6 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day7'}
-                    <img src={day7Img} alt="Day 7 illustration" class="w-full rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day7Img} alt="Day 7 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
                   {/if}
                   <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
                     {getDayIntro(currentLanguage, currentDay.id)?.intro}
