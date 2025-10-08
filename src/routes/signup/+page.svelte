@@ -39,14 +39,15 @@
           processed = true;
         }
 
-        const { data: { user, session } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
         if (!processed && !user) {
           throw new Error('Missing or invalid invite parameters');
         }
 
         // Bridge client session to server cookies for guarded routes
         try {
-          const sess = session || (await supabase.auth.getSession()).data.session;
+          const sess = session;
           if (sess) {
             await fetch('/auth/cookie', {
               method: 'POST',
@@ -131,44 +132,49 @@
   }
 </script>
 
-<div class="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
   <div class="w-full max-w-md">
-    <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg overflow-hidden">
-      <div class="px-6 py-5 border-b border-white/20">
-        <h1 class="text-white text-xl font-bold">Complete Your Account</h1>
-        <p class="text-white/70 text-sm">Set a username and password to finish sign up.</p>
+    <div class="p-8">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Complete Your Account</h1>
+        <p class="text-white/80">Set a username and password to finish sign up.</p>
       </div>
-      <form class="p-6 space-y-4" on:submit|preventDefault={handleSignup}>
+      <form class="space-y-6" on:submit|preventDefault={handleSignup}>
         {#if !ready}
           <div class="text-white/80 text-sm">Validating invite link…</div>
         {:else}
           {#if errorMessage}
-            <div class="text-red-200 bg-red-900/30 border border-red-300/30 rounded-lg p-3 text-sm">{errorMessage}</div>
+            <p class="text-sm text-red-300">{errorMessage}</p>
           {/if}
           {#if infoMessage}
-            <div class="text-emerald-200 bg-emerald-900/30 border border-emerald-300/30 rounded-lg p-3 text-sm">{infoMessage}</div>
+            <p class="text-sm text-green-300">{infoMessage}</p>
           {/if}
           <div>
-            <label class="block text-white/80 text-sm mb-1">Username</label>
-            <input type="text" bind:value={username} class="w-full rounded-lg bg-white/10 border border-white/20 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/40" placeholder="Your name" />
+            <label class="block text-sm font-medium text-white/80 mb-2">Username</label>
+            <input type="text" bind:value={username} placeholder="Your name"
+                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
           <div>
-            <label class="block text-white/80 text-sm mb-1">Password</label>
-            <input type="password" bind:value={password} class="w-full rounded-lg bg-white/10 border border-white/20 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/40" placeholder="Create a password" />
+            <label class="block text-sm font-medium text-white/80 mb-2">Password</label>
+            <input type="password" bind:value={password} placeholder="••••••••" autocomplete="new-password"
+                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
           <div>
-            <label class="block text-white/80 text-sm mb-1">Confirm Password</label>
-            <input type="password" bind:value={confirm} class="w-full rounded-lg bg-white/10 border border-white/20 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/40" placeholder="Re-enter password" />
+            <label class="block text-sm font-medium text-white/80 mb-2">Confirm Password</label>
+            <input type="password" bind:value={confirm} placeholder="••••••••" autocomplete="new-password"
+                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
-          <button class="w-full px-4 py-2 rounded-xl font-semibold text-white bg-white/15 border border-white/30 hover:bg-white/20 transition disabled:opacity-60 disabled:cursor-not-allowed" disabled={!ready || loading}>
+          <button class="w-full px-6 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2"
+                  style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);" disabled={!ready || loading}>
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             {#if loading}
-              Setting up…
-            {:else}
-              Finish Sign Up
+              <svg class="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-width="2" opacity="0.75"/></svg>
             {/if}
+            <span class="relative z-10">{loading ? 'Setting up…' : 'Finish Sign Up'}</span>
           </button>
         {/if}
       </form>
+      
     </div>
   </div>
 </div>

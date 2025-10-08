@@ -12,6 +12,7 @@
   }>();
 
   export let username: string;
+  export let email: string | undefined;
   export let currentLanguage: Language;
   export let nameSaveStatus: { success: boolean; message?: string } | null = null;
   
@@ -155,6 +156,9 @@
           <div>
             <h2 class="text-xl font-bold text-white">{t(currentLanguage, 'settings.title')}</h2>
             <p class="text-white/70 text-sm">{username}</p>
+            {#if email}
+              <p class="text-white/50 text-xs">{email}</p>
+            {/if}
           </div>
         </div>
         <button 

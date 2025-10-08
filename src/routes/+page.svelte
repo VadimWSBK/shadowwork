@@ -1,7 +1,8 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabaseClient';
+  let unsub;
 
   onMount(() => {
     if (typeof window === 'undefined') return;
@@ -17,6 +18,20 @@
     if (hadInvite) {
       // Preserve query + hash when forwarding to signup
       goto(`/signup${location.search}${location.hash}`);
+      // Also listen for the session being created asynchronously by Supabase
+      try {
+        unsub = supabase.auth.onAuthStateChange(async (_event, session) => {
+          if (!session) return;
+          try {
+            await fetch('/auth/cookie', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
+            });
+          } catch {}
+          goto('/signup');
+        });
+      } catch {}
       return;
     }
 
@@ -34,6 +49,10 @@
         goto('/login');
       }
     })();
+  });
+
+  onDestroy(() => {
+    try { unsub?.data?.subscription?.unsubscribe?.(); } catch {}
   });
 </script>
 

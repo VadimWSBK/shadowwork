@@ -825,6 +825,7 @@
   {#if showSettings}
     <Settings 
       {username}
+      email={currentUser?.email}
       {currentLanguage}
       nameSaveStatus={nameSaveStatus}
       on:close={() => showSettings = false}
