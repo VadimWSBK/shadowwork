@@ -25,6 +25,7 @@
   import { isAuthorizedUser, getProfileByEmail, updateProfileSettings } from './lib/supabaseHelpers';
   import { answerStorage, type AnswerRow } from './lib/simpleAnswerStorage';
   import { getAuthenticatedUser, type AuthUserInfo } from './lib/auth';
+  import { PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
   
 
   let currentView: 'login' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
@@ -119,6 +120,9 @@
     const savedLanguage = (cookieLang ?? (localStorage.getItem('shadowwork_language') as Language | null));
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
       currentLanguage = savedLanguage;
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = currentLanguage;
+      }
     }
 
     // Check if user is already logged in
@@ -191,6 +195,11 @@
   });
 
   async function checkAuthAndRedirect() {
+    // Don't interfere with signup page invite processing
+    if (typeof window !== 'undefined' && window.location.pathname === '/signup') {
+      return;
+    }
+    
     if (!currentUser) {
       authorized = false;
       currentView = 'login';
@@ -517,10 +526,90 @@
     await hydrateAnswersFromRemote();
   }
 
+  async function handleDeleteProfile() {
+    try {
+      // Don't close settings immediately - let the loading state show
+      // showSettings = false;
+      
+      // Invoke edge function to delete answers, profile, and auth user
+      const { data: sessionRes } = await supabase.auth.getSession();
+      const accessToken = sessionRes?.session?.access_token || '';
+      const headers: Record<string, string> = {};
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+      if (PUBLIC_SUPABASE_ANON_KEY) headers['apikey'] = PUBLIC_SUPABASE_ANON_KEY;
+
+      // Call delete-profile function
+      let deletionSuccessful = false;
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('delete-profile', {
+          headers,
+          body: {}
+        });
+        
+        if (fnError) {
+          console.warn('delete-profile function error:', fnError.message);
+          // Still proceed with cleanup even if function fails
+        } else {
+          console.log('delete-profile function result:', fnData);
+          deletionSuccessful = fnData?.success === true;
+        }
+      } catch (e) {
+        console.warn('delete-profile invoke failed:', e);
+        // Still proceed with cleanup
+      }
+
+      // Clear local state and storage
+      try {
+        localStorage.removeItem('shadowwork_language');
+        localStorage.removeItem('shadowwork_username');
+        localStorage.removeItem('shadowwork_profile_id');
+        localStorage.removeItem('shadowwork_answers');
+      } catch (e) {
+        console.warn('Failed to clear localStorage:', e);
+      }
+
+      // Reset component state
+      username = '';
+      profileId = '';
+      answers = {};
+      answersStore.set({});
+      currentUser = null;
+      authorized = false;
+      currentView = 'login';
+
+      // Sign out from Supabase and clear server cookies
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.warn('Failed to sign out from Supabase:', e);
+      }
+      
+      try { 
+        await fetch('/auth/logout', { method: 'POST' }); 
+      } catch (e) {
+        console.warn('Failed to clear server cookies:', e);
+      }
+
+      // Close settings popup and force redirect to login page
+      showSettings = false;
+      // Use window.location for a hard redirect to ensure clean state
+      window.location.href = '/login';
+      
+    } catch (error) {
+      console.warn('Delete profile failed:', error);
+      // Close settings and redirect to login even if deletion fails
+      showSettings = false;
+      window.location.href = '/login';
+    }
+  }
+
   function changeLanguage(language: Language) {
     currentLanguage = language;
     localStorage.setItem('shadowwork_language', language);
     setLanguageCookie(language);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
     const email = currentUser?.email as string | undefined;
     if (email && (language === 'en' || language === 'de' || language === 'pl')) {
       updateProfileSettings({ email, language }).catch(() => {});
@@ -580,7 +669,7 @@
                 {currentLanguage.toUpperCase()}
               </button>
               {#if languageMenuOpen}
-                <div class="absolute right-0 mt-2 w-36 bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1" bind:this={languageMenuEl}>
+                <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1" bind:this={languageMenuEl}>
                   <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
                     English
                   </button>
@@ -833,6 +922,7 @@
       on:changePassword={handleChangePassword}
       on:changeName={handleChangeName}
       on:deleteAllData={handleDeleteAllData}
+      on:deleteProfile={handleDeleteProfile}
       on:changeLanguage={handleChangeLanguage}
     />
   {/if}

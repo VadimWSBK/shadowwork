@@ -7,6 +7,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
 }
 
 html, body, #app {
@@ -26,6 +27,28 @@ body {
 :where(button, a, input, textarea):focus-visible {
   outline: 2px solid #F4F649;
   outline-offset: 2px;
+}
+
+/* Global box-sizing for predictable layouts */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Responsive images by default */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Typography resilience for long translations */
+:where(h1, h2, h3, h4, h5, h6, p, li, button, a, label) {
+  overflow-wrap: anywhere; /* allow breaking long words */
+  hyphens: auto;           /* enable auto hyphenation per lang */
+}
+
+/* Balance multi-line headings for better readability */
+:where(h1, h2, h3) {
+  text-wrap: balance;
 }
 
 /* Subtle scrollbar styling */

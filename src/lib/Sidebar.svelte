@@ -89,7 +89,7 @@
           on:click={() => selectDay(day)}
         >
           <div class="flex items-center justify-between">
-            <div class="flex-1">
+            <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <span class="font-medium">{day.title}</span>
                 {#if day.id !== 'intro'}

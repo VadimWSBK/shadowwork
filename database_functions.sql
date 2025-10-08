@@ -230,8 +230,8 @@ GRANT EXECUTE ON FUNCTION public.delete_user_answers() TO authenticated;
 -- Set default for updated_at if not set
 -- ALTER TABLE answers ALTER COLUMN updated_at SET DEFAULT now();
 
--- Ensure profiles table links to auth.users
--- ALTER TABLE profiles ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+-- Ensure profiles table links to auth.users with CASCADE delete
+-- ALTER TABLE profiles ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
 -- CREATE UNIQUE INDEX IF NOT EXISTS profiles_user_id_unique ON profiles(user_id);
 
 -- 4. Row-Level Security (RLS) policies to ensure only the author can read/write their answers
@@ -274,7 +274,7 @@ CREATE POLICY answers_update_own ON public.answers
     )
   );
 
--- Optionally, block DELETEs from regular users; reserve for RPC or admin
+-- Allow deletions for service role (admin) operations, block for regular users
 CREATE POLICY answers_no_delete_for_users ON public.answers
   FOR DELETE
-  USING (false);
+  USING (auth.role() = 'service_role');

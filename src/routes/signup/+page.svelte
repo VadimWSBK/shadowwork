@@ -25,48 +25,59 @@
         const refresh_token = hashParams.get('refresh_token');
 
         let processed = false;
+        
+        // Process different types of invite links
         if (token_hash) {
+          console.log('Processing token_hash invite...');
           const { error } = await supabase.auth.verifyOtp({ token_hash, type: typeParam });
           if (error) throw error;
           processed = true;
         } else if (code) {
+          console.log('Processing code invite...');
           const { error } = await supabase.auth.exchangeCodeForSession(window.location.search);
           if (error) throw error;
           processed = true;
         } else if (access_token && refresh_token) {
+          console.log('Processing access_token invite...');
           const { error } = await supabase.auth.setSession({ access_token, refresh_token });
           if (error) throw error;
           processed = true;
         }
 
+        // Verify we have a valid session
         const { data: { user } } = await supabase.auth.getUser();
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (!processed && !user) {
           throw new Error('Missing or invalid invite parameters');
         }
 
+        console.log('Invite processed successfully, user:', user?.email);
+
         // Bridge client session to server cookies for guarded routes
         try {
-          const sess = session;
-          if (sess) {
+          if (session) {
             await fetch('/auth/cookie', {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ access_token: sess.access_token, refresh_token: sess.refresh_token })
+              body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
             });
+            console.log('Server cookies set successfully');
           }
-        } catch {}
+        } catch (e) {
+          console.warn('Failed to set server cookies:', e);
+        }
 
-        // Listen for session changes while user sets password
+        // Clean up URL to remove sensitive tokens
         try {
-          unsub = supabase.auth.onAuthStateChange(async (_event, _session) => {
-            // No-op; session already bridged above
-          });
+          window.history.replaceState({}, document.title, '/signup');
         } catch {}
       }
       ready = true;
     } catch (e: any) {
+      console.error('Invite processing error:', e);
       errorMessage = 'Invalid or expired invite link. Please request a new one.';
+      ready = true; // Still show the form so user can see the error
     }
   });
 

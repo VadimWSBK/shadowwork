@@ -3,8 +3,16 @@
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabaseClient';
   let unsub;
+  let retryTimer;
+  let loadingMessage = 'Loading…';
 
-  onMount(() => {
+  function forwardToSignupPreservingParams() {
+    if (typeof window === 'undefined') return;
+    const { location } = window;
+    goto(`/signup${location.search}${location.hash}`, { replaceState: true });
+  }
+
+  async function attemptRouting() {
     if (typeof window === 'undefined') return;
     const { location } = window;
     const searchParams = new URLSearchParams(location.search);
@@ -16,46 +24,53 @@
       || hash.includes('refresh_token');
 
     if (hadInvite) {
-      // Preserve query + hash when forwarding to signup
-      goto(`/signup${location.search}${location.hash}`);
-      // Also listen for the session being created asynchronously by Supabase
-      try {
-        unsub = supabase.auth.onAuthStateChange(async (_event, session) => {
-          if (!session) return;
-          try {
-            await fetch('/auth/cookie', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
-            });
-          } catch {}
-          goto('/signup');
-        });
-      } catch {}
+      loadingMessage = 'Processing invite…';
+      // Immediately redirect to signup with all parameters
+      forwardToSignupPreservingParams();
       return;
     }
 
-    // If Supabase already consumed the hash and established a session, forward to signup.
-    // Otherwise, default to login.
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          goto('/signup');
+    loadingMessage = 'Checking session…';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Check if user has completed profile setup
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          goto('/dashboard', { replaceState: true });
         } else {
-          goto('/login');
+          goto('/signup', { replaceState: true });
         }
-      } catch {
-        goto('/login');
+      } else {
+        goto('/login', { replaceState: true });
       }
-    })();
+    } catch {
+      goto('/login', { replaceState: true });
+    }
+  }
+
+  onMount(() => {
+    attemptRouting();
+    // Retry once after 1s if still on the loading page
+    retryTimer = setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined' && window.location.pathname === '/') {
+          loadingMessage = 'Redirecting…';
+          attemptRouting();
+        }
+      } catch {}
+    }, 1000);
   });
 
   onDestroy(() => {
     try { unsub?.data?.subscription?.unsubscribe?.(); } catch {}
+    try { if (retryTimer) clearTimeout(retryTimer); } catch {}
   });
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center">
-  <div class="text-white/80 text-sm">Loading…</div>
+  <div class="flex items-center gap-3 text-white/90">
+    <span class="inline-block w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin"></span>
+    <span class="text-sm">{loadingMessage}</span>
+  </div>
 </div>

@@ -8,6 +8,7 @@
     changePassword: { oldPassword: string; newPassword: string };
     changeName: { newName: string };
     deleteAllData: void;
+    deleteProfile: void;
     changeLanguage: { language: 'en' | 'de' | 'pl' };
   }>();
 
@@ -19,6 +20,7 @@
   let showChangePassword = false;
   let showChangeName = false;
   let showDeleteConfirm = false;
+  let showDeleteProfileConfirm = false;
   let showChangeLanguage = false;
   
   let oldPassword = '';
@@ -31,6 +33,8 @@
   let nameError = '';
   let nameSuccess = false;
   let deleteSuccess = false;
+  let deleteProfileSuccess = false;
+  let isDeletingProfile = false;
   let languageSuccess = false;
   let nameChangeSuccess = false;
   let nameChangeError = '';
@@ -97,6 +101,13 @@
     }, 3000);
   }
 
+  function handleDeleteProfile() {
+    isDeletingProfile = true;
+    dispatch('deleteProfile');
+    // Don't close the modal immediately - let the parent handle the redirect
+    // The modal will close when the parent redirects to login page
+  }
+
   function handleChangeLanguage() {
     dispatch('changeLanguage', { language: selectedLanguage });
     languageSuccess = true;
@@ -133,7 +144,9 @@
     resetNameForm();
     resetLanguageForm();
     showDeleteConfirm = false;
+    showDeleteProfileConfirm = false;
     deleteSuccess = false;
+    deleteProfileSuccess = false;
     dispatch('close');
   }
 
@@ -407,6 +420,83 @@
             <button 
               on:click={() => showDeleteConfirm = false}
               class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors duration-200 text-sm"
+            >
+              {t(currentLanguage, 'settings.cancel')}
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Delete Profile (Account) -->
+      {#if deleteProfileSuccess}
+        <div class="p-4 bg-red-500/20 border border-red-400/30 rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-red-500/30 rounded-lg flex items-center justify-center">
+              <svg class="w-5 h-5 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-red-200 font-medium">{t(currentLanguage, 'settings.deleteProfileSuccessTitle')}</h3>
+              <p class="text-red-300/70 text-sm">{t(currentLanguage, 'settings.deleteProfileSuccessBody')}</p>
+            </div>
+          </div>
+        </div>
+      {:else if !showDeleteProfileConfirm}
+        <button 
+          on:click={() => showDeleteProfileConfirm = true}
+          class="w-full p-4 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl transition-all duration-200 text-left group"
+        >
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-red-600/30 rounded-lg flex items-center justify-center group-hover:bg-red-600/40 transition-colors duration-200">
+              <svg class="w-5 h-5 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-red-200 font-medium">{t(currentLanguage, 'settings.deleteProfile')}</h3>
+              <p class="text-red-300/70 text-sm">{t(currentLanguage, 'settings.deleteProfileSubtitle')}</p>
+            </div>
+          </div>
+        </button>
+      {:else}
+        <div class="p-4 bg-red-600/20 border border-red-500/30 rounded-xl">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 bg-red-600/30 rounded-lg flex items-center justify-center">
+              <svg class="w-5 h-5 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+            <div>
+              {#if isDeletingProfile}
+                <h3 class="text-red-200 font-medium">Deleting Account...</h3>
+                <p class="text-red-300/70 text-sm">Please wait while we delete your account and all data. You will be redirected to the login page shortly.</p>
+              {:else}
+                <h3 class="text-red-200 font-medium">{t(currentLanguage, 'settings.deleteConfirmTitle')}</h3>
+                <p class="text-red-300/70 text-sm">{t(currentLanguage, 'settings.deleteConfirmBody')}</p>
+              {/if}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button 
+              on:click={handleDeleteProfile}
+              disabled={isDeletingProfile}
+              class="px-4 py-2 bg-red-700 hover:bg-red-800 disabled:bg-red-900 disabled:opacity-50 text-white rounded-lg transition-colors duration-200 text-sm font-medium flex items-center gap-2"
+            >
+              {#if isDeletingProfile}
+                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Deleting...
+              {:else}
+                {t(currentLanguage, 'settings.deleteProfileAction')}
+              {/if}
+            </button>
+            <button 
+              on:click={() => showDeleteProfileConfirm = false}
+              disabled={isDeletingProfile}
+              class="px-4 py-2 bg-white/10 hover:bg-white/15 disabled:bg-white/5 disabled:opacity-50 text-white rounded-lg transition-colors duration-200 text-sm"
             >
               {t(currentLanguage, 'settings.cancel')}
             </button>

@@ -60,6 +60,7 @@
       if (browser) {
         localStorage.setItem('shadowwork_language', language);
         setLanguageCookie(language);
+        document.documentElement.lang = language;
       }
     } catch {}
   }
@@ -220,7 +221,7 @@
         {currentLanguage.toUpperCase()}
       </button>
       {#if languageMenuOpen}
-        <div class="absolute right-0 mt-2 w-36 bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1">
+        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1">
           <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
             English
           </button>
