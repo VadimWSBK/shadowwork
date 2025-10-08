@@ -528,8 +528,7 @@
 
   async function handleDeleteProfile() {
     try {
-      // Don't close settings immediately - let the loading state show
-      // showSettings = false;
+      console.log('🗑️ Starting profile deletion process...');
       
       // Invoke edge function to delete answers, profile, and auth user
       const { data: sessionRes } = await supabase.auth.getSession();
@@ -541,23 +540,25 @@
       // Call delete-profile function
       let deletionSuccessful = false;
       try {
+        console.log('🔄 Calling delete-profile function...');
         const { data: fnData, error: fnError } = await supabase.functions.invoke('delete-profile', {
           headers,
           body: {}
         });
         
         if (fnError) {
-          console.warn('delete-profile function error:', fnError.message);
+          console.warn('❌ delete-profile function error:', fnError.message);
           // Still proceed with cleanup even if function fails
         } else {
-          console.log('delete-profile function result:', fnData);
+          console.log('✅ delete-profile function result:', fnData);
           deletionSuccessful = fnData?.success === true;
         }
       } catch (e) {
-        console.warn('delete-profile invoke failed:', e);
+        console.warn('❌ delete-profile invoke failed:', e);
         // Still proceed with cleanup
       }
 
+      console.log('🧹 Clearing local state and storage...');
       // Clear local state and storage
       try {
         localStorage.removeItem('shadowwork_language');
@@ -577,6 +578,7 @@
       authorized = false;
       currentView = 'login';
 
+      console.log('🚪 Signing out from Supabase...');
       // Sign out from Supabase and clear server cookies
       try {
         await supabase.auth.signOut();
@@ -590,13 +592,14 @@
         console.warn('Failed to clear server cookies:', e);
       }
 
+      console.log('🔄 Redirecting to login page...');
       // Close settings popup and force redirect to login page
       showSettings = false;
       // Use window.location for a hard redirect to ensure clean state
       window.location.href = '/login';
       
     } catch (error) {
-      console.warn('Delete profile failed:', error);
+      console.warn('❌ Delete profile failed:', error);
       // Close settings and redirect to login even if deletion fails
       showSettings = false;
       window.location.href = '/login';
