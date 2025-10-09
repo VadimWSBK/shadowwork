@@ -36,5 +36,10 @@ export const handle: Handle = async ({ event, resolve }) => {
     return session;
   };
 
-  return resolve(event);
+  return resolve(event, {
+    filterSerializedResponseHeaders(name) {
+      // Allow Set-Cookie headers to be sent in responses
+      return name === 'content-range' || name === 'x-supabase-api-version';
+    }
+  });
 };

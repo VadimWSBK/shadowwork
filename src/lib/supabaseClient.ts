@@ -9,6 +9,8 @@ export const supabase = createClient(url, key, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    // Versioned storage key - increment when you make breaking auth changes
+    storageKey: 'sb-shadowwork-auth-v1'
   }
 });
