@@ -70,7 +70,7 @@
 
 <div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center">
   <div class="flex items-center gap-3 text-white/90">
-    <span class="inline-block w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin"></span>
+    <span class="inline-block w-5 h-5 rounded border-2 border-white/40 border-t-white animate-spin"></span>
     <span class="text-sm">{loadingMessage}</span>
   </div>
 </div>

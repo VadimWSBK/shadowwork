@@ -199,7 +199,8 @@
   <div class="fixed top-4 right-4 z-50">
     <div class="relative">
       <button
-        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
+        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-white/15 border text-white/90"
+        style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
         on:click={() => (languageMenuOpen = !languageMenuOpen)}
         aria-haspopup="menu"
         aria-expanded={languageMenuOpen}
@@ -208,14 +209,15 @@
         {currentLanguage.toUpperCase()}
       </button>
       {#if languageMenuOpen}
-        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1">
-          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
+        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border rounded shadow-lg backdrop-blur-md p-1"
+             style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;">
+          <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
             English
           </button>
-          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
+          <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
             Deutsch
           </button>
-          <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
+          <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
             Polski
           </button>
         </div>
@@ -225,7 +227,7 @@
   <div class="w-full max-w-md">
     <div class="p-8">
       <div class="text-center mb-8">
-        <div class="w-16 h-16 bg-white/20 border border-white/30 rounded-full mx-auto mb-4 flex items-center justify-center shadow-md backdrop-blur-sm">
+        <div class="w-16 h-16 bg-white/20 border border-white/30 rounded mx-auto mb-4 flex items-center justify-center shadow-md backdrop-blur-sm">
           <svg class="w-8 h-8 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
@@ -247,20 +249,21 @@
           <div>
             <label class="block text-sm font-medium text-white/80 mb-2">{t(currentLanguage, 'signup.usernameLabel')}</label>
             <input type="text" bind:value={username} placeholder={t(currentLanguage, 'signup.usernamePlaceholder')}
-                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
+                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 rounded focus:outline-none transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
           <div>
             <label class="block text-sm font-medium text-white/80 mb-2">{t(currentLanguage, 'signup.passwordLabel')}</label>
             <input type="password" bind:value={password} placeholder={t(currentLanguage, 'signup.passwordPlaceholder')} autocomplete="new-password"
-                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
+                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 rounded focus:outline-none transition-all duration-200 shadow-inner backdrop-blur-sm" />
+            <p class="mt-1 text-xs text-white/60">{t(currentLanguage, 'signup.passwordRequirement')}</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-white/80 mb-2">{t(currentLanguage, 'signup.confirmPasswordLabel')}</label>
             <input type="password" bind:value={confirm} placeholder={t(currentLanguage, 'signup.confirmPasswordPlaceholder')} autocomplete="new-password"
-                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 shadow-inner backdrop-blur-sm" />
+                   class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 rounded focus:outline-none transition-all duration-200 shadow-inner backdrop-blur-sm" />
           </div>
-          <button class="w-full px-6 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2"
-                  style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);" disabled={!ready || loading}>
+          <button class="w-full px-6 py-3 text-sm font-bold text-white rounded shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2 border"
+                  style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;" disabled={!ready || loading}>
             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             {#if loading}
               <svg class="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-width="2" opacity="0.75"/></svg>

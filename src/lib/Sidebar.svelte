@@ -70,9 +70,9 @@
         <span class="text-white text-sm font-medium">{t(currentLanguage, 'sidebar.overallProgress')}</span>
         <span class="text-white text-sm font-bold">{Math.round(overallProgress)}%</span>
       </div>
-      <div class="w-full bg-white/25 rounded-full h-2">
+      <div class="w-full bg-white/25 rounded h-2">
         <div 
-          class="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-white to-white/90"
+          class="h-2 rounded transition-all duration-500 bg-gradient-to-r from-white to-white/90"
           style="width: {overallProgress}%"
         ></div>
       </div>
@@ -85,7 +85,7 @@
     <nav class="p-4">
       {#each courseData as day, index}
         <button
-          class="w-full text-left p-3 rounded-lg transition-all duration-200 group {currentDay === day.id ? 'bg-white/25 text-white' : 'text-white/90 hover:bg-white/15 hover:text-white'}"
+          class="w-full text-left p-3 rounded transition-all duration-200 group {currentDay === day.id ? 'bg-white/25 text-white' : 'text-white/90 hover:bg-white/15 hover:text-white'}"
           on:click={() => selectDay(day)}
         >
           <div class="flex items-center justify-between">
@@ -93,7 +93,7 @@
               <div class="flex items-center gap-2">
                 <span class="font-medium">{day.title}</span>
                 {#if day.id !== 'intro'}
-                  <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-white/20 text-white/90">
+                  <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded bg-white/20 text-white/90">
                     {Math.round((($answersStore[day.id] || []).filter(answer => answer && answer.trim().length > 0).length / day.questions.length) * 100)}%
                   </span>
                 {/if}

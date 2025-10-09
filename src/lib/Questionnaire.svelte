@@ -384,9 +384,11 @@
       <div class="flex justify-end mb-4">
         <button 
           on:click={onShowAnswers}
-          class="px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors duration-200 rounded-lg backdrop-blur-sm border border-white/30"
+          class="px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors duration-200 rounded backdrop-blur-sm border relative overflow-hidden group"
+          style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
         >
-          {t(currentLanguage, 'questionnaire.viewAnswers')}
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <span class="relative z-10">{t(currentLanguage, 'questionnaire.viewAnswers')}</span>
         </button>
       </div>
       
@@ -403,8 +405,8 @@
         </div>
       </div>
       
-      <div class="w-full bg-gray-400 rounded-full h-3 lg:h-4 mt-4" role="progressbar" aria-valuenow={completionRate} aria-valuemin="0" aria-valuemax="100" aria-label={t(currentLanguage, 'questionnaire.progressAria')}>
-        <div class="h-3 lg:h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden progress-bar-animated" style="width: {completionRate}%; background: linear-gradient(90deg, #ffffff 0%, #f3f4f6 50%, #ffffff 100%);">
+      <div class="w-full bg-gray-400 rounded h-3 lg:h-4 mt-4" role="progressbar" aria-valuenow={completionRate} aria-valuemin="0" aria-valuemax="100" aria-label={t(currentLanguage, 'questionnaire.progressAria')}>
+        <div class="h-3 lg:h-4 rounded transition-all duration-700 ease-out relative overflow-hidden progress-bar-animated" style="width: {completionRate}%; background: linear-gradient(90deg, #ffffff 0%, #f3f4f6 50%, #ffffff 100%);">
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/50 to-transparent animate-pulse"></div>
         </div>
       </div>
@@ -439,8 +441,7 @@
                 bind:this={answerEl}
                 value={dayAnswers[displayIndex] || ''} 
                 on:input={updateAnswer}
-                on:focus={() => answerEl?.classList.add('textarea-focus')}
-                on:blur={() => { answerEl?.classList.remove('textarea-focus'); void maybeSaveCurrentAnswer(); }}
+                on:blur={() => { void maybeSaveCurrentAnswer(); }}
                 on:keydown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); next(); }
                   else if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); prev(); }
@@ -450,7 +451,8 @@
                 autocapitalize="sentences"
                 inputmode="text"
                 enterkeyhint="next"
-                class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-[#0C6E78] transition-all duration-200 resize-y shadow-inner backdrop-blur-sm text-base min-h-[140px]"
+                class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border rounded focus:outline-none transition-all duration-200 resize-y shadow-inner backdrop-blur-sm text-base min-h-[140px]"
+                style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
               ></textarea>
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bounce-in" style="animation-delay: 0.6s;">
@@ -488,13 +490,13 @@
               <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 lg:gap-4 xl:gap-5">
                 <div class="flex-1 order-2 sm:order-1">
                   <div class="mb-1">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase">{currentDay.subtitle}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase">{currentDay.subtitle}</span>
                   </div>
                   <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white leading-tight mb-2 sm:mb-3 lg:mb-4">{questions[displayIndex].text}</h2>
                 </div>
                 <button 
                   type="button" 
-                  class="flex-shrink-0 order-1 sm:order-2 self-center sm:self-start w-12 h-12 sm:w-10 sm:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 bg-primary/10 hover:bg-primary/20 dark:bg-primary-light/10 dark:hover:bg-primary-light/20 text-primary dark:text-primary-light rounded-full flex items-center justify-center text-lg sm:text-base lg:text-lg xl:text-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-secondary-dark" 
+                  class="flex-shrink-0 order-1 sm:order-2 self-center sm:self-start w-12 h-12 sm:w-10 sm:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 bg-primary/10 hover:bg-primary/20 dark:bg-primary-light/10 dark:hover:bg-primary-light/20 text-primary dark:text-primary-light rounded flex items-center justify-center text-lg sm:text-base lg:text-lg xl:text-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-secondary-dark" 
                   disabled
                 >
                   ?
@@ -510,7 +512,7 @@
                 placeholder={t(currentLanguage, 'questionnaire.reflectionPlaceholder')} 
                 rows="6"
                 disabled
-                class="w-full px-3 sm:px-4 lg:px-5 xl:px-6 py-3 sm:py-3 lg:py-4 xl:py-5 text-gray-800 placeholder-gray-400 bg-gray-200 border-2 border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-primary transition-all duration-200 resize-y shadow-inner opacity-75 text-sm sm:text-base lg:text-lg xl:text-lg min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px]"
+                class="w-full px-3 sm:px-4 lg:px-5 xl:px-6 py-3 sm:py-3 lg:py-4 xl:py-5 text-gray-800 placeholder-gray-400 bg-gray-200 border-2 border-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-primary transition-all duration-200 resize-y shadow-inner opacity-75 text-sm sm:text-base lg:text-lg xl:text-lg min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] xl:min-h-[180px]"
               ></textarea>
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm lg:text-base xl:text-base">
@@ -542,9 +544,11 @@
           <button 
             on:click={prev} 
             disabled={currentIndex === 0 || isTransitioning}
-            class="order-1 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded-lg backdrop-blur-sm border border-white/30"
+            class="order-1 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded backdrop-blur-sm border relative overflow-hidden group"
+            style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
           >
-            ← Previous
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <span class="relative z-10">← Previous</span>
           </button>
           
           <div class="hidden sm:flex items-center space-x-3 order-2">
@@ -552,8 +556,7 @@
               {@const isAnswered = dayAnswers[i] && dayAnswers[i].trim().length > 0}
               <div class="relative group">
                 <button
-                  class="w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 {i === currentIndex ? 'border-white/60 bg-white/20 shadow-lg' : isAnswered ? 'border-white/40 bg-white/10' : 'border-white/20 bg-transparent'}"
-                  on:click={() => { if (!isTransitioning) { void maybeSaveCurrentAnswer(); currentIndex = i; } }}
+                  class="w-4 h-4 rounded border cursor-pointer transition-all duration-200 flex items-center justify-center hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50 {i === currentIndex ? 'border-white/60 bg-white/20  shadow-lg' : isAnswered ? 'border-white/40 bg-white/10' : 'border-white/20 bg-transparent'}"                  on:click={() => { if (!isTransitioning) { void maybeSaveCurrentAnswer(); currentIndex = i; } }}
                   aria-label="Go to question {i + 1}"
                 >
                   {#if isAnswered}
@@ -572,8 +575,8 @@
           <button 
             on:click={next} 
             disabled={isTransitioning || nextSaving}
-            class="order-2 w-auto flex-1 sm:flex-none px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            style="background-color: #0C6E78;"
+            class="order-2 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white rounded shadow-lg transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed border"
+            style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
           >
             <span class="flex items-center justify-center gap-2">
               {#if nextSaving}
@@ -610,7 +613,7 @@
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
     <div 
-      class="bg-gradient-to-br from-white/25 via-white/20 to-white/15 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 max-w-lg w-full mx-4 relative overflow-hidden"
+      class="bg-gradient-to-br from-white/25 via-white/20 to-white/15 backdrop-blur-xl rounded shadow-2xl border border-white/30 p-8 max-w-lg w-full mx-4 relative overflow-hidden"
       transition:fly={{ y: 30, duration: 400, easing: cubicInOut }}
       on:click|stopPropagation
       role="document"
@@ -620,7 +623,7 @@
       
       <!-- Modal Header -->
       <div class="text-center mb-8 relative z-10">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center shadow-lg relative overflow-hidden group" 
+        <div class="w-20 h-20 mx-auto mb-6 rounded flex items-center justify-center shadow-lg relative overflow-hidden group" 
              style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12"></div>
           <svg class="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -629,7 +632,7 @@
         </div>
         <h3 id="modal-title" class="text-2xl font-bold text-white mb-3 drop-shadow-sm">Complete this day?</h3>
         <p class="text-white/90 text-base leading-relaxed">
-          You have <span class="font-bold text-white bg-white/20 px-2 py-1 rounded-lg">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
+          You have <span class="font-bold text-white bg-white/20 px-2 py-1 rounded">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
         </p>
       </div>
 
@@ -637,14 +640,16 @@
       <div class="flex gap-4 justify-center relative z-10">
         <button
           on:click={cancelComplete}
-          class="px-8 py-3 text-base font-semibold text-white/90 bg-white/20 hover:bg-white/30 rounded-xl transition-all duration-300 border border-white/40 hover:border-white/60 hover:scale-105 hover:shadow-lg backdrop-blur-sm"
+          class="px-8 py-3 text-base font-semibold text-white/90 bg-white/20 hover:bg-white/30 rounded transition-all duration-300 border hover:border-white/60 hover:scale-105 hover:shadow-lg backdrop-blur-sm relative overflow-hidden group"
+          style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
         >
-          Cancel
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <span class="relative z-10">Cancel</span>
         </button>
         <button
           on:click={confirmComplete}
-          class="px-8 py-3 text-base font-bold text-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group"
-          style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);"
+          class="px-8 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+          style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
         >
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
           <span class="relative z-10">OK</span>

@@ -343,51 +343,80 @@
     currentView = 'questionnaire';
   }
 
-  async function handleUpdateAnswer(dayId: string, index: number, newAnswer: string): Promise<{ success: boolean; error?: any }> {
-  if (!answers[dayId]) {
-    answers[dayId] = [];
-  }
-  answers[dayId][index] = newAnswer;
-  answersStore.set(answers);
-  // No longer saving to localStorage - Supabase is our source of truth
+  // Track ongoing save operations to prevent race conditions
+  const ongoingSaves = new Map<string, Promise<{ success: boolean; error?: any }>>();
 
-  // Persist to Supabase using simple storage with retry logic
-  const maxRetries = 3;
-  let lastError;
+  async function handleUpdateAnswer(dayId: string, index: number, newAnswer: string): Promise<{ success: boolean; error?: any }> {
+  // Create a unique key for this save operation
+  const saveKey = `${dayId}-${index}`;
   
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  // If there's already a save in progress for this answer, wait for it to complete first
+  if (ongoingSaves.has(saveKey)) {
+    console.log('⏳ Waiting for ongoing save to complete:', saveKey);
+    await ongoingSaves.get(saveKey);
+  }
+  
+  // Start the save operation
+  const savePromise = (async () => {
     try {
-      console.log(`💾 handleUpdateAnswer attempt ${attempt}/${maxRetries}:`, { dayId, index, profileId });
+      // Store original value in case we need to rollback
+      const originalAnswer = answers[dayId]?.[index];
       
-      const result = await answerStorage.saveAnswer(dayId, index, newAnswer);
-      if (result.success) {
-        console.log('✅ handleUpdateAnswer successful on attempt', attempt);
-        return { success: true };
-      } else {
-        lastError = result.error;
-        console.warn(`❌ handleUpdateAnswer failed on attempt ${attempt}:`, result.error);
-        
-        // Wait before retry (exponential backoff)
-        if (attempt < maxRetries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`⏳ Waiting ${delay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+      // Persist to Supabase using simple storage with retry logic
+      const maxRetries = 3;
+      let lastError;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`💾 handleUpdateAnswer attempt ${attempt}/${maxRetries}:`, { dayId, index, profileId });
+          
+          const result = await answerStorage.saveAnswer(dayId, index, newAnswer);
+          if (result.success) {
+            console.log('✅ handleUpdateAnswer successful on attempt', attempt);
+            
+            // Only update local state after successful save
+            if (!answers[dayId]) {
+              answers[dayId] = [];
+            }
+            answers[dayId][index] = newAnswer;
+            answersStore.set(answers);
+            
+            return { success: true };
+          } else {
+            lastError = result.error;
+            console.warn(`❌ handleUpdateAnswer failed on attempt ${attempt}:`, result.error);
+            
+            // Wait before retry (exponential backoff)
+            if (attempt < maxRetries) {
+              const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+              console.log(`⏳ Waiting ${delay}ms before retry...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+        } catch (e) {
+          lastError = e;
+          console.warn(`💥 handleUpdateAnswer threw on attempt ${attempt}:`, e);
+          
+          // Wait before retry
+          if (attempt < maxRetries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
       }
-    } catch (e) {
-      lastError = e;
-      console.warn(`💥 handleUpdateAnswer threw on attempt ${attempt}:`, e);
       
-      // Wait before retry
-      if (attempt < maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+      console.error('❌ handleUpdateAnswer failed after all retries:', lastError);
+      return { success: false, error: lastError };
+    } finally {
+      // Clean up the ongoing save tracker
+      ongoingSaves.delete(saveKey);
     }
-  }
+  })();
   
-  console.error('❌ handleUpdateAnswer failed after all retries:', lastError);
-  return { success: false, error: lastError };
+  // Track this save operation
+  ongoingSaves.set(saveKey, savePromise);
+  
+  return savePromise;
 }
 
   function calculateCompletionRate(dayId: string): number {
@@ -593,16 +622,24 @@
       }
 
       console.log('🔄 Redirecting to login page...');
-      // Close settings popup and force redirect to login page
+      // Close settings popup first
       showSettings = false;
-      // Use window.location for a hard redirect to ensure clean state
-      window.location.href = '/login';
+      
+      // Add a small delay to ensure the popup closes before redirect
+      setTimeout(() => {
+        // Use window.location for a hard redirect to ensure clean state
+        window.location.href = '/login';
+      }, 100);
       
     } catch (error) {
       console.warn('❌ Delete profile failed:', error);
       // Close settings and redirect to login even if deletion fails
       showSettings = false;
-      window.location.href = '/login';
+      
+      // Add delay for error case too
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
     }
   }
 
@@ -662,7 +699,7 @@
           <div class="flex items-center gap-3 ml-auto">
             <div class="relative">
               <button
-                class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
+                class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90"
                 on:click={() => (languageMenuOpen = !languageMenuOpen)}
                 bind:this={languageMenuButtonEl}
                 aria-haspopup="menu"
@@ -672,14 +709,14 @@
                 {currentLanguage.toUpperCase()}
               </button>
               {#if languageMenuOpen}
-                <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1" bind:this={languageMenuEl}>
-                  <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
+                <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded shadow-lg backdrop-blur-md p-1" bind:this={languageMenuEl}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
                     English
                   </button>
-                  <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
                     Deutsch
                   </button>
-                  <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
                     Polski
                   </button>
                 </div>
@@ -688,7 +725,7 @@
             <span class="text-white/80 text-sm font-medium hidden sm:block">{username}</span>
             <div class="flex items-center">
               <button 
-                class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg hover:bg-white/25 transition-all duration-200"
+                class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded flex items-center justify-center border-2 border-white/30 shadow-lg hover:bg-white/25 transition-all duration-200"
                 on:click={() => showSettings = true}
                 aria-label={t(currentLanguage, 'settings.title')}
                 title={t(currentLanguage, 'settings.title')}
@@ -731,7 +768,7 @@
               <div class="mb-6 text-left relative">
                 {#if currentDay.id !== 'intro'}
                   <div class="absolute top-0 right-0">
-                    <div class="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 shadow-lg">
+                    <div class="bg-white/20 backdrop-blur-sm border border-white/30 rounded px-4 py-2 shadow-lg">
                       <div class="text-center">
                         <div class="text-2xl font-bold text-white">{calculateCompletionRate(currentDay.id)}%</div>
                         <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
@@ -742,7 +779,7 @@
                 <div class="flex items-center gap-3 mb-1">
                   <h1 class="text-2xl lg:text-3xl font-bold text-white">{currentDay.title}</h1>
                   {#if currentDay.id !== 'intro'}
-                    <span class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full bg-white/20 text-white/90 border border-white/30">
+                    <span class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded bg-white/20 text-white/90 border border-white/30">
                       {calculateCompletionRate(currentDay.id)}%
                     </span>
                   {/if}
@@ -753,15 +790,15 @@
               <div class="grid grid-cols-1 gap-8 lg:gap-12 items-center">
                 <!-- Copy -->
                 <div class="border-l border-white/10 pl-6">
-                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded-full after:mt-3">
+                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded after:mt-3">
                   {t(currentLanguage, 'app.welcomeTitle')}
                 </h2>
                 
                 <div class="mt-4 mb-6">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border-2 border-white/30 animate-pulse"
-                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
+                    class="px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base font-bold text-white rounded shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                   >
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
                     <span class="relative z-10 flex items-center">
@@ -775,7 +812,7 @@
 
                 <div class="mt-10 mb-12">
                   <div class="grid grid-cols-1 gap-8">
-                    <div class="relative overflow-hidden rounded-xl p-6 lg:p-8 bg-cover bg-center bg-no-repeat ring-1 ring-white/10 w-full" style={`background-image: linear-gradient(to bottom right, rgba(0,68,75,0.65), rgba(0,68,75,0.75)), url('${introBg}')`}>
+                    <div class="relative overflow-hidden rounded p-6 lg:p-8 bg-cover bg-center bg-no-repeat ring-1 ring-white/10 w-full" style={`background-image: linear-gradient(to bottom right, rgba(0,68,75,0.65), rgba(0,68,75,0.75)), url('${introBg}')`}>
                       <img src={sittingWomanShadow} alt="silhouette" class="pointer-events-none select-none absolute -right-24 bottom-0 w-[22rem] sm:w-[26rem] md:w-[30rem] opacity-20" />
                       <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-4">{t(currentLanguage, 'app.whatIsShadowWorkTitle')}</p>
                       <div class="space-y-5 text-white/90 leading-relaxed">
@@ -793,7 +830,7 @@
                   <ul class="space-y-4">
                     {#each courseData.slice(1) as day}
                       <li class="flex items-start gap-3">
-                        <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                        <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                         <div>
                           <p class="text-white font-semibold text-sm sm:text-base">{day.title}: {day.subtitle}</p>
                           <p class="text-white/90 text-sm">{getDaySummary(currentLanguage, day.id)}</p>
@@ -810,8 +847,8 @@
                 <div class="flex justify-start">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group"
-                    style="background-color: #0C6E78;"
+                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                    style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                   >
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
                     <span class="relative z-10">{t(currentLanguage, 'app.startJourneyButton')}</span>
@@ -823,27 +860,27 @@
               <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">{t(currentLanguage, 'app.howToUseTitle')}</p>
               <ul class="space-y-3">
                 <li class="flex items-start gap-3">
-                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                   <span class="text-white/90">{t(currentLanguage, 'app.howTo1')}</span>
                 </li>
                 <li class="flex items-start gap-3">
-                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                   <span class="text-white/90">{t(currentLanguage, 'app.howTo2')}</span>
                 </li>
                 <li class="flex items-start gap-3">
-                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                   <span class="text-white/90">{t(currentLanguage, 'app.howTo3')}</span>
                 </li>
                 <li class="flex items-start gap-3">
-                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                   <span class="text-white/90">{t(currentLanguage, 'app.howTo4')}</span>
                 </li>
                 <li class="flex items-start gap-3">
-                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                   <span class="text-white/90">{t(currentLanguage, 'app.howTo5')}</span>
                 </li>
                 <li class="flex items-start gap-3">
-                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded-full bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
+                  <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                   <span class="text-white/90">{t(currentLanguage, 'app.howTo6')}</span>
                 </li>
               </ul>
@@ -864,23 +901,23 @@
                     {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
                   </h2>
                   <div class="flex flex-wrap items-center gap-3 mb-3">
-                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
-                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
                   </div>
                   {#if currentDay.id === 'day1'}
-                    <img src={introBg} alt="Day 1 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={introBg} alt="Day 1 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day2'}
-                    <img src={day2Img} alt="Day 2 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day2Img} alt="Day 2 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day3'}
-                    <img src={day3Img} alt="Day 3 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day3Img} alt="Day 3 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day4'}
-                    <img src={day4Img} alt="Day 4 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day4Img} alt="Day 4 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day5'}
-                    <img src={day5Img} alt="Day 5 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day5Img} alt="Day 5 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day6'}
-                    <img src={day6Img} alt="Day 6 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day6Img} alt="Day 6 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day7'}
-                    <img src={day7Img} alt="Day 7 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded-xl mb-4 ring-1 ring-white/10" />
+                    <img src={day7Img} alt="Day 7 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
                   {/if}
                   <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
                     {getDayIntro(currentLanguage, currentDay.id)?.intro}
@@ -890,8 +927,8 @@
                   <div class="flex gap-3 justify-start">
                     <button
                       on:click={() => currentView = 'questionnaire'}
-                      class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group"
-                      style="background-color: #0C6E78;"
+                      class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                      style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                     >
                       <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
                       <span class="relative z-10">{t(currentLanguage, 'app.startDayButton', { day: getDayNumber(currentDay.id) })}</span>
