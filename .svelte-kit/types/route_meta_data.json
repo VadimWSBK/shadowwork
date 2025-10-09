@@ -14,18 +14,33 @@
 	"/auth/logout": [
 		"src/routes/auth/logout/+server.ts"
 	],
+	"/contact": [
+		"src/routes/+layout.server.ts"
+	],
 	"/(app)/dashboard": [
 		"src/routes/(app)/+layout.server.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/disclaimer": [
+		"src/routes/+layout.server.ts"
+	],
+	"/faq": [
 		"src/routes/+layout.server.ts"
 	],
 	"/login": [
 		"src/routes/login/+page.server.ts",
 		"src/routes/+layout.server.ts"
 	],
+	"/privacy": [
+		"src/routes/+layout.server.ts"
+	],
 	"/reset": [
 		"src/routes/+layout.server.ts"
 	],
 	"/signup": [
+		"src/routes/+layout.server.ts"
+	],
+	"/terms": [
 		"src/routes/+layout.server.ts"
 	]
 }

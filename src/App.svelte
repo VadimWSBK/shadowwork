@@ -4,6 +4,7 @@
   import Questionnaire from './lib/Questionnaire.svelte';
   import ViewAnswers from './lib/ViewAnswers.svelte';
   import Settings from './lib/Settings.svelte';
+  import Dashboard from './lib/Dashboard.svelte';
   import { getCourseData } from './lib/questions';
   import type { DayData } from './lib/questions';
   import type { Language } from './lib/questions';
@@ -28,7 +29,7 @@
   import { PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
   
 
-  let currentView: 'login' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
+  let currentView: 'login' | 'dashboard' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
   let username = '';
   let profileId = '';
   let currentLanguage: Language = 'en';
@@ -48,7 +49,12 @@
   let isMobileMenuOpen = false;
   let currentDay: DayData = courseData[0]; // Start with Intro
   let sidebarOpen = false;
+  let sidebarCollapsed = false;
   let showSettings = false;
+  let showCompletionPopup = false;
+  let completedDay: DayData | null = null;
+  let dayIntroImageLoaded = false;
+  let isTransitioningDay = false;
 
   // Cookie helpers for language persistence
   const LANGUAGE_COOKIE = 'shadowwork_language';
@@ -129,7 +135,7 @@
     const savedUsername = localStorage.getItem('shadowwork_username');
     if (savedUsername) {
       username = savedUsername;
-      currentView = 'intro';
+      currentView = 'dashboard';
       currentDay = courseData[0];
       loadAnswers();
     }
@@ -251,10 +257,10 @@
         await hydrateAnswersFromRemote();
       }
     }
-    // If authorized and currently at login, proceed to intro
+    // If authorized and currently at login, proceed to dashboard
     if (currentView === 'login') {
       currentDay = courseData[0];
-      currentView = 'intro';
+      currentView = 'dashboard';
     }
   }
 
@@ -309,8 +315,66 @@
       return;
     }
     currentDay = courseData[0]; // Set to intro
-    currentView = 'intro';
+    currentView = 'dashboard';
     loadAnswers();
+  }
+  
+  function handleStartIntro() {
+    currentDay = courseData[0];
+    currentView = 'intro';
+  }
+  
+  function handleGoToDashboard() {
+    currentView = 'dashboard';
+    currentDay = courseData[0]; // Reset to intro to avoid highlighting both dashboard and a day
+  }
+
+  // Helper function to check if user has started any day
+  function hasStartedAnyDay(): boolean {
+    return Object.keys(answers).some(dayId => {
+      const dayAnswers = answers[dayId] || [];
+      return dayAnswers.some(answer => answer && answer.trim().length > 0);
+    });
+  }
+
+  // Helper function to check if user has started a specific day
+  function hasStartedDay(dayId: string): boolean {
+    const dayAnswers = answers[dayId] || [];
+    return dayAnswers.some(answer => answer && answer.trim().length > 0);
+  }
+
+  // Helper function to get the appropriate button text
+  function getJourneyButtonText(): string {
+    return hasStartedAnyDay() 
+      ? t(currentLanguage, 'app.continueJourneyButton')
+      : t(currentLanguage, 'app.startJourneyButton');
+  }
+
+  function getDayButtonText(dayId: string): string {
+    return hasStartedDay(dayId)
+      ? t(currentLanguage, 'app.continueDayButton', { day: getDayNumber(dayId) })
+      : t(currentLanguage, 'app.startDayButton', { day: getDayNumber(dayId) });
+  }
+
+  // Helper function to get day statistics
+  function getDayStats(dayId: string) {
+    const dayAnswers = answers[dayId] || [];
+    const answeredQuestions = dayAnswers.filter(answer => answer && answer.trim().length > 0);
+    const totalWords = answeredQuestions.reduce((sum, answer) => {
+      return sum + (answer.trim().split(/\s+/).length || 0);
+    }, 0);
+    const totalCharacters = answeredQuestions.reduce((sum, answer) => {
+      return sum + (answer.trim().length || 0);
+    }, 0);
+    const progress = dayAnswers.length > 0 ? Math.round((answeredQuestions.length / dayAnswers.length) * 100) : 0;
+    
+    return {
+      answeredQuestions: answeredQuestions.length,
+      totalQuestions: dayAnswers.length,
+      progress,
+      totalWords,
+      totalCharacters
+    };
   }
 
   function loadAnswers() {
@@ -432,18 +496,65 @@
     // Handle day completion logic if needed
     console.log(`Day ${dayId} completed`);
     
-    // Find the current day index
-    const currentDayIndex = courseData.findIndex(day => day.id === dayId);
-    
-    // Check if there's a next day available
-    if (currentDayIndex !== -1 && currentDayIndex < courseData.length - 1) {
-      // Automatically progress to the next day
-      const nextDay = courseData[currentDayIndex + 1];
-      handleDayChange(nextDay);
+    // Find the completed day
+    const day = courseData.find(d => d.id === dayId);
+    if (day) {
+      completedDay = day;
+      showCompletionPopup = true;
     }
   }
 
+  function continueToNextDay() {
+    if (!completedDay) return;
+    
+    // Find the current day index
+    const currentDayIndex = courseData.findIndex(day => day.id === completedDay.id);
+    
+    // Check if there's a next day available
+    if (currentDayIndex !== -1 && currentDayIndex < courseData.length - 1) {
+      const nextDay = courseData[currentDayIndex + 1];
+      handleDayChange(nextDay);
+    } else {
+      // If it's the last day, go to dashboard
+      currentView = 'dashboard';
+      currentDay = courseData[0]; // Reset to intro
+    }
+    
+    // Close popup
+    showCompletionPopup = false;
+    completedDay = null;
+  }
+
+  function closeCompletionPopup() {
+    if (!completedDay) return;
+    
+    // If it's the last day, go to dashboard when closing
+    const currentDayIndex = courseData.findIndex(day => day.id === completedDay.id);
+    if (currentDayIndex === courseData.length - 1) {
+      currentView = 'dashboard';
+      currentDay = courseData[0]; // Reset to intro
+    }
+    
+    showCompletionPopup = false;
+    completedDay = null;
+  }
+
   async function handleDayChange(day: DayData) {
+    if (isTransitioningDay) {
+      console.log('Transition already in progress, ignoring day change request');
+      return; // Prevent multiple simultaneous transitions
+    }
+    
+    isTransitioningDay = true;
+    dayIntroImageLoaded = false;
+    
+    // Preload the image for the day intro view before starting the transition
+    if (day.id !== 'intro') {
+      await preloadDayImage(day.id);
+    } else {
+      dayIntroImageLoaded = true;
+    }
+    
     // Small delay to allow current transition to complete
     await new Promise(resolve => setTimeout(resolve, 50));
     currentDay = day;
@@ -452,6 +563,8 @@
     } else {
       currentView = 'day-intro';
     }
+    
+    isTransitioningDay = false;
   }
 
   async function logout() {
@@ -673,6 +786,64 @@
     return m ? Number(m[1]) : 0;
   }
 
+  function getDayImage(dayId: string): string | null {
+    switch(dayId) {
+      case 'day1': return introBg;
+      case 'day2': return day2Img;
+      case 'day3': return day3Img;
+      case 'day4': return day4Img;
+      case 'day5': return day5Img;
+      case 'day6': return day6Img;
+      case 'day7': return day7Img;
+      default: return null;
+    }
+  }
+
+  async function preloadDayImage(dayId: string): Promise<void> {
+    const imageSrc = getDayImage(dayId);
+    if (!imageSrc) {
+      dayIntroImageLoaded = true;
+      return;
+    }
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      
+      // If image is already cached, it loads synchronously
+      const isAlreadyCached = img.complete || img.naturalWidth > 0;
+      
+      img.onload = () => {
+        dayIntroImageLoaded = true;
+        resolve();
+      };
+      img.onerror = () => {
+        // Even if image fails to load, proceed with transition
+        console.warn(`Failed to preload image for ${dayId}`);
+        dayIntroImageLoaded = true;
+        resolve();
+      };
+      
+      // Start loading
+      img.src = imageSrc;
+      
+      // If already cached, resolve immediately
+      if (img.complete) {
+        dayIntroImageLoaded = true;
+        resolve();
+        return;
+      }
+      
+      // Set timeout to prevent indefinite waiting
+      setTimeout(() => {
+        if (!dayIntroImageLoaded) {
+          console.warn(`Image preload timeout for ${dayId}, proceeding anyway`);
+          dayIntroImageLoaded = true;
+          resolve();
+        }
+      }, 2000); // Max 2 seconds wait for image
+    });
+  }
+
   // Passphrase handlers removed — encryption is automatic now.
 </script>
 
@@ -681,7 +852,7 @@
   {#if currentView !== 'login'}
     <nav 
       bind:this={navElement}
-      class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20 transition-all duration-300 lg:left-80"
+      class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20 transition-all duration-500 {sidebarCollapsed ? 'lg:left-20' : 'lg:left-80'}"
     >
       <div class="max-w-none px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
@@ -751,8 +922,12 @@
           currentDay={currentDay.id}
           {answersStore}
           onDayChange={handleDayChange}
+          onPreloadDay={preloadDayImage}
+          onDashboard={handleGoToDashboard}
           bind:isOpen={sidebarOpen}
+          bind:isCollapsed={sidebarCollapsed}
           {currentLanguage}
+          {currentView}
         />
         {#if sidebarOpen}
           <!-- Overlay that closes sidebar when clicking outside (mobile only) -->
@@ -767,9 +942,18 @@
         {/if}
       {/if}
  
-      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-500 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
+      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-500 z-20 {currentView !== 'login' ? (sidebarCollapsed ? 'lg:left-20' : 'lg:left-80') : 'left-0'}">
         {#if currentView === 'login'}
           <Login {currentLanguage} on:login={handleLogin} />
+        {:else if currentView === 'dashboard'}
+          <Dashboard 
+            {courseData}
+            {answersStore}
+            {username}
+            {currentLanguage}
+            onDayChange={handleDayChange}
+            onStartIntro={handleStartIntro}
+          />
         {:else if currentView === 'intro'}
           <div class="flex items-center justify-center p-2 sm:p-4 lg:p-10" transition:slide={{ duration: 500, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
@@ -814,7 +998,7 @@
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
-                      {t(currentLanguage, 'app.startJourneyButton')}
+                      {getJourneyButtonText()}
                     </span>
                   </button>
                 </div>
@@ -860,7 +1044,7 @@
                     style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                   >
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                    <span class="relative z-10">{t(currentLanguage, 'app.startJourneyButton')}</span>
+                    <span class="relative z-10">{getJourneyButtonText()}</span>
                   </button>
                 </div>
                 </div>
@@ -898,7 +1082,7 @@
           </div>
         {:else if currentView === 'day-intro'}
           {#key currentDay.id}
-            <div class=" flex items-center justify-center p-2 sm:p-4 lg:p-10" transition:slide={{ duration: 500, easing: quintOut }}>
+            <div class=" flex items-center justify-center p-2 sm:p-4 lg:p-10" transition:slide={{ duration: 400, easing: quintOut }}>
               <div class="w-full max-w-6xl mx-auto">
                 <div class="mb-6 text-left">
                   <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
@@ -914,36 +1098,68 @@
                       <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
                       <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
                     </div>
-                    {#if currentDay.id === 'day1'}
-                      <img src={introBg} alt="Day 1 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                    {:else if currentDay.id === 'day2'}
-                      <img src={day2Img} alt="Day 2 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                    {:else if currentDay.id === 'day3'}
-                      <img src={day3Img} alt="Day 3 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                    {:else if currentDay.id === 'day4'}
-                      <img src={day4Img} alt="Day 4 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                    {:else if currentDay.id === 'day5'}
-                      <img src={day5Img} alt="Day 5 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                    {:else if currentDay.id === 'day6'}
-                      <img src={day6Img} alt="Day 6 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                    {:else if currentDay.id === 'day7'}
-                      <img src={day7Img} alt="Day 7 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {#if getDayImage(currentDay.id)}
+                      <div class="relative w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mb-4">
+                        {#if !dayIntroImageLoaded}
+                          <div class="absolute inset-0 flex items-center justify-center bg-white/5 rounded ring-1 ring-white/10">
+                            <svg class="w-8 h-8 animate-spin text-white/50" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                          </div>
+                        {/if}
+                        <img 
+                          src={getDayImage(currentDay.id)} 
+                          alt="{currentDay.title} illustration" 
+                          class="w-full rounded ring-1 ring-white/10 transition-opacity duration-300 {dayIntroImageLoaded ? 'opacity-100' : 'opacity-0'}" 
+                          loading="eager"
+                          decoding="async"
+                          on:load={() => dayIntroImageLoaded = true}
+                        />
+                      </div>
                     {/if}
+                    
                     <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
                       {getDayIntro(currentLanguage, currentDay.id)?.intro}
                     </p>
                     <p class="text-white/80 text-sm mb-6">{t(currentLanguage, 'app.dayIntroTip')}</p>
                   
-                    <div class="flex gap-3 justify-start">
+                    <div class="flex gap-3 justify-start mb-6">
                       <button
                         on:click={() => currentView = 'questionnaire'}
                         class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
                         style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                       >
                         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                        <span class="relative z-10">{t(currentLanguage, 'app.startDayButton', { day: getDayNumber(currentDay.id) })}</span>
+                        <span class="relative z-10">{getDayButtonText(currentDay.id)}</span>
                       </button>
                     </div>
+
+                    <!-- Day Statistics -->
+                    {#if getDayStats(currentDay.id).totalQuestions > 0}
+                      {@const stats = getDayStats(currentDay.id)}
+                      <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded p-4">
+                        <h3 class="text-white font-semibold text-sm mb-3">{t(currentLanguage, 'app.dayStats')}</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div class="text-center">
+                            <div class="text-2xl font-bold text-white">{stats.answeredQuestions}</div>
+                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.questionsAnswered')}</div>
+                          </div>
+                          <div class="text-center">
+                            <div class="text-2xl font-bold text-white">{stats.progress}%</div>
+                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.progress')}</div>
+                          </div>
+                          <div class="text-center">
+                            <div class="text-2xl font-bold text-white">{stats.totalWords}</div>
+                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.totalWords')}</div>
+                          </div>
+                          <div class="text-center">
+                            <div class="text-2xl font-bold text-white">{stats.totalCharacters}</div>
+                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.totalCharacters')}</div>
+                          </div>
+                        </div>
+                      </div>
+                    {/if}
                   </div>
                 </div>
               </div>
@@ -977,13 +1193,70 @@
             </div>
           {/key}
           {/if}
-        <footer class="px-4 sm:px-6 lg:px-8 mt-8 mb-6 pt-4 border-t border-white/10 text-center">
-          <p class="text-[11px] sm:text-xs text-white/50 leading-snug">
-            Disclaimer: This app provides educational self‑reflection prompts and is not therapy, counseling, medical, or psychological advice. It does not diagnose, treat, or prevent any condition and is not a substitute for professional care. If you have concerns about your mental or physical health, or you are experiencing significant distress, please consult a qualified healthcare professional. If you feel unsafe or in Crisis, seek immediate support from local emergency or Crisis services.
-          </p>
-        </footer>
         </div>
       </div>
+
+  <!-- Day Completion Popup -->
+  {#if showCompletionPopup && completedDay}
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 confetti-container" transition:fade={{ duration: 300 }}>
+      <!-- Confetti pieces -->
+      <div class="confetti-piece confetti-1"></div>
+      <div class="confetti-piece confetti-2"></div>
+      <div class="confetti-piece confetti-3"></div>
+      <div class="confetti-piece confetti-4"></div>
+      <div class="confetti-piece confetti-5"></div>
+      <div class="confetti-piece confetti-6"></div>
+      <div class="confetti-piece confetti-7"></div>
+      <div class="confetti-piece confetti-8"></div>
+      <div class="confetti-piece confetti-9"></div>
+      <div class="confetti-piece confetti-10"></div>
+      <div class="confetti-piece confetti-11"></div>
+      <div class="confetti-piece confetti-12"></div>
+      
+      <div class="bg-white/15 backdrop-blur-md border border-white/30 rounded shadow-lg max-w-md w-full mx-4 relative overflow-hidden" transition:fly={{ y: 20, duration: 400 }}>
+        <!-- Background decoration -->
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl opacity-50"></div>
+        
+        <div class="relative z-10 p-8 text-center">
+          <!-- Success icon -->
+          <div class="w-16 h-16 bg-white/15 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          
+          <!-- Congratulations text -->
+          <h2 class="text-2xl font-bold text-white mb-3">Congratulations! 🎉</h2>
+          <p class="text-white/90 text-lg mb-2">You've completed Day {courseData.findIndex(day => day.id === completedDay.id)}</p>
+          <h3 class="text-xl font-semibold text-white mb-6">{completedDay.subtitle}</h3>
+          
+          <p class="text-white/80 text-sm mb-8 leading-relaxed">
+            Great job on finishing Day {courseData.findIndex(day => day.id === completedDay.id)} of your shadow work journey. You're making meaningful progress in understanding yourself better.
+          </p>
+          
+          <!-- Action buttons -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            {#if courseData.findIndex(day => day.id === completedDay.id) < courseData.length - 1}
+              <button
+                on:click={continueToNextDay}
+                class="flex-1 px-6 py-3 text-white font-semibold text-sm rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+              >
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+                <span class="relative z-10">Continue to Day {courseData.findIndex(day => day.id === completedDay.id) + 1}</span>
+              </button>
+            {/if}
+            <button
+              on:click={closeCompletionPopup}
+              class="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm rounded transition-colors duration-200 border border-white/30"
+            >
+              {courseData.findIndex(day => day.id === completedDay.id) < courseData.length - 1 ? 'Stay Here' : 'Go to Dashboard'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- Settings Modal -->
   {#if showSettings}
@@ -1003,3 +1276,60 @@
   {/if}
 
 </main>
+
+<style>
+  /* Confetti Animation */
+  .confetti-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #D4AF37;
+    animation: confetti-fall 3s ease-in-out infinite;
+    z-index: 40;
+  }
+
+  .confetti-piece:nth-child(odd) {
+    background: #0C6E78;
+  }
+
+  .confetti-piece:nth-child(3n) {
+    background: #10b981;
+  }
+
+  .confetti-piece:nth-child(4n) {
+    background: #f59e0b;
+  }
+
+  .confetti-piece:nth-child(5n) {
+    background: #ef4444;
+  }
+
+  .confetti-1 { left: 10%; animation-delay: 0s; }
+  .confetti-2 { left: 20%; animation-delay: 0.2s; }
+  .confetti-3 { left: 30%; animation-delay: 0.4s; }
+  .confetti-4 { left: 40%; animation-delay: 0.6s; }
+  .confetti-5 { left: 50%; animation-delay: 0.8s; }
+  .confetti-6 { left: 60%; animation-delay: 1s; }
+  .confetti-7 { left: 70%; animation-delay: 1.2s; }
+  .confetti-8 { left: 80%; animation-delay: 1.4s; }
+  .confetti-9 { left: 90%; animation-delay: 1.6s; }
+  .confetti-10 { left: 15%; animation-delay: 0.3s; }
+  .confetti-11 { left: 35%; animation-delay: 0.7s; }
+  .confetti-12 { left: 75%; animation-delay: 1.3s; }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-100vh) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+</style>

@@ -406,9 +406,7 @@
       </div>
       
       <div class="w-full bg-gray-400 rounded h-3 lg:h-4 mt-4" role="progressbar" aria-valuenow={completionRate} aria-valuemin="0" aria-valuemax="100" aria-label={t(currentLanguage, 'questionnaire.progressAria')}>
-        <div class="h-3 lg:h-4 rounded transition-all duration-700 ease-out relative overflow-hidden progress-bar-animated" style="width: {completionRate}%; background: linear-gradient(90deg, #ffffff 0%, #f3f4f6 50%, #ffffff 100%);">
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/50 to-transparent animate-pulse"></div>
-        </div>
+        <div class="h-3 lg:h-4 rounded bg-green-500" style="width: {completionRate}%"></div>
       </div>
     </div>
 
