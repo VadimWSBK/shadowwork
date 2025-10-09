@@ -762,7 +762,7 @@
         {#if currentView === 'login'}
           <Login {currentLanguage} on:login={handleLogin} />
         {:else if currentView === 'intro'}
-          <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
+          <div class="flex items-center justify-center py-10 px-10" transition:slide={{ duration: 300, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
               <!-- Day Title and Description -->
               <div class="mb-6 text-left relative">
@@ -888,7 +888,7 @@
             </div>
           </div>
         {:else if currentView === 'day-intro'}
-          <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center py-4 px-4" transition:slide={{ duration: 300, easing: quintOut }}>
+          <div class=" flex items-center justify-center p-10" transition:slide={{ duration: 300, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
               <div class="mb-6 text-left">
                 <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
@@ -900,24 +900,24 @@
                   <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
                     {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
                   </h2>
-                  <div class="flex flex-wrap items-center gap-3 mb-3">
-                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
-                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
+                  <div class="flex flex-wrap items-start gap-3 mb-3">
+                    <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
+                    <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
                   </div>
                   {#if currentDay.id === 'day1'}
-                    <img src={introBg} alt="Day 1 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={introBg} alt="Day 1 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day2'}
-                    <img src={day2Img} alt="Day 2 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={day2Img} alt="Day 2 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day3'}
-                    <img src={day3Img} alt="Day 3 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={day3Img} alt="Day 3 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day4'}
-                    <img src={day4Img} alt="Day 4 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={day4Img} alt="Day 4 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day5'}
-                    <img src={day5Img} alt="Day 5 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={day5Img} alt="Day 5 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day6'}
-                    <img src={day6Img} alt="Day 6 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={day6Img} alt="Day 6 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {:else if currentDay.id === 'day7'}
-                    <img src={day7Img} alt="Day 7 illustration" class="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto rounded mb-4 ring-1 ring-white/10" />
+                    <img src={day7Img} alt="Day 7 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
                   {/if}
                   <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
                     {getDayIntro(currentLanguage, currentDay.id)?.intro}

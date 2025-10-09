@@ -38,6 +38,7 @@ declare module '$env/static/private' {
 	export const CONDA_PROMPT_MODIFIER: string;
 	export const CONDA_PYTHON_EXE: string;
 	export const CONDA_SHLVL: string;
+	export const CURSOR_TRACE_ID: string;
 	export const HOME: string;
 	export const HOMEBREW_CELLAR: string;
 	export const HOMEBREW_PREFIX: string;
@@ -67,6 +68,7 @@ declare module '$env/static/private' {
 	export const VSCODE_IPC_HOOK: string;
 	export const VSCODE_NLS_CONFIG: string;
 	export const VSCODE_PID: string;
+	export const VSCODE_PROCESS_TITLE: string;
 	export const XPC_FLAGS: string;
 	export const XPC_SERVICE_NAME: string;
 	export const _: string;
@@ -118,6 +120,7 @@ declare module '$env/dynamic/private' {
 		CONDA_PROMPT_MODIFIER: string;
 		CONDA_PYTHON_EXE: string;
 		CONDA_SHLVL: string;
+		CURSOR_TRACE_ID: string;
 		HOME: string;
 		HOMEBREW_CELLAR: string;
 		HOMEBREW_PREFIX: string;
@@ -147,6 +150,7 @@ declare module '$env/dynamic/private' {
 		VSCODE_IPC_HOOK: string;
 		VSCODE_NLS_CONFIG: string;
 		VSCODE_PID: string;
+		VSCODE_PROCESS_TITLE: string;
 		XPC_FLAGS: string;
 		XPC_SERVICE_NAME: string;
 		_: string;

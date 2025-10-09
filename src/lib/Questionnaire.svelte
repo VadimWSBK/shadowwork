@@ -375,7 +375,7 @@
   }
 </style>
 
-<div class="min-h-[calc(100vh-4rem)] flex items-center justify-center py-4 px-4">
+<div class="flex items-center justify-center p-10">
   <div class="w-full max-w-4xl mx-auto">
 
     <!-- Header -->
