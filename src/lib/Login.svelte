@@ -207,21 +207,22 @@
 
 <svelte:window on:keydown={onKeyDown} />
 
-<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 relative">
   <!-- Language Switcher (top-right) -->
   <div class="fixed top-4 right-4 z-50">
     <div class="relative">
       <button
-        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30 text-white/90"
+        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/15 border border-white/30 text-white/90 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
         on:click={() => (languageMenuOpen = !languageMenuOpen)}
         aria-haspopup="menu"
         aria-expanded={languageMenuOpen}
         title="Change language"
       >
-        {currentLanguage.toUpperCase()}
+        <span class="sr-only">Change language</span>
+        <span class="text-sm font-medium">{currentLanguage.toUpperCase()}</span>
       </button>
       {#if languageMenuOpen}
-        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1">
+        <div class="fixed sm:absolute right-4 left-4 sm:right-0 sm:left-auto mt-2 w-auto sm:w-40 bg-white/15 border border-white/30 rounded-xl shadow-lg backdrop-blur-md p-1 z-50">
           <button class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
             English
           </button>
