@@ -9,8 +9,8 @@
   // Validate and clean up stale sessions on mount
   onMount(async () => {
     try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
         // Clear any broken/invalid session tokens
         await supabase.auth.signOut();
       }

@@ -26,6 +26,7 @@
     "@supabase/auth-helpers-sveltekit": "^0.13.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.74.0",
-    "@tailwindcss/vite": "^4.1.13"
+    "@tailwindcss/vite": "^4.1.13",
+    "jspdf": "^3.0.3"
   }
 }

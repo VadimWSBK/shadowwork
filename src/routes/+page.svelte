@@ -32,15 +32,10 @@
 
     loadingMessage = 'Checking session…';
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check if user has completed profile setup
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          goto('/dashboard', { replaceState: true });
-        } else {
-          goto('/signup', { replaceState: true });
-        }
+      // Verify authentication securely first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        goto('/dashboard', { replaceState: true });
       } else {
         goto('/login', { replaceState: true });
       }

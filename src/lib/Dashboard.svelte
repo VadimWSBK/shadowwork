@@ -77,10 +77,104 @@
     const dayAnswers = answers[dayId] || [];
     return dayAnswers.some(a => a && a.trim().length > 0);
   }
+
+  // Download PDF for a specific day
+  async function downloadDayPDF(day: DayData, event: Event) {
+    event.stopPropagation(); // Prevent day selection when clicking download
+    
+    try {
+      // Dynamic import of jsPDF
+      const { jsPDF } = await import('jspdf');
+      
+      // Get answers for this day
+      const dayAnswers = answers[day.id] || [];
+      const dayIndex = courseData.findIndex(d => d.id === day.id);
+      
+      // Create PDF
+      const pdf = new jsPDF();
+      
+      // Set up fonts and colors
+      pdf.setFontSize(20);
+      pdf.setTextColor(12, 110, 120); // Teal color
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('SHADOW WORK JOURNEY', 20, 30);
+      
+      pdf.setFontSize(16);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(`Day ${dayIndex}: ${day.subtitle}`, 20, 45);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Completed on: ${new Date().toLocaleDateString()}`, 20, 60);
+      
+      const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
+      const totalWords = dayAnswers.reduce((sum, answer) => {
+        if (!answer || answer.trim().length === 0) return sum;
+        return sum + answer.trim().split(/\s+/).length;
+      }, 0);
+      
+      pdf.text(`Progress: ${answeredCount}/${day.questions.length} questions answered`, 20, 70);
+      pdf.text(`Total words written: ${totalWords}`, 20, 80);
+      
+      // Add a line separator
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(20, 90, 190, 90);
+      
+      // Add questions and answers
+      let yPosition = 105;
+      const maxWidth = 170;
+      const lineHeight = 7;
+      
+      day.questions.forEach((question, index) => {
+        // Check if we need a new page
+        if (yPosition > 270) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        const answer = dayAnswers[index] || 'No answer provided';
+        
+        // Question
+        pdf.setFontSize(12);
+        pdf.setTextColor(40, 40, 40);
+        pdf.setFont('helvetica', 'bold');
+        const questionText = `Question ${index + 1}: ${question.text}`;
+        const questionLines = pdf.splitTextToSize(questionText, maxWidth);
+        pdf.text(questionLines, 20, yPosition);
+        yPosition += questionLines.length * lineHeight + 3;
+        
+        // Question Explanation (if available)
+        if (question.explanation) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 100, 100);
+          pdf.setFont('helvetica', 'italic');
+          const explanationLines = pdf.splitTextToSize(question.explanation, maxWidth);
+          pdf.text(explanationLines, 20, yPosition);
+          yPosition += explanationLines.length * lineHeight + 5;
+        }
+        
+        // Answer
+        pdf.setFontSize(10);
+        pdf.setTextColor(12, 110, 120); // Same teal color as headline
+        pdf.setFont('helvetica', 'normal');
+        const answerLines = pdf.splitTextToSize(`Answer: ${answer}`, maxWidth);
+        pdf.text(answerLines, 20, yPosition);
+        yPosition += answerLines.length * lineHeight + 10;
+      });
+      
+      // Save the PDF
+      const fileName = `shadowwork-day-${dayIndex}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Error downloading day summary:', error);
+      alert('Error downloading your day summary. Please try again.');
+    }
+  }
 </script>
 
 <div class="min-h-screen p-4 sm:p-6 lg:p-10">
-  <div class="max-w-7xl mx-auto space-y-6">
+  <div class="max-w-7xl mx-auto space-y-8">
     
     {#if !answersLoaded}
       <!-- Loading state -->
@@ -176,7 +270,7 @@
 
     <!-- Continue Journey / Getting Started -->
     {#if overallCompletion > 0 && overallCompletion < 100}
-      <div class="bg-gradient-to-br from-[#0C6E78]/30 to-[#0A5A63]/30 backdrop-blur-xl border border-[#0C6E78]/50 rounded p-6 shadow-lg">
+      <div class="bg-gradient-to-br from-[#0C6E78]/30 to-[#0A5A63]/30 backdrop-blur-xl border border-[#0C6E78]/50 rounded p-6 shadow-lg mt-4">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-bold text-white mb-2">Continue Your Journey</h2>
@@ -245,7 +339,7 @@
     {/if}
 
     <!-- Days Overview -->
-    <div>
+    <div class="mt-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-bold text-white">Your Journey</h2>
         <button
@@ -267,18 +361,20 @@
           {@const isCurrent = currentDay?.id === day.id}
           {@const words = getDayWords(day.id)}
           
-          <button
-            on:click={() => onDayChange(day)}
-            class="group relative bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/30 hover:border-white/40 rounded p-6 shadow-lg transition-all duration-300 text-left hover:scale-[1.02] hover:shadow-lg"
-            class:ring-2={isCurrent}
-            class:ring-[#0C6E78]={isCurrent}
-          >
+          <div class="group relative">
+            <button
+              on:click={() => onDayChange(day)}
+              class="w-full h-64 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/30 hover:border-white/40 rounded p-6 shadow-lg transition-all duration-300 text-left hover:scale-[1.02] hover:shadow-lg flex flex-col"
+              class:ring-2={isCurrent}
+              class:ring-[#0C6E78]={isCurrent}
+            >
             {#if isCurrent}
               <div class="absolute top-3 right-3 px-2 py-1 bg-[#0C6E78] text-white text-xs font-bold rounded">
                 CURRENT
               </div>
             {/if}
             
+            <!-- Header Section -->
             <div class="flex items-start justify-between mb-3">
               <div>
                 <div class="text-white text-sm font-semibold uppercase tracking-wide mb-1">
@@ -308,11 +404,14 @@
               {/if}
             </div>
             
-            <p class="text-white/70 text-sm mb-4 line-clamp-2">
-              {getDaySummary(currentLanguage, day.id)}
-            </p>
+            <!-- Description Section - Takes up available space -->
+            <div class="flex-1 mb-4">
+              <p class="text-white/70 text-sm line-clamp-3">
+                {getDaySummary(currentLanguage, day.id)}
+              </p>
+            </div>
             
-            <!-- Progress Bar -->
+            <!-- Progress Bar Section -->
             <div class="space-y-2">
               <div class="flex items-center justify-between text-xs">
                 <span class="text-white/60">{completion}% complete</span>
@@ -332,9 +431,25 @@
               {/if}
             </div>
             
-            <!-- Hover effect -->
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded pointer-events-none"></div>
-          </button>
+              <!-- Hover effect -->
+              <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded pointer-events-none"></div>
+            </button>
+            
+            <!-- Download PDF Button - Bottom Right -->
+            {#if isDayStarted(day.id)}
+              <button
+                on:click={(e) => downloadDayPDF(day, e)}
+                class="absolute bottom-3 right-3 px-2 py-1 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs rounded transition-all duration-200 flex items-center gap-1 opacity-0 group-hover:opacity-100"
+                title="Download Day {courseData.findIndex(d => d.id === day.id)} Summary"
+                aria-label="Download Day {courseData.findIndex(d => d.id === day.id)} Summary PDF"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Day {courseData.findIndex(d => d.id === day.id)} PDF</span>
+              </button>
+            {/if}
+          </div>
         {/each}
       </div>
     </div>

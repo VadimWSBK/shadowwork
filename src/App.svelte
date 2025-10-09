@@ -11,7 +11,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { writable } from 'svelte/store';
-  import { quintOut } from 'svelte/easing';
+  import { quintOut, cubicOut } from 'svelte/easing';
   import { slide } from 'svelte/transition';
   import introBg from './assets/shadowwork_bg_intro.webp';
   import sittingWomanShadow from './assets/logo_shadowwork.png';
@@ -29,7 +29,7 @@
   import { PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
   
 
-  let currentView: 'login' | 'dashboard' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' = 'login';
+  let currentView: 'login' | 'dashboard' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' | 'day-completion' = 'login';
   let username = '';
   let profileId = '';
   let currentLanguage: Language = 'en';
@@ -51,7 +51,7 @@
   let sidebarOpen = false;
   let sidebarCollapsed = false;
   let showSettings = false;
-  let showCompletionPopup = false;
+  let showCompletionPage = false;
   let completedDay: DayData | null = null;
   let dayIntroImageLoaded = false;
   let isTransitioningDay = false;
@@ -500,7 +500,8 @@
     const day = courseData.find(d => d.id === dayId);
     if (day) {
       completedDay = day;
-      showCompletionPopup = true;
+      showCompletionPage = true;
+      currentView = 'day-completion';
     }
   }
 
@@ -520,23 +521,111 @@
       currentDay = courseData[0]; // Reset to intro
     }
     
-    // Close popup
-    showCompletionPopup = false;
+    // Close completion page
+    showCompletionPage = false;
     completedDay = null;
   }
 
-  function closeCompletionPopup() {
+  function goToDashboard() {
+    // Always go to dashboard regardless of which day was completed
+    currentView = 'dashboard';
+    currentDay = courseData[0]; // Reset to intro
+    
+    showCompletionPage = false;
+    completedDay = null;
+  }
+
+  async function downloadDayPDF() {
     if (!completedDay) return;
     
-    // If it's the last day, go to dashboard when closing
-    const currentDayIndex = courseData.findIndex(day => day.id === completedDay.id);
-    if (currentDayIndex === courseData.length - 1) {
-      currentView = 'dashboard';
-      currentDay = courseData[0]; // Reset to intro
+    try {
+      // Dynamic import of jsPDF
+      const { jsPDF } = await import('jspdf');
+      
+      // Get answers for this day
+      const dayAnswers = $answersStore[completedDay.id] || [];
+      const dayIndex = courseData.findIndex(day => day.id === completedDay.id);
+      
+      // Create PDF
+      const pdf = new jsPDF();
+      
+      // Set up fonts and colors
+      pdf.setFontSize(20);
+      pdf.setTextColor(12, 110, 120); // Teal color
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('SHADOW WORK JOURNEY', 20, 30);
+      
+      pdf.setFontSize(16);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(`Day ${dayIndex}: ${completedDay.subtitle}`, 20, 45);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Completed on: ${new Date().toLocaleDateString()}`, 20, 60);
+      
+      const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
+      const totalWords = dayAnswers.reduce((sum, answer) => {
+        if (!answer || answer.trim().length === 0) return sum;
+        return sum + answer.trim().split(/\s+/).length;
+      }, 0);
+      
+      pdf.text(`Progress: ${answeredCount}/${completedDay.questions.length} questions answered`, 20, 70);
+      pdf.text(`Total words written: ${totalWords}`, 20, 80);
+      
+      // Add a line separator
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(20, 90, 190, 90);
+      
+      // Add questions and answers
+      let yPosition = 105;
+      const maxWidth = 170;
+      const lineHeight = 7;
+      
+      completedDay.questions.forEach((question, index) => {
+        // Check if we need a new page
+        if (yPosition > 270) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        const answer = dayAnswers[index] || 'No answer provided';
+        
+        // Question
+        pdf.setFontSize(12);
+        pdf.setTextColor(40, 40, 40);
+        pdf.setFont('helvetica', 'bold');
+        const questionText = `Question ${index + 1}: ${question.text}`;
+        const questionLines = pdf.splitTextToSize(questionText, maxWidth);
+        pdf.text(questionLines, 20, yPosition);
+        yPosition += questionLines.length * lineHeight + 3;
+        
+        // Question Explanation (if available)
+        if (question.explanation) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 100, 100);
+          pdf.setFont('helvetica', 'italic');
+          const explanationLines = pdf.splitTextToSize(question.explanation, maxWidth);
+          pdf.text(explanationLines, 20, yPosition);
+          yPosition += explanationLines.length * lineHeight + 5;
+        }
+        
+        // Answer
+        pdf.setFontSize(10);
+        pdf.setTextColor(12, 110, 120); // Same teal color as headline
+        pdf.setFont('helvetica', 'normal');
+        const answerLines = pdf.splitTextToSize(`Answer: ${answer}`, maxWidth);
+        pdf.text(answerLines, 20, yPosition);
+        yPosition += answerLines.length * lineHeight + 10;
+      });
+      
+      // Save the PDF
+      const fileName = `shadowwork-day-${dayIndex}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Error downloading day summary:', error);
+      alert('Error downloading your day summary. Please try again.');
     }
-    
-    showCompletionPopup = false;
-    completedDay = null;
   }
 
   async function handleDayChange(day: DayData) {
@@ -674,7 +763,11 @@
     try {
       console.log('🗑️ Starting profile deletion process...');
       
-      // Invoke edge function to delete answers, profile, and auth user
+      // Verify user is authenticated and get access token
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
       const { data: sessionRes } = await supabase.auth.getSession();
       const accessToken = sessionRes?.session?.access_token || '';
       const headers: Record<string, string> = {};
@@ -1133,6 +1226,19 @@
                         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
                         <span class="relative z-10">{getDayButtonText(currentDay.id)}</span>
                       </button>
+                      
+                      <!-- View Summary Button - Only show when day is 100% completed -->
+                      {#if getDayStats(currentDay.id).progress === 100}
+                        <button
+                          on:click={() => { completedDay = currentDay; showCompletionPage = true; currentView = 'day-completion'; }}
+                          class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-semibold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-110 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                          View Summary
+                        </button>
+                      {/if}
                     </div>
 
                     <!-- Day Statistics -->
@@ -1192,71 +1298,163 @@
               />
             </div>
           {/key}
+        {:else if currentView === 'day-completion' && completedDay}
+          {#key completedDay.id}
+            <div transition:slide={{ duration: 500, easing: quintOut }}>
+              <!-- Day Completion Page -->
+              <div class="min-h-screen p-6">
+                <div class="max-w-6xl mx-auto">
+                  <!-- Back to Questionnaire Button - Top Left -->
+                  <div class="mb-4">
+                    <button
+                      on:click={() => { currentView = 'questionnaire'; }}
+                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                      </svg>
+                      Go Back to Questionnaire
+                    </button>
+                  </div>
+                  
+                  <!-- Page Header Container -->
+                  <div class="flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+                    <!-- Day Summary Title -->
+                    <div class="text-2xl font-bold text-white text-center sm:text-left">
+                      Day {courseData.findIndex(day => day.id === completedDay.id)} Summary
+                    </div>
+                    
+                    <!-- Download Button -->
+                    <button
+                      on:click={downloadDayPDF}
+                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      Download Day {courseData.findIndex(day => day.id === completedDay.id)} Summary
+                    </button>
+                  </div>
+
+                  <!-- Congratulations Section -->
+                  <div class="text-center mb-8">
+                    <!-- Success icon -->
+                    <div class="w-16 h-16 bg-white/15 backdrop-blur-xl border border-white/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                      <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
+                    
+                    <h1 class="text-3xl font-bold text-white mb-4">Congratulations! 🎉</h1>
+                    <p class="text-white/90 text-lg mb-3">You've completed Day {courseData.findIndex(day => day.id === completedDay.id)}</p>
+                    <h2 class="text-xl font-semibold text-white">{completedDay.subtitle}</h2>
+                  </div>
+
+                  <!-- Day Summary Stats -->
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {#if completedDay}
+                      {@const dayAnswers = $answersStore[completedDay.id] || []}
+                      {@const dayIndex = courseData.findIndex(day => day.id === completedDay.id)}
+                      {@const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length}
+                      {@const totalWords = dayAnswers.reduce((sum, answer) => {
+                        if (!answer || answer.trim().length === 0) return sum;
+                        return sum + answer.trim().split(/\s+/).length;
+                      }, 0)}
+                      {@const completionRate = Math.round((answeredCount / completedDay.questions.length) * 100)}
+                      
+                      <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
+                        <div class="text-2xl font-bold text-white mb-2">{answeredCount}/{completedDay.questions.length}</div>
+                        <p class="text-white/70 text-sm">Questions Answered</p>
+                      </div>
+                      
+                      <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
+                        <div class="text-2xl font-bold text-white mb-2">{totalWords}</div>
+                        <p class="text-white/70 text-sm">Words Written</p>
+                      </div>
+                      
+                      <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
+                        <div class="text-2xl font-bold text-white mb-2">{completionRate}%</div>
+                        <p class="text-white/70 text-sm">Completion Rate</p>
+                      </div>
+                    {/if}
+                  </div>
+
+                  <!-- Day Summary -->
+                  <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 mb-8 shadow-lg">
+                    <h3 class="text-lg font-semibold text-white mb-4">Day Summary</h3>
+                    <p class="text-white/80 leading-relaxed text-base">
+                      You've successfully completed Day {courseData.findIndex(day => day.id === completedDay.id)} of your shadow work journey. 
+                      This day focused on <strong class="text-white">{completedDay.subtitle}</strong> and helped you explore important aspects of your inner world.
+                    </p>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex flex-col sm:flex-row gap-4 max-w-4xl mx-auto">
+                    <!-- Go to Dashboard - Left -->
+                    <button
+                      on:click={goToDashboard}
+                      class="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center justify-center gap-2"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                      </svg>
+                      Go to Dashboard
+                    </button>
+                    
+                    <!-- Continue to Next Day - Right -->
+                    {#if courseData.findIndex(day => day.id === completedDay.id) < courseData.length - 1}
+                      <button
+                        on:click={continueToNextDay}
+                        class="flex-1 px-6 py-3 text-white font-semibold text-sm shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-110 relative overflow-hidden group border"
+                        style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                      >
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+                        <span class="relative z-10">Continue to Day {courseData.findIndex(day => day.id === completedDay.id) + 1}</span>
+                      </button>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Answers Section -->
+              <div class="mt-12">
+                <ViewAnswers 
+                  answers={$answersStore[completedDay.id] || []} 
+                  {username}
+                  currentDay={completedDay}
+                  {currentLanguage}
+                  onBack={() => { currentView = 'questionnaire'; }}
+                  onUpdateAnswer={(index, answer) => handleUpdateAnswer(completedDay.id, index, answer)}
+                />
+              </div>
+              
+              <!-- Scroll to Top Button -->
+              <div class="flex justify-center mt-12 mb-8">
+                <button
+                  on:click={() => {
+                    // Find the main content container with overflow-y-auto
+                    const mainContainer = document.querySelector('.fixed.top-16.bottom-0.right-0.overflow-y-auto');
+                    if (mainContainer) {
+                      mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      // Fallback to window scrolling
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                  </svg>
+                  Scroll to Top
+                </button>
+              </div>
+            </div>
+          {/key}
           {/if}
         </div>
       </div>
 
-  <!-- Day Completion Popup -->
-  {#if showCompletionPopup && completedDay}
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 confetti-container" transition:fade={{ duration: 300 }}>
-      <!-- Confetti pieces -->
-      <div class="confetti-piece confetti-1"></div>
-      <div class="confetti-piece confetti-2"></div>
-      <div class="confetti-piece confetti-3"></div>
-      <div class="confetti-piece confetti-4"></div>
-      <div class="confetti-piece confetti-5"></div>
-      <div class="confetti-piece confetti-6"></div>
-      <div class="confetti-piece confetti-7"></div>
-      <div class="confetti-piece confetti-8"></div>
-      <div class="confetti-piece confetti-9"></div>
-      <div class="confetti-piece confetti-10"></div>
-      <div class="confetti-piece confetti-11"></div>
-      <div class="confetti-piece confetti-12"></div>
-      
-      <div class="bg-white/15 backdrop-blur-md border border-white/30 rounded shadow-lg max-w-md w-full mx-4 relative overflow-hidden" transition:fly={{ y: 20, duration: 400 }}>
-        <!-- Background decoration -->
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl opacity-50"></div>
-        
-        <div class="relative z-10 p-8 text-center">
-          <!-- Success icon -->
-          <div class="w-16 h-16 bg-white/15 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          
-          <!-- Congratulations text -->
-          <h2 class="text-2xl font-bold text-white mb-3">Congratulations! 🎉</h2>
-          <p class="text-white/90 text-lg mb-2">You've completed Day {courseData.findIndex(day => day.id === completedDay.id)}</p>
-          <h3 class="text-xl font-semibold text-white mb-6">{completedDay.subtitle}</h3>
-          
-          <p class="text-white/80 text-sm mb-8 leading-relaxed">
-            Great job on finishing Day {courseData.findIndex(day => day.id === completedDay.id)} of your shadow work journey. You're making meaningful progress in understanding yourself better.
-          </p>
-          
-          <!-- Action buttons -->
-          <div class="flex flex-col sm:flex-row gap-3">
-            {#if courseData.findIndex(day => day.id === completedDay.id) < courseData.length - 1}
-              <button
-                on:click={continueToNextDay}
-                class="flex-1 px-6 py-3 text-white font-semibold text-sm rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
-                style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
-              >
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                <span class="relative z-10">Continue to Day {courseData.findIndex(day => day.id === completedDay.id) + 1}</span>
-              </button>
-            {/if}
-            <button
-              on:click={closeCompletionPopup}
-              class="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm rounded transition-colors duration-200 border border-white/30"
-            >
-              {courseData.findIndex(day => day.id === completedDay.id) < courseData.length - 1 ? 'Stay Here' : 'Go to Dashboard'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  {/if}
 
   <!-- Settings Modal -->
   {#if showSettings}
@@ -1277,59 +1475,3 @@
 
 </main>
 
-<style>
-  /* Confetti Animation */
-  .confetti-container {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .confetti-piece {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: #D4AF37;
-    animation: confetti-fall 3s ease-in-out infinite;
-    z-index: 40;
-  }
-
-  .confetti-piece:nth-child(odd) {
-    background: #0C6E78;
-  }
-
-  .confetti-piece:nth-child(3n) {
-    background: #10b981;
-  }
-
-  .confetti-piece:nth-child(4n) {
-    background: #f59e0b;
-  }
-
-  .confetti-piece:nth-child(5n) {
-    background: #ef4444;
-  }
-
-  .confetti-1 { left: 10%; animation-delay: 0s; }
-  .confetti-2 { left: 20%; animation-delay: 0.2s; }
-  .confetti-3 { left: 30%; animation-delay: 0.4s; }
-  .confetti-4 { left: 40%; animation-delay: 0.6s; }
-  .confetti-5 { left: 50%; animation-delay: 0.8s; }
-  .confetti-6 { left: 60%; animation-delay: 1s; }
-  .confetti-7 { left: 70%; animation-delay: 1.2s; }
-  .confetti-8 { left: 80%; animation-delay: 1.4s; }
-  .confetti-9 { left: 90%; animation-delay: 1.6s; }
-  .confetti-10 { left: 15%; animation-delay: 0.3s; }
-  .confetti-11 { left: 35%; animation-delay: 0.7s; }
-  .confetti-12 { left: 75%; animation-delay: 1.3s; }
-
-  @keyframes confetti-fall {
-    0% {
-      transform: translateY(-100vh) rotate(0deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(100vh) rotate(720deg);
-      opacity: 0;
-    }
-  }
-</style>

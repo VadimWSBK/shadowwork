@@ -31,15 +31,18 @@ export class SimpleAnswerStorage {
       hasPassphrase: !!getPassphrase()
     });
     
-    // Check session status
-    const { data: sessionData } = await supabase.auth.getSession();
-    const session = sessionData?.session;
-    const hasValidSession = !!session?.access_token;
+    // Verify user authentication securely
+    const { data: { user } } = await supabase.auth.getUser();
+    const hasValidSession = !!user;
     console.log('🔐 Session status:', { 
       hasSession: hasValidSession,
-      sessionExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'none',
+      userId: user?.id,
       currentTime: new Date().toISOString()
     });
+    
+    // Get session for tokens after verifying user
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
     
     // Always encrypt using automatic project key (derived in crypto.ts)
     let toStore = answer;
@@ -153,6 +156,8 @@ export class SimpleAnswerStorage {
   async deleteAllAnswers(): Promise<{ success: boolean; error?: string }> {
     const profileId = this.getProfileId();
     try {
+      // Verify user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
       // Primary: Edge Function delete to support both JWT and anonymous modes
       const { data: sessionRes } = await supabase.auth.getSession();
       const accessToken = sessionRes?.session?.access_token || '';

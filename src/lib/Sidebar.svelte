@@ -203,7 +203,7 @@
                 <div class="flex items-center gap-2">
                   <span class="font-medium">{day.title}</span>
                   {#if day.id !== 'intro'}
-                    <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded bg-white/20 text-white/90">
+                    <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded text-white/90 {completion === 100 ? 'bg-green-500' : 'bg-white/20'}">
                       {completion}%
                     </span>
                   {/if}

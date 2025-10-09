@@ -12,7 +12,7 @@
   
   let isSubmitting = false;
   let submitStatus = '';
-  let errors = {};
+  let errors: Record<string, string> = {};
   
   const categories = [
     { value: 'general', label: 'General Question' },
