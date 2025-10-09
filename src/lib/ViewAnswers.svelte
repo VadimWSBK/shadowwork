@@ -64,7 +64,7 @@
   }
 </script>
 
-<div class="bg-gradient-to-br from-primary-light via-primary to-secondary-dark p-10 sm:py-6 sm:px-4 lg:py-8 lg:px-8">
+<div class="bg-gradient-to-br from-primary-light via-primary to-secondary-dark p-2 sm:py-6 sm:px-4 lg:py-8 lg:px-8">
   <div class="max-w-3xl mx-auto">
 <!-- Header -->
 <div class="mb-6 sm:mb-8">

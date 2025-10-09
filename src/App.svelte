@@ -443,7 +443,9 @@
     }
   }
 
-  function handleDayChange(day: DayData) {
+  async function handleDayChange(day: DayData) {
+    // Small delay to allow current transition to complete
+    await new Promise(resolve => setTimeout(resolve, 50));
     currentDay = day;
     if (day.id === 'intro') {
       currentView = 'intro';
@@ -754,15 +756,22 @@
         />
         {#if sidebarOpen}
           <!-- Overlay that closes sidebar when clicking outside (mobile only) -->
-          <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden" on:click={() => (sidebarOpen = false)}></div>
+          <div 
+            class="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden" 
+            on:click={() => (sidebarOpen = false)}
+            on:keydown={(e) => e.key === 'Escape' && (sidebarOpen = false)}
+            role="button"
+            tabindex="0"
+            aria-label="Close sidebar"
+          ></div>
         {/if}
       {/if}
  
-      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-300 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
+      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-500 z-20 {currentView !== 'login' ? 'lg:left-80' : 'left-0'}">
         {#if currentView === 'login'}
           <Login {currentLanguage} on:login={handleLogin} />
         {:else if currentView === 'intro'}
-          <div class="flex items-center justify-center py-10 px-10" transition:slide={{ duration: 300, easing: quintOut }}>
+          <div class="flex items-center justify-center p-2 sm:p-4 lg:p-10" transition:slide={{ duration: 500, easing: quintOut }}>
             <div class="w-full max-w-6xl mx-auto">
               <!-- Day Title and Description -->
               <div class="mb-6 text-left relative">
@@ -888,75 +897,85 @@
             </div>
           </div>
         {:else if currentView === 'day-intro'}
-          <div class=" flex items-center justify-center p-10" transition:slide={{ duration: 300, easing: quintOut }}>
-            <div class="w-full max-w-6xl mx-auto">
-              <div class="mb-6 text-left">
-                <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
-                <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
-              </div>
-              
-              <div class="grid grid-cols-1 gap-8 lg:gap-12 items-start">
-                <div class="border-l border-white/10 pl-6">
-                  <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
-                    {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
-                  </h2>
-                  <div class="flex flex-wrap items-start gap-3 mb-3">
-                    <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
-                    <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
-                  </div>
-                  {#if currentDay.id === 'day1'}
-                    <img src={introBg} alt="Day 1 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {:else if currentDay.id === 'day2'}
-                    <img src={day2Img} alt="Day 2 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {:else if currentDay.id === 'day3'}
-                    <img src={day3Img} alt="Day 3 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {:else if currentDay.id === 'day4'}
-                    <img src={day4Img} alt="Day 4 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {:else if currentDay.id === 'day5'}
-                    <img src={day5Img} alt="Day 5 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {:else if currentDay.id === 'day6'}
-                    <img src={day6Img} alt="Day 6 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {:else if currentDay.id === 'day7'}
-                    <img src={day7Img} alt="Day 7 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
-                  {/if}
-                  <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
-                    {getDayIntro(currentLanguage, currentDay.id)?.intro}
-                  </p>
-                  <p class="text-white/80 text-sm mb-6">{t(currentLanguage, 'app.dayIntroTip')}</p>
+          {#key currentDay.id}
+            <div class=" flex items-center justify-center p-2 sm:p-4 lg:p-10" transition:slide={{ duration: 500, easing: quintOut }}>
+              <div class="w-full max-w-6xl mx-auto">
+                <div class="mb-6 text-left">
+                  <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
+                  <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
+                </div>
                 
-                  <div class="flex gap-3 justify-start">
-                    <button
-                      on:click={() => currentView = 'questionnaire'}
-                      class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
-                      style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
-                    >
-                      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                      <span class="relative z-10">{t(currentLanguage, 'app.startDayButton', { day: getDayNumber(currentDay.id) })}</span>
-                    </button>
+                <div class="grid grid-cols-1 gap-8 lg:gap-12 items-start">
+                  <div class="border-l border-white/10 pl-6">
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
+                      {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
+                    </h2>
+                    <div class="flex flex-wrap items-start gap-3 mb-3">
+                      <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
+                      <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
+                    </div>
+                    {#if currentDay.id === 'day1'}
+                      <img src={introBg} alt="Day 1 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {:else if currentDay.id === 'day2'}
+                      <img src={day2Img} alt="Day 2 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {:else if currentDay.id === 'day3'}
+                      <img src={day3Img} alt="Day 3 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {:else if currentDay.id === 'day4'}
+                      <img src={day4Img} alt="Day 4 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {:else if currentDay.id === 'day5'}
+                      <img src={day5Img} alt="Day 5 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {:else if currentDay.id === 'day6'}
+                      <img src={day6Img} alt="Day 6 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {:else if currentDay.id === 'day7'}
+                      <img src={day7Img} alt="Day 7 illustration" class="w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg rounded mb-4 ring-1 ring-white/10" />
+                    {/if}
+                    <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
+                      {getDayIntro(currentLanguage, currentDay.id)?.intro}
+                    </p>
+                    <p class="text-white/80 text-sm mb-6">{t(currentLanguage, 'app.dayIntroTip')}</p>
+                  
+                    <div class="flex gap-3 justify-start">
+                      <button
+                        on:click={() => currentView = 'questionnaire'}
+                        class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                        style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                      >
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+                        <span class="relative z-10">{t(currentLanguage, 'app.startDayButton', { day: getDayNumber(currentDay.id) })}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          {/key}
         {:else if currentView === 'questionnaire'}
-          <Questionnaire 
-            {answersStore}
-            {username}
-            {profileId}
-            {currentDay}
-            {currentLanguage}
-            onDayComplete={handleDayComplete}
-            onShowAnswers={showAnswers}
-          />
+          {#key currentDay.id}
+            <div transition:slide={{ duration: 500, easing: quintOut }}>
+              <Questionnaire 
+                {answersStore}
+                {username}
+                {profileId}
+                {currentDay}
+                {currentLanguage}
+                onDayComplete={handleDayComplete}
+                onShowAnswers={showAnswers}
+              />
+            </div>
+          {/key}
         {:else if currentView === 'view-answers'}
-          <ViewAnswers 
-            answers={$answersStore[currentDay.id] || []} 
-            {username}
-            {currentDay}
-            {currentLanguage}
-            onBack={backToQuestionnaire}
-            onUpdateAnswer={(index, answer) => handleUpdateAnswer(currentDay.id, index, answer)}
-          />
+          {#key currentDay.id}
+            <div transition:slide={{ duration: 500, easing: quintOut }}>
+              <ViewAnswers 
+                answers={$answersStore[currentDay.id] || []} 
+                {username}
+                {currentDay}
+                {currentLanguage}
+                onBack={backToQuestionnaire}
+                onUpdateAnswer={(index, answer) => handleUpdateAnswer(currentDay.id, index, answer)}
+              />
+            </div>
+          {/key}
           {/if}
         <footer class="px-4 sm:px-6 lg:px-8 mt-8 mb-6 pt-4 border-t border-white/10 text-center">
           <p class="text-[11px] sm:text-xs text-white/50 leading-snug">

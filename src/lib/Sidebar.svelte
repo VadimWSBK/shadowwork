@@ -34,14 +34,16 @@
     return totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
   }
   
-  function selectDay(day: DayData) {
+  async function selectDay(day: DayData) {
+    // Add visual feedback with a brief delay for smooth transition
+    await new Promise(resolve => setTimeout(resolve, 50));
     onDayChange(day);
     // Close sidebar on mobile after navigating
     isOpen = false;
   }
 </script>
 
-<div class="fixed top-16 left-0 w-80 bg-white/15 backdrop-blur-md border-r border-white/30 h-[calc(100vh-4rem)] flex flex-col z-40 transform transition-transform duration-300 sidebar-container {isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen'}">
+<div class="fixed top-16 left-0 w-80 bg-white/15 backdrop-blur-md border-r border-white/30 h-[calc(100vh-4rem)] flex flex-col z-40 transform transition-transform duration-500 sidebar-container {isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen'}">
   
   <!-- Header -->
   <div class="p-6 border-b border-white/30 relative z-50">
@@ -72,7 +74,7 @@
       </div>
       <div class="w-full bg-white/25 rounded h-2">
         <div 
-          class="h-2 rounded transition-all duration-500 bg-gradient-to-r from-white to-white/90"
+          class="h-2 rounded transition-all duration-700 ease-out bg-gradient-to-r from-white to-white/90"
           style="width: {overallProgress}%"
         ></div>
       </div>
@@ -85,7 +87,7 @@
     <nav class="p-4">
       {#each courseData as day, index}
         <button
-          class="w-full text-left p-3 rounded transition-all duration-200 group {currentDay === day.id ? 'bg-white/25 text-white' : 'text-white/90 hover:bg-white/15 hover:text-white'}"
+          class="w-full text-left p-3 rounded transition-all duration-500 group transform hover:scale-[1.02] active:scale-[0.98] {currentDay === day.id ? 'bg-white/25 text-white shadow-lg' : 'text-white/90 hover:bg-white/15 hover:text-white hover:shadow-md'}"
           on:click={() => selectDay(day)}
         >
           <div class="flex items-center justify-between">

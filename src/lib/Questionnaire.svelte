@@ -375,7 +375,7 @@
   }
 </style>
 
-<div class="flex items-center justify-center p-10">
+<div class="flex items-center justify-center p-2 sm:p-4 lg:p-10">
   <div class="w-full max-w-4xl mx-auto">
 
     <!-- Header -->
