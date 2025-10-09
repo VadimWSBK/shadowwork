@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t, getDaySummary, type Language } from './i18n';
-  import type { DayData } from './questions';
+  import { getCourseData, type DayData } from './questions';
   import type { Writable } from 'svelte/store';
   import Footer from './Footer.svelte';
   
@@ -90,22 +90,35 @@
       const dayAnswers = answers[day.id] || [];
       const dayIndex = courseData.findIndex(d => d.id === day.id);
       
-      // Create PDF
+      // Create PDF with proper Unicode support
       const pdf = new jsPDF();
       
+      // Get localized date format
+      const dateFormat = currentLanguage === 'en' ? 'en-US' : currentLanguage === 'de' ? 'de-DE' : 'pl-PL';
+      const formattedDate = new Date().toLocaleDateString(dateFormat, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Get the translated course data for the current language
+      const translatedCourseData = getCourseData(currentLanguage);
+      const translatedDay = translatedCourseData.find(d => d.id === day.id);
+      const questionsToUse = translatedDay ? translatedDay.questions : day.questions;
+      
       // Set up fonts and colors
-      pdf.setFontSize(20);
+      pdf.setFontSize(24);
       pdf.setTextColor(12, 110, 120); // Teal color
       pdf.setFont('helvetica', 'bold');
-      pdf.text('SHADOW WORK JOURNEY', 20, 30);
+      pdf.text(t(currentLanguage, 'pdf.title'), 20, 30);
       
-      pdf.setFontSize(16);
+      pdf.setFontSize(18);
       pdf.setTextColor(60, 60, 60);
-      pdf.text(`Day ${dayIndex}: ${day.subtitle}`, 20, 45);
+      pdf.text(t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: day.subtitle }), 20, 50);
       
       pdf.setFontSize(12);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`Completed on: ${new Date().toLocaleDateString()}`, 20, 60);
+      pdf.text(t(currentLanguage, 'pdf.completedOn', { date: formattedDate }), 20, 65);
       
       const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
       const totalWords = dayAnswers.reduce((sum, answer) => {
@@ -113,62 +126,99 @@
         return sum + answer.trim().split(/\s+/).length;
       }, 0);
       
-      pdf.text(`Progress: ${answeredCount}/${day.questions.length} questions answered`, 20, 70);
-      pdf.text(`Total words written: ${totalWords}`, 20, 80);
+      pdf.text(t(currentLanguage, 'pdf.progress', { answered: answeredCount, total: questionsToUse.length }), 20, 80);
+      pdf.text(t(currentLanguage, 'pdf.totalWords', { words: totalWords }), 20, 90);
       
-      // Add a line separator
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(20, 90, 190, 90);
+      // Add a line separator with better styling
+      pdf.setDrawColor(12, 110, 120);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 105, 190, 105);
       
-      // Add questions and answers
-      let yPosition = 105;
+      // Add questions and answers with improved formatting
+      let yPosition = 120;
       const maxWidth = 170;
       const lineHeight = 7;
       
-      day.questions.forEach((question, index) => {
+      questionsToUse.forEach((question, index) => {
         // Check if we need a new page
         if (yPosition > 270) {
           pdf.addPage();
           yPosition = 20;
         }
         
-        const answer = dayAnswers[index] || 'No answer provided';
+        const answer = dayAnswers[index] || t(currentLanguage, 'answers.noResponse');
         
-        // Question
-        pdf.setFontSize(12);
-        pdf.setTextColor(40, 40, 40);
+        // Question number and text with better formatting
+        pdf.setFontSize(13);
+        pdf.setTextColor(12, 110, 120);
         pdf.setFont('helvetica', 'bold');
-        const questionText = `Question ${index + 1}: ${question.text}`;
+        const questionNumber = t(currentLanguage, 'questionnaire.questionNumber', { number: index + 1 });
+        pdf.text(questionNumber, 20, yPosition);
+        yPosition += 8;
+        
+        // Question text
+        pdf.setFontSize(11);
+        pdf.setTextColor(40, 40, 40);
+        pdf.setFont('helvetica', 'normal');
+        // Ensure proper encoding for special characters
+        const questionText = question.text.replace(/[^\x00-\x7F]/g, (char) => {
+          return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        });
         const questionLines = pdf.splitTextToSize(questionText, maxWidth);
         pdf.text(questionLines, 20, yPosition);
-        yPosition += questionLines.length * lineHeight + 3;
+        yPosition += questionLines.length * lineHeight + 5;
         
         // Question Explanation (if available)
         if (question.explanation) {
           pdf.setFontSize(9);
           pdf.setTextColor(100, 100, 100);
           pdf.setFont('helvetica', 'italic');
-          const explanationLines = pdf.splitTextToSize(question.explanation, maxWidth);
+          // Ensure proper encoding for special characters in explanations
+          const explanationText = question.explanation.replace(/[^\x00-\x7F]/g, (char) => {
+            return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          });
+          const explanationLines = pdf.splitTextToSize(explanationText, maxWidth);
           pdf.text(explanationLines, 20, yPosition);
-          yPosition += explanationLines.length * lineHeight + 5;
+          yPosition += explanationLines.length * lineHeight + 8;
         }
         
-        // Answer
+        // Answer with better formatting
         pdf.setFontSize(10);
-        pdf.setTextColor(12, 110, 120); // Same teal color as headline
+        pdf.setTextColor(60, 60, 60);
+        pdf.setFont('helvetica', 'bold');
+        const answerLabel = t(currentLanguage, 'pdf.answer');
+        pdf.text(answerLabel, 20, yPosition);
+        yPosition += 6;
+        
+        pdf.setFontSize(10);
+        pdf.setTextColor(40, 40, 40);
         pdf.setFont('helvetica', 'normal');
-        const answerLines = pdf.splitTextToSize(`Answer: ${answer}`, maxWidth);
+        // Ensure proper encoding for special characters in answers
+        const answerText = answer.replace(/[^\x00-\x7F]/g, (char) => {
+          return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        });
+        const answerLines = pdf.splitTextToSize(answerText, maxWidth);
         pdf.text(answerLines, 20, yPosition);
-        yPosition += answerLines.length * lineHeight + 10;
+        yPosition += answerLines.length * lineHeight + 15;
+        
+        // Add subtle separator between questions
+        if (index < questionsToUse.length - 1) {
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.2);
+          pdf.line(20, yPosition - 5, 190, yPosition - 5);
+        }
       });
       
-      // Save the PDF
-      const fileName = `shadowwork-day-${dayIndex}-${new Date().toISOString().split('T')[0]}.pdf`;
+      // Save the PDF with localized filename
+      const fileName = t(currentLanguage, 'pdf.fileName', { 
+        day: dayIndex, 
+        date: new Date().toISOString().split('T')[0] 
+      });
       pdf.save(fileName);
       
     } catch (error) {
       console.error('Error downloading day summary:', error);
-      alert('Error downloading your day summary. Please try again.');
+      alert(t(currentLanguage, 'errors.pdfDownloadFailed') || 'Error downloading your day summary. Please try again.');
     }
   }
 </script>
@@ -190,19 +240,19 @@
     <div class="relative overflow-hidden rounded bg-gradient-to-br from-white/20 via-white/10 to-white/5 backdrop-blur-xl border border-white/30 p-8 shadow-2xl">
       <div class="relative z-10">
         <h1 class="text-3xl lg:text-4xl font-bold text-white mb-2">
-          Welcome back, {username}! 👋
+          {t(currentLanguage, 'dashboard.welcomeBack', { username })}
         </h1>
         <p class="text-white/80 text-lg">
           {#if overallCompletion === 100}
-            🎉 Congratulations! You've completed your shadow work journey.
+            {t(currentLanguage, 'dashboard.congratulationsComplete')}
           {:else if overallCompletion === 0}
-            Ready to begin your journey of self-discovery?
+            {t(currentLanguage, 'dashboard.readyToBegin')}
           {:else if overallCompletion < 30}
-            You're just getting started. Keep going!
+            {t(currentLanguage, 'dashboard.justGettingStarted')}
           {:else if overallCompletion < 70}
-            You're making great progress. Stay committed!
+            {t(currentLanguage, 'dashboard.greatProgress')}
           {:else}
-            Almost there! Finish strong!
+            {t(currentLanguage, 'dashboard.almostThere')}
           {/if}
         </p>
       </div>
@@ -217,7 +267,7 @@
       <!-- Overall Progress -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">Overall Progress</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.overallProgress')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
@@ -234,37 +284,37 @@
       <!-- Questions Answered -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">Questions</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.questions')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <div class="text-4xl font-bold text-white mb-1">{totalAnswered}/{totalQuestions}</div>
-        <p class="text-white/60 text-sm">questions answered</p>
+        <p class="text-white/60 text-sm">{t(currentLanguage, 'dashboard.questionsAnswered')}</p>
       </div>
 
       <!-- Days Completed -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">Days Done</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.daysDone')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <div class="text-4xl font-bold text-white mb-1">{daysCompleted}/7</div>
-        <p class="text-white/60 text-sm">days completed</p>
+        <p class="text-white/60 text-sm">{t(currentLanguage, 'dashboard.daysCompleted')}</p>
       </div>
 
       <!-- Total Words -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">Written</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.written')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
         </div>
         <div class="text-4xl font-bold text-white mb-1">{totalWords}</div>
-        <p class="text-white/60 text-sm">words written</p>
+        <p class="text-white/60 text-sm">{t(currentLanguage, 'dashboard.wordsWritten')}</p>
       </div>
     </div>
 
@@ -278,7 +328,7 @@
               {currentDay.title}: {currentDay.subtitle}
             </p>
             <p class="text-white/60 text-sm mt-1">
-              {getDayCompletion(currentDay.id)}% complete
+              {getDayCompletion(currentDay.id)}% {t(currentLanguage, 'dashboard.percentComplete')}
             </p>
           </div>
           <button
@@ -300,9 +350,9 @@
       <div class="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-white mb-2">Ready to Begin?</h2>
+            <h2 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'dashboard.readyToBeginTitle')}</h2>
             <p class="text-white/80 text-sm">
-              Start with the introduction to understand what shadow work is and how this journey will unfold.
+              {t(currentLanguage, 'dashboard.readyToBeginDescription')}
             </p>
           </div>
           <button
@@ -312,7 +362,7 @@
           >
             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
             <span class="relative z-10 flex items-center gap-2">
-              View Introduction
+              {t(currentLanguage, 'dashboard.viewIntroduction')}
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
               </svg>
@@ -329,9 +379,9 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white mb-1">Journey Complete! 🎉</h2>
+            <h2 class="text-xl font-bold text-white mb-1">{t(currentLanguage, 'dashboard.journeyComplete')}</h2>
             <p class="text-white/80 text-sm">
-              You've completed all 7 days. Review your answers anytime or restart your journey.
+              {t(currentLanguage, 'dashboard.journeyCompleteDescription')}
             </p>
           </div>
         </div>
@@ -341,7 +391,7 @@
     <!-- Days Overview -->
     <div class="mt-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-white">Your Journey</h2>
+        <h2 class="text-2xl font-bold text-white">{t(currentLanguage, 'dashboard.yourJourney')}</h2>
         <button
           on:click={onStartIntro}
           class="text-white/70 hover:text-white text-sm flex items-center gap-2 transition-colors"
@@ -349,7 +399,7 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          View Introduction
+          {t(currentLanguage, 'dashboard.viewIntroduction')}
         </button>
       </div>
       
@@ -414,7 +464,7 @@
             <!-- Progress Bar Section -->
             <div class="space-y-2">
               <div class="flex items-center justify-between text-xs">
-                <span class="text-white/60">{completion}% complete</span>
+                <span class="text-white/60">{completion}% {t(currentLanguage, 'dashboard.percentComplete')}</span>
                 <span class="text-white/60">{day.questions.length} questions</span>
               </div>
               <div class="w-full bg-white/20 rounded-full h-1.5">

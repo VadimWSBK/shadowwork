@@ -1,5 +1,48 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { t, type Language } from '$lib/i18n';
+  import { onMount } from 'svelte';
+  
+  let currentLanguage: Language = 'en';
+  
+  function checkLanguage() {
+    const savedLanguage = localStorage.getItem('shadowwork_language') as Language | null;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
+      if (savedLanguage !== currentLanguage) {
+        currentLanguage = savedLanguage;
+      }
+    }
+  }
+  
+  onMount(() => {
+    checkLanguage();
+    
+    // Check for language changes when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkLanguage();
+      }
+    };
+    
+    // Check for language changes periodically (every 500ms)
+    const languageCheckInterval = setInterval(checkLanguage, 500);
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(languageCheckInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  });
+  
+  function getFormattedDate() {
+    const date = new Date();
+    return date.toLocaleDateString(currentLanguage === 'en' ? 'en-US' : currentLanguage === 'de' ? 'de-DE' : 'pl-PL', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-[#004D56] via-[#00444B] to-[#003B41] p-4 sm:p-6 lg:p-8">
@@ -13,13 +56,13 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
       </svg>
-      Back to Dashboard
+      {t(currentLanguage, 'pages.backToDashboard')}
     </button>
     
     <!-- Content Card -->
     <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded shadow-2xl p-8">
-      <h1 class="text-4xl font-bold text-white mb-2">Disclaimer</h1>
-      <p class="text-white/60 text-sm mb-8">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <h1 class="text-4xl font-bold text-white mb-2">{t(currentLanguage, 'pages.disclaimer')}</h1>
+      <p class="text-white/60 text-sm mb-8">{t(currentLanguage, 'pages.lastUpdated', { date: getFormattedDate() })}</p>
       
       <div class="prose prose-invert max-w-none space-y-6 text-white/90">
         
@@ -30,180 +73,171 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-              <h3 class="text-xl font-bold text-white mb-2">Important Information</h3>
+              <h3 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'disclaimer.important.title')}</h3>
               <p class="text-white/90 leading-relaxed">
-                Shadow Work Course is a <strong>self-guided journaling program</strong> designed for personal reflection and growth. 
-                It is not intended as a substitute for professional therapy, counseling, or medical advice.
+                {t(currentLanguage, 'disclaimer.important.content')}
               </p>
             </div>
           </div>
         </div>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">1. Not Medical or Therapeutic Services</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section1.title')}</h2>
           <p class="leading-relaxed">
-            Shadow Work Course is an educational self-help program designed for personal growth and self-reflection. 
-            It does <strong>not</strong> provide:
+            {t(currentLanguage, 'disclaimer.section1.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Medical advice, diagnosis, or treatment</li>
-            <li>Psychotherapy or psychological counseling</li>
-            <li>Crisis intervention or emergency mental health services</li>
-            <li>Professional mental health treatment of any kind</li>
+            <li>{t(currentLanguage, 'disclaimer.section1.medical')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section1.therapy')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section1.crisis')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section1.professional')}</li>
           </ul>
           <p class="leading-relaxed mt-3">
-            The course creators and operators are not licensed therapists, psychologists, psychiatrists, or medical professionals unless explicitly stated otherwise.
+            {t(currentLanguage, 'disclaimer.section1.creators')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">2. Consult Healthcare Professionals</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section2.title')}</h2>
           <p class="leading-relaxed">
-            <strong>Before starting this course, especially if you:</strong>
+            <strong>{t(currentLanguage, 'disclaimer.section2.intro')}</strong>
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Have been diagnosed with any mental health condition</li>
-            <li>Are currently in therapy or taking psychiatric medication</li>
-            <li>Have experienced trauma or PTSD</li>
-            <li>Are experiencing suicidal thoughts or self-harm urges</li>
-            <li>Have a history of severe depression, anxiety, or other mental health issues</li>
+            <li>{t(currentLanguage, 'disclaimer.section2.condition')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section2.therapy')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section2.trauma')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section2.suicidal')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section2.history')}</li>
           </ul>
           <p class="leading-relaxed mt-3">
-            <strong>Please consult with a qualified healthcare professional before proceeding.</strong> 
-            Self-reflection work can bring up difficult emotions and memories that may require professional support.
+            <strong>{t(currentLanguage, 'disclaimer.section2.consult')}</strong>
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">3. When to Seek Professional Help</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section3.title')}</h2>
           <p class="leading-relaxed">
-            While this journaling course can be beneficial for self-reflection, please consider seeking professional support if you:
+            {t(currentLanguage, 'disclaimer.section3.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Are experiencing severe depression, anxiety, or other mental health conditions</li>
-            <li>Have thoughts of self-harm or suicide</li>
-            <li>Are currently in crisis or experiencing a mental health emergency</li>
-            <li>Feel overwhelmed by difficult emotions during the course</li>
-            <li>Would benefit from professional guidance alongside your journaling practice</li>
+            <li>{t(currentLanguage, 'disclaimer.section3.severe')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section3.harm')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section3.crisis')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section3.overwhelmed')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section3.guidance')}</li>
           </ul>
           <p class="leading-relaxed mt-3">
-            <strong>Emergency:</strong> If you're in immediate danger, please call emergency services (911 in the US, 112 in Europe) or go to your nearest emergency room.
+            <strong>{t(currentLanguage, 'disclaimer.section3.emergency')}</strong>
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">4. What to Expect</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section4.title')}</h2>
           <p class="leading-relaxed">
-            Self-reflection and journaling may bring up:
+            {t(currentLanguage, 'disclaimer.section4.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Various emotions as you explore your inner world</li>
-            <li>Memories or insights you hadn't previously considered</li>
-            <li>Moments of discomfort as you examine different aspects of yourself</li>
-            <li>New awareness of patterns in your thoughts and behaviors</li>
+            <li>{t(currentLanguage, 'disclaimer.section4.emotions')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section4.memories')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section4.discomfort')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section4.awareness')}</li>
           </ul>
           <p class="leading-relaxed mt-3">
-            <strong>Take breaks when needed:</strong> You can pause, skip questions, or discontinue the course at any time. 
-            Listen to your intuition about what feels right for you.
+            <strong>{t(currentLanguage, 'disclaimer.section4.breaks')}</strong>
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">5. No Guaranteed Results</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section5.title')}</h2>
           <p class="leading-relaxed">
-            We make no guarantees or warranties regarding:
+            {t(currentLanguage, 'disclaimer.section5.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Specific outcomes or results from completing the course</li>
-            <li>Improvement in mental health or well-being</li>
-            <li>Resolution of personal issues or challenges</li>
-            <li>Achievement of any particular goals</li>
+            <li>{t(currentLanguage, 'disclaimer.section5.outcomes')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section5.improvement')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section5.resolution')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section5.goals')}</li>
           </ul>
           <p class="leading-relaxed mt-3">
-            Individual results vary greatly depending on many factors including personal circumstances, commitment level, 
-            existing mental health conditions, and external support systems.
+            {t(currentLanguage, 'disclaimer.section5.variation')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">6. Educational Purpose Only</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section6.title')}</h2>
           <p class="leading-relaxed">
-            All content provided through Shadow Work Course is for <strong>educational and informational purposes only</strong>. 
-            The information is not intended to:
+            {t(currentLanguage, 'disclaimer.section6.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Replace professional mental health treatment</li>
-            <li>Diagnose or treat any mental health condition</li>
-            <li>Provide personalized advice for your specific situation</li>
-            <li>Create a therapist-client or doctor-patient relationship</li>
+            <li>{t(currentLanguage, 'disclaimer.section6.replace')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section6.diagnose')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section6.personalized')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section6.relationship')}</li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">7. User Responsibility</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section7.title')}</h2>
           <p class="leading-relaxed">
-            By using Shadow Work Course, you acknowledge and agree that:
+            {t(currentLanguage, 'disclaimer.section7.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>You are responsible for your own mental health and well-being</li>
-            <li>You will seek professional help if needed</li>
-            <li>You understand the limitations of this educational program</li>
-            <li>You will not rely solely on this course for mental health support</li>
-            <li>You will stop using the course if you experience significant distress</li>
+            <li>{t(currentLanguage, 'disclaimer.section7.responsible')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section7.seek')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section7.limitations')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section7.rely')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section7.stop')}</li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">8. Age Requirement</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section8.title')}</h2>
           <p class="leading-relaxed">
-            Shadow Work Course is designed for adults aged 18 and older. The content involves mature self-reflection 
-            on personal experiences, relationships, and emotions that may not be appropriate for younger audiences.
+            {t(currentLanguage, 'disclaimer.section8.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">9. Limitation of Liability</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section9.title')}</h2>
           <p class="leading-relaxed">
-            To the fullest extent permitted by law, Shadow Work Course and its creators, operators, and affiliates shall not be liable for:
+            {t(currentLanguage, 'disclaimer.section9.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Any emotional distress or mental health issues arising from course participation</li>
-            <li>Actions taken or decisions made based on course content</li>
-            <li>Any indirect, incidental, or consequential damages</li>
-            <li>Personal injury or harm of any kind</li>
+            <li>{t(currentLanguage, 'disclaimer.section9.distress')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section9.actions')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section9.damages')}</li>
+            <li>{t(currentLanguage, 'disclaimer.section9.injury')}</li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">10. External Resources</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section10.title')}</h2>
           <p class="leading-relaxed">
-            The course may contain links to third-party resources, therapists, or crisis lines. We do not control or endorse these resources 
-            and are not responsible for their content, availability, or services. Always verify credentials and suitability before engaging with any external provider.
+            {t(currentLanguage, 'disclaimer.section10.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">11. Updates to Disclaimer</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section11.title')}</h2>
           <p class="leading-relaxed">
-            We reserve the right to update this disclaimer at any time. Continued use of the Service after changes constitutes acceptance of the updated disclaimer.
+            {t(currentLanguage, 'disclaimer.section11.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">12. Acknowledgment</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section12.title')}</h2>
           <p class="leading-relaxed font-semibold">
-            By using Shadow Work Course, you acknowledge that you have read, understood, and agree to this disclaimer. 
-            You accept full responsibility for your participation and any outcomes resulting from your use of the course.
+            {t(currentLanguage, 'disclaimer.section12.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">Questions or Concerns?</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section13.title')}</h2>
           <p class="leading-relaxed">
-            If you have questions about this disclaimer or need clarification, please contact us:
+            {t(currentLanguage, 'disclaimer.section13.intro')}
           </p>
           <ul class="list-none space-y-2 mt-3">
-            <li><strong>Email:</strong> <a href="mailto:support@shadowwork.com" class="text-[#0C6E78] hover:text-white underline">support@shadowwork.com</a></li>
+            <li><strong>{t(currentLanguage, 'disclaimer.section13.email')}</strong></li>
           </ul>
         </section>
         

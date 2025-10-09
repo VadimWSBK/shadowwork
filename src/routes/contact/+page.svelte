@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { t, type Language } from '$lib/i18n';
   import { onMount } from 'svelte';
   
   let formData = {
@@ -13,37 +14,42 @@
   let isSubmitting = false;
   let submitStatus = '';
   let errors: Record<string, string> = {};
+  let currentLanguage: Language = 'en';
   
-  const categories = [
-    { value: 'general', label: 'General Question' },
-    { value: 'technical', label: 'Technical Issue' },
-    { value: 'billing', label: 'Billing & Refunds' },
-    { value: 'privacy', label: 'Privacy & Data' },
-    { value: 'course', label: 'Course Content' },
-    { value: 'other', label: 'Other' }
-  ];
+  let categories: Array<{ value: string; label: string }> = [];
+  
+  function updateCategories() {
+    categories = [
+      { value: 'general', label: t(currentLanguage, 'contact.form.categories.general') },
+      { value: 'technical', label: t(currentLanguage, 'contact.form.categories.technical') },
+      { value: 'billing', label: t(currentLanguage, 'contact.form.categories.billing') },
+      { value: 'privacy', label: t(currentLanguage, 'contact.form.categories.privacy') },
+      { value: 'course', label: t(currentLanguage, 'contact.form.categories.course') },
+      { value: 'other', label: t(currentLanguage, 'contact.form.categories.other') }
+    ];
+  }
   
   function validateForm() {
     errors = {};
     
     if (!formData.name.trim()) {
-      errors.name = 'Name is required';
+      errors.name = t(currentLanguage, 'contact.form.errors.nameRequired');
     }
     
     if (!formData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = t(currentLanguage, 'contact.form.errors.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = t(currentLanguage, 'contact.form.errors.emailInvalid');
     }
     
     if (!formData.subject.trim()) {
-      errors.subject = 'Subject is required';
+      errors.subject = t(currentLanguage, 'contact.form.errors.subjectRequired');
     }
     
     if (!formData.message.trim()) {
-      errors.message = 'Message is required';
+      errors.message = t(currentLanguage, 'contact.form.errors.messageRequired');
     } else if (formData.message.trim().length < 10) {
-      errors.message = 'Message must be at least 10 characters long';
+      errors.message = t(currentLanguage, 'contact.form.errors.messageTooShort');
     }
     
     return Object.keys(errors).length === 0;
@@ -86,6 +92,38 @@
     errors = {};
     submitStatus = '';
   }
+  
+  function checkLanguage() {
+    const savedLanguage = localStorage.getItem('shadowwork_language') as Language | null;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
+      if (savedLanguage !== currentLanguage) {
+        currentLanguage = savedLanguage;
+        updateCategories();
+      }
+    }
+  }
+  
+  onMount(() => {
+    checkLanguage();
+    updateCategories();
+    
+    // Check for language changes when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkLanguage();
+      }
+    };
+    
+    // Check for language changes periodically (every 500ms)
+    const languageCheckInterval = setInterval(checkLanguage, 500);
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(languageCheckInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  });
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-[#004D56] via-[#00444B] to-[#003B41] p-4 sm:p-6 lg:p-8">
@@ -99,13 +137,13 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
       </svg>
-      Back to Dashboard
+      {t(currentLanguage, 'pages.backToDashboard')}
     </button>
     
     <!-- Header -->
     <div class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-white mb-4">Contact Support</h1>
-      <p class="text-white/70 text-lg">We're here to help. Send us a message and we'll get back to you within 24 hours.</p>
+      <h1 class="text-4xl font-bold text-white mb-4">{t(currentLanguage, 'contact.title')}</h1>
+      <p class="text-white/70 text-lg">{t(currentLanguage, 'contact.subtitle')}</p>
     </div>
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -122,15 +160,15 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <div>
-                  <h3 class="text-lg font-semibold text-white mb-2">Message Sent Successfully!</h3>
+                  <h3 class="text-lg font-semibold text-white mb-2">{t(currentLanguage, 'contact.form.success.title')}</h3>
                   <p class="text-white/80">
-                    Thank you for contacting us. We've received your message and will get back to you within 24 hours.
+                    {t(currentLanguage, 'contact.form.success.message')}
                   </p>
                   <button 
                     on:click={resetForm}
                     class="mt-3 text-green-300 hover:text-white underline text-sm"
                   >
-                    Send another message
+                    {t(currentLanguage, 'contact.form.success.sendAnother')}
                   </button>
                 </div>
               </div>
@@ -145,9 +183,9 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3l-6.928-12c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                 </svg>
                 <div>
-                  <h3 class="text-lg font-semibold text-white mb-2">Error Sending Message</h3>
+                  <h3 class="text-lg font-semibold text-white mb-2">{t(currentLanguage, 'contact.form.error.title')}</h3>
                   <p class="text-white/80">
-                    Sorry, there was an error sending your message. Please try again or contact us directly at support@shadowwork.com.
+                    {t(currentLanguage, 'contact.form.error.message')}
                   </p>
                 </div>
               </div>
@@ -158,13 +196,13 @@
             
             <!-- Name -->
             <div>
-              <label for="name" class="block text-white font-medium mb-2">Name *</label>
+              <label for="name" class="block text-white font-medium mb-2">{t(currentLanguage, 'contact.form.name')} *</label>
               <input
                 type="text"
                 id="name"
                 bind:value={formData.name}
                 class="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-transparent {errors.name ? 'border-red-400' : ''}"
-                placeholder="Your full name"
+                placeholder={t(currentLanguage, 'contact.form.placeholders.name')}
               />
               {#if errors.name}
                 <p class="text-red-400 text-sm mt-1">{errors.name}</p>
@@ -173,13 +211,13 @@
             
             <!-- Email -->
             <div>
-              <label for="email" class="block text-white font-medium mb-2">Email *</label>
+              <label for="email" class="block text-white font-medium mb-2">{t(currentLanguage, 'contact.form.email')} *</label>
               <input
                 type="email"
                 id="email"
                 bind:value={formData.email}
                 class="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-transparent {errors.email ? 'border-red-400' : ''}"
-                placeholder="your.email@example.com"
+                placeholder={t(currentLanguage, 'contact.form.placeholders.email')}
               />
               {#if errors.email}
                 <p class="text-red-400 text-sm mt-1">{errors.email}</p>
@@ -188,7 +226,7 @@
             
             <!-- Category -->
             <div>
-              <label for="category" class="block text-white font-medium mb-2">Category</label>
+              <label for="category" class="block text-white font-medium mb-2">{t(currentLanguage, 'contact.form.category')}</label>
               <select
                 id="category"
                 bind:value={formData.category}
@@ -202,13 +240,13 @@
             
             <!-- Subject -->
             <div>
-              <label for="subject" class="block text-white font-medium mb-2">Subject *</label>
+              <label for="subject" class="block text-white font-medium mb-2">{t(currentLanguage, 'contact.form.subject')} *</label>
               <input
                 type="text"
                 id="subject"
                 bind:value={formData.subject}
                 class="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-transparent {errors.subject ? 'border-red-400' : ''}"
-                placeholder="Brief description of your question"
+                placeholder={t(currentLanguage, 'contact.form.placeholders.subject')}
               />
               {#if errors.subject}
                 <p class="text-red-400 text-sm mt-1">{errors.subject}</p>
@@ -217,18 +255,18 @@
             
             <!-- Message -->
             <div>
-              <label for="message" class="block text-white font-medium mb-2">Message *</label>
+              <label for="message" class="block text-white font-medium mb-2">{t(currentLanguage, 'contact.form.message')} *</label>
               <textarea
                 id="message"
                 bind:value={formData.message}
                 rows="6"
                 class="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#0C6E78] focus:border-transparent resize-vertical {errors.message ? 'border-red-400' : ''}"
-                placeholder="Please describe your question or issue in detail..."
+                placeholder={t(currentLanguage, 'contact.form.placeholders.message')}
               ></textarea>
               {#if errors.message}
                 <p class="text-red-400 text-sm mt-1">{errors.message}</p>
               {/if}
-              <p class="text-white/50 text-sm mt-1">{formData.message.length} characters</p>
+              <p class="text-white/50 text-sm mt-1">{formData.message.length} {t(currentLanguage, 'contact.form.characters')}</p>
             </div>
             
             <!-- Submit Button -->
@@ -242,12 +280,12 @@
                   <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
-                  Sending Message...
+                  {t(currentLanguage, 'contact.form.sendingMessage')}
                 {:else}
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                   </svg>
-                  Send Message
+                  {t(currentLanguage, 'contact.form.sendMessage')}
                 {/if}
               </button>
             </div>
@@ -261,16 +299,15 @@
         
         <!-- Response Time -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">Response Time</h3>
+          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.responseTime.title')}</h3>
           <p class="text-white/70 text-sm leading-relaxed">
-            We typically respond to all inquiries within 24 hours during business days. 
-            For urgent technical issues, we'll prioritize your message.
+            {t(currentLanguage, 'contact.info.responseTime.message')}
           </p>
         </div>
         
         <!-- Alternative Contact -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">Alternative Contact</h3>
+          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.alternativeContact.title')}</h3>
           <div class="space-y-3 text-sm">
             <div class="flex items-center gap-3 text-white/70">
               <svg class="w-4 h-4 text-[#0C6E78]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,9 +320,9 @@
         
         <!-- FAQ Link -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">Quick Help</h3>
+          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.quickHelp.title')}</h3>
           <p class="text-white/70 text-sm mb-3">
-            Many common questions are answered in our FAQ section.
+            {t(currentLanguage, 'contact.info.quickHelp.message')}
           </p>
           <a 
             href="/faq" 
@@ -294,16 +331,15 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            Browse FAQ
+            {t(currentLanguage, 'contact.info.quickHelp.browseFaq')}
           </a>
         </div>
         
         <!-- Privacy Notice -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">Privacy</h3>
+          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.privacy.title')}</h3>
           <p class="text-white/70 text-sm leading-relaxed">
-            Your message and personal information are kept confidential. 
-            We only use this information to respond to your inquiry.
+            {t(currentLanguage, 'contact.info.privacy.message')}
           </p>
         </div>
         

@@ -1,5 +1,48 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { t, type Language } from '$lib/i18n';
+  import { onMount } from 'svelte';
+  
+  let currentLanguage: Language = 'en';
+  
+  function checkLanguage() {
+    const savedLanguage = localStorage.getItem('shadowwork_language') as Language | null;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
+      if (savedLanguage !== currentLanguage) {
+        currentLanguage = savedLanguage;
+      }
+    }
+  }
+  
+  onMount(() => {
+    checkLanguage();
+    
+    // Check for language changes when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkLanguage();
+      }
+    };
+    
+    // Check for language changes periodically (every 500ms)
+    const languageCheckInterval = setInterval(checkLanguage, 500);
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(languageCheckInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  });
+  
+  function getFormattedDate() {
+    const date = new Date();
+    return date.toLocaleDateString(currentLanguage === 'en' ? 'en-US' : currentLanguage === 'de' ? 'de-DE' : 'pl-PL', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-[#004D56] via-[#00444B] to-[#003B41] p-4 sm:p-6 lg:p-8">
@@ -13,176 +56,166 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
       </svg>
-      Back to Dashboard
+      {t(currentLanguage, 'pages.backToDashboard')}
     </button>
     
     <!-- Content Card -->
     <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded shadow-2xl p-8">
-      <h1 class="text-4xl font-bold text-white mb-2">Terms of Service</h1>
-      <p class="text-white/60 text-sm mb-8">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <h1 class="text-4xl font-bold text-white mb-2">{t(currentLanguage, 'pages.termsOfService')}</h1>
+      <p class="text-white/60 text-sm mb-8">{t(currentLanguage, 'pages.lastUpdated', { date: getFormattedDate() })}</p>
       
       <div class="prose prose-invert max-w-none space-y-6 text-white/90">
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">1. Acceptance of Terms</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section1.title')}</h2>
           <p class="leading-relaxed">
-            By accessing and using Shadow Work Course ("the Service"), you accept and agree to be bound by these Terms of Service. 
-            If you do not agree to these terms, please do not use the Service.
+            {t(currentLanguage, 'terms.section1.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">2. Description of Service</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section2.title')}</h2>
           <p class="leading-relaxed">
-            Shadow Work Course is a self-guided, online personal development course designed to facilitate self-reflection and emotional awareness. 
-            The course consists of 7 days of guided questions and exercises.
+            {t(currentLanguage, 'terms.section2.intro')}
           </p>
           <p class="leading-relaxed mt-2">
-            <strong>Important:</strong> This is a self-help educational tool, not a substitute for professional mental health services.
+            <strong>{t(currentLanguage, 'terms.section2.important')}</strong>
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">3. User Accounts</h2>
-          <p class="leading-relaxed">To use the Service, you must:</p>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section3.title')}</h2>
+          <p class="leading-relaxed">{t(currentLanguage, 'terms.section3.intro')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Be at least 18 years of age</li>
-            <li>Provide accurate and complete registration information</li>
-            <li>Maintain the security of your account credentials</li>
-            <li>Notify us immediately of any unauthorized use of your account</li>
+            <li>{t(currentLanguage, 'terms.section3.age')}</li>
+            <li>{t(currentLanguage, 'terms.section3.registration')}</li>
+            <li>{t(currentLanguage, 'terms.section3.security')}</li>
+            <li>{t(currentLanguage, 'terms.section3.notify')}</li>
           </ul>
           <p class="leading-relaxed mt-2">
-            You are responsible for all activities that occur under your account.
+            {t(currentLanguage, 'terms.section3.responsibility')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">4. Payment & Refunds</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section4.title')}</h2>
           <p class="leading-relaxed">
-            Access to Shadow Work Course requires payment as specified at the time of purchase. All fees are non-refundable except as required by law or as specified in our refund policy.
+            {t(currentLanguage, 'terms.section4.intro')}
           </p>
           <p class="leading-relaxed mt-2">
-            <strong>Refund Policy:</strong> If you're not satisfied within the first 7 days of purchase and have completed less than 2 days of the course, 
-            contact us for a full refund.
+            <strong>{t(currentLanguage, 'terms.section4.refund')}</strong>
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">5. Intellectual Property</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section5.title')}</h2>
           <p class="leading-relaxed">
-            All content provided through Shadow Work Course, including text, graphics, questions, and exercises, is owned by us or our licensors 
-            and is protected by copyright, trademark, and other intellectual property laws.
+            {t(currentLanguage, 'terms.section5.intro')}
           </p>
-          <p class="leading-relaxed mt-2">You may not:</p>
+          <p class="leading-relaxed mt-2">{t(currentLanguage, 'terms.section5.prohibited')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Reproduce, distribute, or share course materials without permission</li>
-            <li>Create derivative works based on course content</li>
-            <li>Use course content for commercial purposes</li>
-            <li>Reverse engineer or attempt to extract source code</li>
+            <li>{t(currentLanguage, 'terms.section5.reproduce')}</li>
+            <li>{t(currentLanguage, 'terms.section5.derivative')}</li>
+            <li>{t(currentLanguage, 'terms.section5.commercial')}</li>
+            <li>{t(currentLanguage, 'terms.section5.reverse')}</li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">6. User Content & Privacy</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section6.title')}</h2>
           <p class="leading-relaxed">
-            Your responses to course questions ("User Content") remain your property. By using the Service, you grant us a limited license 
-            to store and process your User Content solely to provide the Service.
+            {t(currentLanguage, 'terms.section6.intro')}
           </p>
           <p class="leading-relaxed mt-2">
-            We will not share, sell, or use your User Content for any purpose other than providing the Service to you. 
-            See our <a href="/privacy" class="text-[#0C6E78] hover:text-white underline">Privacy Policy</a> for details.
+            {t(currentLanguage, 'terms.section6.privacy')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">7. Prohibited Conduct</h2>
-          <p class="leading-relaxed">You agree not to:</p>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section7.title')}</h2>
+          <p class="leading-relaxed">{t(currentLanguage, 'terms.section7.intro')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>Use the Service for any illegal purpose</li>
-            <li>Attempt to gain unauthorized access to the Service or other users' accounts</li>
-            <li>Interfere with or disrupt the Service</li>
-            <li>Use automated systems (bots) to access the Service</li>
-            <li>Impersonate any person or entity</li>
-            <li>Upload or transmit viruses or malicious code</li>
+            <li>{t(currentLanguage, 'terms.section7.illegal')}</li>
+            <li>{t(currentLanguage, 'terms.section7.unauthorized')}</li>
+            <li>{t(currentLanguage, 'terms.section7.interfere')}</li>
+            <li>{t(currentLanguage, 'terms.section7.automated')}</li>
+            <li>{t(currentLanguage, 'terms.section7.impersonate')}</li>
+            <li>{t(currentLanguage, 'terms.section7.viruses')}</li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">8. Medical Disclaimer</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section8.title')}</h2>
           <p class="leading-relaxed font-semibold">
-            Shadow Work Course is NOT a substitute for professional mental health treatment, therapy, or medical advice.
+            {t(currentLanguage, 'terms.section8.important')}
           </p>
           <p class="leading-relaxed mt-2">
-            The course is designed for educational and self-reflection purposes only. If you are experiencing mental health issues, 
-            suicidal thoughts, or any medical emergency, please contact a qualified healthcare professional immediately.
+            {t(currentLanguage, 'terms.section8.educational')}
           </p>
           <p class="leading-relaxed mt-2">
-            Emergency resources:
+            {t(currentLanguage, 'terms.section8.emergency')}
           </p>
           <ul class="list-disc pl-6 space-y-1 mt-2">
-            <li>US: 988 Suicide & Crisis Lifeline</li>
-            <li>International: <a href="https://findahelpline.com" target="_blank" rel="noopener noreferrer" class="text-[#0C6E78] hover:text-white underline">findahelpline.com</a></li>
+            <li>{t(currentLanguage, 'terms.section8.us')}</li>
+            <li>{t(currentLanguage, 'terms.section8.international')}: <a href="https://findahelpline.com" target="_blank" rel="noopener noreferrer" class="text-[#0C6E78] hover:text-white underline">findahelpline.com</a></li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">9. Limitation of Liability</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section9.title')}</h2>
           <p class="leading-relaxed">
-            To the maximum extent permitted by law, Shadow Work Course and its creators shall not be liable for any indirect, incidental, 
-            special, consequential, or punitive damages resulting from your use or inability to use the Service.
+            {t(currentLanguage, 'terms.section9.intro')}
           </p>
           <p class="leading-relaxed mt-2">
-            Our total liability shall not exceed the amount you paid for access to the Service.
+            {t(currentLanguage, 'terms.section9.limit')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">10. Disclaimer of Warranties</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section10.title')}</h2>
           <p class="leading-relaxed">
-            The Service is provided "as is" without warranties of any kind, either express or implied. We do not guarantee that:
+            {t(currentLanguage, 'terms.section10.intro')}
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
-            <li>The Service will be uninterrupted or error-free</li>
-            <li>Defects will be corrected</li>
-            <li>The Service is free of viruses or harmful components</li>
-            <li>Any specific results will be achieved</li>
+            <li>{t(currentLanguage, 'terms.section10.uninterrupted')}</li>
+            <li>{t(currentLanguage, 'terms.section10.defects')}</li>
+            <li>{t(currentLanguage, 'terms.section10.viruses')}</li>
+            <li>{t(currentLanguage, 'terms.section10.results')}</li>
           </ul>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">11. Termination</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section11.title')}</h2>
           <p class="leading-relaxed">
-            We reserve the right to suspend or terminate your access to the Service at any time, with or without cause or notice, 
-            for violation of these Terms or for any other reason.
+            {t(currentLanguage, 'terms.section11.intro')}
           </p>
           <p class="leading-relaxed mt-2">
-            You may terminate your account at any time through the Settings page. Upon termination, your right to use the Service will immediately cease.
+            {t(currentLanguage, 'terms.section11.user')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">12. Changes to Terms</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section12.title')}</h2>
           <p class="leading-relaxed">
-            We reserve the right to modify these Terms at any time. We will notify you of material changes by posting the updated Terms 
-            with a new "Last updated" date. Your continued use of the Service after such changes constitutes acceptance of the new Terms.
+            {t(currentLanguage, 'terms.section12.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">13. Governing Law</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section13.title')}</h2>
           <p class="leading-relaxed">
-            These Terms shall be governed by and construed in accordance with the laws of [Your Jurisdiction], without regard to its conflict of law provisions.
+            {t(currentLanguage, 'terms.section13.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">14. Contact Information</h2>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section14.title')}</h2>
           <p class="leading-relaxed">
-            For questions about these Terms of Service, please contact:
+            {t(currentLanguage, 'terms.section14.intro')}
           </p>
           <ul class="list-none space-y-2 mt-3">
-            <li><strong>Email:</strong> <a href="mailto:support@shadowwork.com" class="text-[#0C6E78] hover:text-white underline">support@shadowwork.com</a></li>
-            <li><strong>Address:</strong> [Your Business Address]</li>
+            <li><strong>{t(currentLanguage, 'terms.section14.email')}</strong></li>
+            <li><strong>{t(currentLanguage, 'terms.section14.address')}</strong></li>
           </ul>
         </section>
         

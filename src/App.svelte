@@ -546,22 +546,35 @@
       const dayAnswers = $answersStore[completedDay.id] || [];
       const dayIndex = courseData.findIndex(day => day.id === completedDay.id);
       
-      // Create PDF
+      // Create PDF with proper Unicode support
       const pdf = new jsPDF();
       
+      // Get localized date format
+      const dateFormat = currentLanguage === 'en' ? 'en-US' : currentLanguage === 'de' ? 'de-DE' : 'pl-PL';
+      const formattedDate = new Date().toLocaleDateString(dateFormat, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Get the translated course data for the current language
+      const translatedCourseData = getCourseData(currentLanguage);
+      const translatedDay = translatedCourseData.find(day => day.id === completedDay.id);
+      const questionsToUse = translatedDay ? translatedDay.questions : completedDay.questions;
+      
       // Set up fonts and colors
-      pdf.setFontSize(20);
+      pdf.setFontSize(24);
       pdf.setTextColor(12, 110, 120); // Teal color
       pdf.setFont('helvetica', 'bold');
-      pdf.text('SHADOW WORK JOURNEY', 20, 30);
+      pdf.text(t(currentLanguage, 'pdf.title'), 20, 30);
       
-      pdf.setFontSize(16);
+      pdf.setFontSize(18);
       pdf.setTextColor(60, 60, 60);
-      pdf.text(`Day ${dayIndex}: ${completedDay.subtitle}`, 20, 45);
+      pdf.text(t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: completedDay.subtitle }), 20, 50);
       
       pdf.setFontSize(12);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`Completed on: ${new Date().toLocaleDateString()}`, 20, 60);
+      pdf.text(t(currentLanguage, 'pdf.completedOn', { date: formattedDate }), 20, 65);
       
       const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
       const totalWords = dayAnswers.reduce((sum, answer) => {
@@ -569,62 +582,99 @@
         return sum + answer.trim().split(/\s+/).length;
       }, 0);
       
-      pdf.text(`Progress: ${answeredCount}/${completedDay.questions.length} questions answered`, 20, 70);
-      pdf.text(`Total words written: ${totalWords}`, 20, 80);
+      pdf.text(t(currentLanguage, 'pdf.progress', { answered: answeredCount, total: questionsToUse.length }), 20, 80);
+      pdf.text(t(currentLanguage, 'pdf.totalWords', { words: totalWords }), 20, 90);
       
-      // Add a line separator
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(20, 90, 190, 90);
+      // Add a line separator with better styling
+      pdf.setDrawColor(12, 110, 120);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 105, 190, 105);
       
-      // Add questions and answers
-      let yPosition = 105;
+      // Add questions and answers with improved formatting
+      let yPosition = 120;
       const maxWidth = 170;
       const lineHeight = 7;
       
-      completedDay.questions.forEach((question, index) => {
+      questionsToUse.forEach((question, index) => {
         // Check if we need a new page
         if (yPosition > 270) {
           pdf.addPage();
           yPosition = 20;
         }
         
-        const answer = dayAnswers[index] || 'No answer provided';
+        const answer = dayAnswers[index] || t(currentLanguage, 'answers.noResponse');
         
-        // Question
-        pdf.setFontSize(12);
-        pdf.setTextColor(40, 40, 40);
+        // Question number and text with better formatting
+        pdf.setFontSize(13);
+        pdf.setTextColor(12, 110, 120);
         pdf.setFont('helvetica', 'bold');
-        const questionText = `Question ${index + 1}: ${question.text}`;
+        const questionNumber = t(currentLanguage, 'questionnaire.questionNumber', { number: index + 1 });
+        pdf.text(questionNumber, 20, yPosition);
+        yPosition += 8;
+        
+        // Question text
+        pdf.setFontSize(11);
+        pdf.setTextColor(40, 40, 40);
+        pdf.setFont('helvetica', 'normal');
+        // Ensure proper encoding for special characters
+        const questionText = question.text.replace(/[^\x00-\x7F]/g, (char) => {
+          return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        });
         const questionLines = pdf.splitTextToSize(questionText, maxWidth);
         pdf.text(questionLines, 20, yPosition);
-        yPosition += questionLines.length * lineHeight + 3;
+        yPosition += questionLines.length * lineHeight + 5;
         
         // Question Explanation (if available)
         if (question.explanation) {
           pdf.setFontSize(9);
           pdf.setTextColor(100, 100, 100);
           pdf.setFont('helvetica', 'italic');
-          const explanationLines = pdf.splitTextToSize(question.explanation, maxWidth);
+          // Ensure proper encoding for special characters in explanations
+          const explanationText = question.explanation.replace(/[^\x00-\x7F]/g, (char) => {
+            return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          });
+          const explanationLines = pdf.splitTextToSize(explanationText, maxWidth);
           pdf.text(explanationLines, 20, yPosition);
-          yPosition += explanationLines.length * lineHeight + 5;
+          yPosition += explanationLines.length * lineHeight + 8;
         }
         
-        // Answer
+        // Answer with better formatting
         pdf.setFontSize(10);
-        pdf.setTextColor(12, 110, 120); // Same teal color as headline
+        pdf.setTextColor(60, 60, 60);
+        pdf.setFont('helvetica', 'bold');
+        const answerLabel = t(currentLanguage, 'pdf.answer');
+        pdf.text(answerLabel, 20, yPosition);
+        yPosition += 6;
+        
+        pdf.setFontSize(10);
+        pdf.setTextColor(40, 40, 40);
         pdf.setFont('helvetica', 'normal');
-        const answerLines = pdf.splitTextToSize(`Answer: ${answer}`, maxWidth);
+        // Ensure proper encoding for special characters in answers
+        const answerText = answer.replace(/[^\x00-\x7F]/g, (char) => {
+          return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        });
+        const answerLines = pdf.splitTextToSize(answerText, maxWidth);
         pdf.text(answerLines, 20, yPosition);
-        yPosition += answerLines.length * lineHeight + 10;
+        yPosition += answerLines.length * lineHeight + 15;
+        
+        // Add subtle separator between questions
+        if (index < questionsToUse.length - 1) {
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.2);
+          pdf.line(20, yPosition - 5, 190, yPosition - 5);
+        }
       });
       
-      // Save the PDF
-      const fileName = `shadowwork-day-${dayIndex}-${new Date().toISOString().split('T')[0]}.pdf`;
+      // Save the PDF with localized filename
+      const fileName = t(currentLanguage, 'pdf.fileName', { 
+        day: dayIndex, 
+        date: new Date().toISOString().split('T')[0] 
+      });
       pdf.save(fileName);
       
     } catch (error) {
       console.error('Error downloading day summary:', error);
-      alert('Error downloading your day summary. Please try again.');
+      alert(t(currentLanguage, 'errors.pdfDownloadFailed') || 'Error downloading your day summary. Please try again.');
     }
   }
 
@@ -1236,7 +1286,7 @@
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                           </svg>
-                          View Summary
+{t(currentLanguage, 'summary.viewSummary')}
                         </button>
                       {/if}
                     </div>
@@ -1313,7 +1363,7 @@
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                       </svg>
-                      Go Back to Questionnaire
+{t(currentLanguage, 'summary.goBackToQuestionnaire')}
                     </button>
                   </div>
                   
@@ -1321,7 +1371,7 @@
                   <div class="flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
                     <!-- Day Summary Title -->
                     <div class="text-2xl font-bold text-white text-center sm:text-left">
-                      Day {courseData.findIndex(day => day.id === completedDay.id)} Summary
+{t(currentLanguage, 'summary.daySummaryTitle', { day: courseData.findIndex(day => day.id === completedDay.id) })}
                     </div>
                     
                     <!-- Download Button -->
@@ -1332,7 +1382,7 @@
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                       </svg>
-                      Download Day {courseData.findIndex(day => day.id === completedDay.id)} Summary
+{t(currentLanguage, 'summary.downloadDaySummary', { day: courseData.findIndex(day => day.id === completedDay.id) })}
                     </button>
                   </div>
 
@@ -1345,8 +1395,8 @@
                       </svg>
                     </div>
                     
-                    <h1 class="text-3xl font-bold text-white mb-4">Congratulations! 🎉</h1>
-                    <p class="text-white/90 text-lg mb-3">You've completed Day {courseData.findIndex(day => day.id === completedDay.id)}</p>
+                    <h1 class="text-3xl font-bold text-white mb-4">{t(currentLanguage, 'summary.congratulations')}</h1>
+                    <p class="text-white/90 text-lg mb-3">{t(currentLanguage, 'summary.completedDay', { day: courseData.findIndex(day => day.id === completedDay.id) })}</p>
                     <h2 class="text-xl font-semibold text-white">{completedDay.subtitle}</h2>
                   </div>
 
@@ -1364,27 +1414,29 @@
                       
                       <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
                         <div class="text-2xl font-bold text-white mb-2">{answeredCount}/{completedDay.questions.length}</div>
-                        <p class="text-white/70 text-sm">Questions Answered</p>
+                        <p class="text-white/70 text-sm">{t(currentLanguage, 'summary.questionsAnswered')}</p>
                       </div>
                       
                       <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
                         <div class="text-2xl font-bold text-white mb-2">{totalWords}</div>
-                        <p class="text-white/70 text-sm">Words Written</p>
+                        <p class="text-white/70 text-sm">{t(currentLanguage, 'summary.wordsWritten')}</p>
                       </div>
                       
                       <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
                         <div class="text-2xl font-bold text-white mb-2">{completionRate}%</div>
-                        <p class="text-white/70 text-sm">Completion Rate</p>
+                        <p class="text-white/70 text-sm">{t(currentLanguage, 'summary.completionRate')}</p>
                       </div>
                     {/if}
                   </div>
 
                   <!-- Day Summary -->
                   <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 mb-8 shadow-lg">
-                    <h3 class="text-lg font-semibold text-white mb-4">Day Summary</h3>
+                    <h3 class="text-lg font-semibold text-white mb-4">{t(currentLanguage, 'summary.daySummary')}</h3>
                     <p class="text-white/80 leading-relaxed text-base">
-                      You've successfully completed Day {courseData.findIndex(day => day.id === completedDay.id)} of your shadow work journey. 
-                      This day focused on <strong class="text-white">{completedDay.subtitle}</strong> and helped you explore important aspects of your inner world.
+                      {@html t(currentLanguage, 'summary.daySummaryText', { 
+                        day: courseData.findIndex(day => day.id === completedDay.id),
+                        theme: `<strong class="text-white">${completedDay.subtitle}</strong>`
+                      })}
                     </p>
                   </div>
 
@@ -1398,7 +1450,7 @@
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                       </svg>
-                      Go to Dashboard
+{t(currentLanguage, 'summary.goToDashboard')}
                     </button>
                     
                     <!-- Continue to Next Day - Right -->
@@ -1409,7 +1461,7 @@
                         style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                       >
                         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                        <span class="relative z-10">Continue to Day {courseData.findIndex(day => day.id === completedDay.id) + 1}</span>
+                        <span class="relative z-10">{t(currentLanguage, 'summary.continueToNextDay', { nextDay: courseData.findIndex(day => day.id === completedDay.id) + 1 })}</span>
                       </button>
                     {/if}
                   </div>
