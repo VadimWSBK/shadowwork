@@ -28,10 +28,52 @@ body {
   outline: none;
 }
 
+/* Smooth gold gradient border on focus for login and signup pages */
+.login-page :where(input, textarea),
+.signup-page :where(input, textarea) {
+  border: 1px solid transparent;
+  transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+}
+
+.login-page :where(input, textarea):focus-visible,
+.signup-page :where(input, textarea):focus-visible {
+  border: 1px solid transparent; /* keep layout stable */
+  border-radius: inherit; /* follow the element's rounding */
+  /* Rounded gold border using layered box-shadows (respects border-radius) */
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.08) inset, /* subtle inner soft edge */
+    0 0 0 1.5px #D4AF37,                     /* outer gold */
+    0 0 0 3px rgba(184,134,11,0.45);         /* soft amber glow */
+}
+
 /* Keep focus ring for buttons and links for accessibility */
 :where(button, a):focus-visible {
   outline: 2px solid #F4F649;
   outline-offset: 2px;
+}
+
+/* Remove border on language selector button and dropdown (login + signup) */
+.login-page .fixed.top-4.right-4 button[title="Change language"],
+.signup-page .fixed.top-4.right-4 button[title="Change language"] {
+  border: none !important;
+  border-image: none !important;
+}
+
+.login-page .fixed.top-4.right-4 button[title="Change language"]:focus-visible,
+.signup-page .fixed.top-4.right-4 button[title="Change language"]:focus-visible {
+  outline: none !important; /* remove yellow focus outline specifically here */
+}
+
+.login-page .fixed.top-4.right-4 .backdrop-blur-md,
+.signup-page .fixed.top-4.right-4 .backdrop-blur-md {
+  border: none !important;
+  border-image: none !important;
+}
+
+/* Hard override any inline border-image on button or dropdown inside the top-right container */
+.login-page .fixed.top-4.right-4 [style*="border-image"] {
+  border-image: none !important;
+  border: none !important;
 }
 
 /* Global box-sizing for predictable layouts */

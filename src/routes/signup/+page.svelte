@@ -194,23 +194,21 @@
   }
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="signup-page min-h-screen bg-gradient-to-br from-primary-light via-primary to-secondary-dark flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
   <!-- Language Switcher (top-right) -->
   <div class="fixed top-4 right-4 z-50">
     <div class="relative">
       <button
-        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-white/15 border text-white/90"
-        style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-white/15 text-white/90 hover:bg-white/20 transition-colors focus:outline-none"
         on:click={() => (languageMenuOpen = !languageMenuOpen)}
         aria-haspopup="menu"
         aria-expanded={languageMenuOpen}
         title="Change language"
       >
-        {currentLanguage.toUpperCase()}
+        <span class="text-xs font-semibold tracking-wide">{currentLanguage.toUpperCase()}</span>
       </button>
       {#if languageMenuOpen}
-        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border rounded shadow-lg backdrop-blur-md p-1"
-             style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;">
+        <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 rounded shadow-lg backdrop-blur-md p-1">
           <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
             English
           </button>
