@@ -15,12 +15,13 @@
   import { slide } from 'svelte/transition';
   import introBg from './assets/shadowwork_bg_intro.webp';
   import sittingWomanShadow from './assets/logo_shadowwork.png';
-  import day2Img from './assets/shadowworkt_day_2.png';
-  import day3Img from './assets/shadow_work_day_3.png';
-  import day4Img from './assets/shadowwork_day_4.png';
-  import day5Img from './assets/shadowwork_day_5.png';
-  import day6Img from './assets/shadowwork_day_6.png';
-  import day7Img from './assets/shadow_work_day_7.png';
+  import day1Img from './assets/Day_Images/shadowwork_day_1.webp';
+  import day2Img from './assets/Day_Images/shadowwork_day_2.webp';
+  import day3Img from './assets/Day_Images/shadowwork_day_3.webp';
+  import day4Img from './assets/Day_Images/shadowwork_day_4.webp';
+  import day5Img from './assets/Day_Images/shadowwork_day_5.webp';
+  import day6Img from './assets/Day_Images/shadowwork_day_6.webp';
+  import day7Img from './assets/Day_Images/shadowwork_day_7.webp';
   import { t, getDaySummary, getDayIntro } from './lib/i18n';
   import { supabase } from './lib/supabaseClient';
   import { isAuthorizedUser, getProfileByEmail, updateProfileSettings } from './lib/supabaseHelpers';
@@ -1001,7 +1002,7 @@
 
   function getDayImage(dayId: string): string | null {
     switch(dayId) {
-      case 'day1': return introBg;
+      case 'day1': return day1Img;
       case 'day2': return day2Img;
       case 'day3': return day3Img;
       case 'day4': return day4Img;

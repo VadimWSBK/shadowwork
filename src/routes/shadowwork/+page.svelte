@@ -4,12 +4,13 @@
   import introBg from '../../assets/shadowwork_bg_intro.webp';
   import dashboardImg from '../../assets/ShadowWorkCourse_Dashboard.webp';
   import logo from '../../assets/LOGO_SELF_COACHING_TOOLS.svg';
-  import day2Img from '../../assets/shadowworkt_day_2.png';
-  import day3Img from '../../assets/shadow_work_day_3.png';
-  import day4Img from '../../assets/shadowwork_day_4.png';
-  import day5Img from '../../assets/shadowwork_day_5.png';
-  import day6Img from '../../assets/shadowwork_day_6.png';
-  import day7Img from '../../assets/shadow_work_day_7.png';
+  import day1Img from '../../assets/Day_Images/shadowwork_day_1.webp';
+  import day2Img from '../../assets/Day_Images/shadowwork_day_2.webp';
+  import day3Img from '../../assets/Day_Images/shadowwork_day_3.webp';
+  import day4Img from '../../assets/Day_Images/shadowwork_day_4.webp';
+  import day5Img from '../../assets/Day_Images/shadowwork_day_5.webp';
+  import day6Img from '../../assets/Day_Images/shadowwork_day_6.webp';
+  import day7Img from '../../assets/Day_Images/shadowwork_day_7.webp';
   
   let currentLanguage: 'en' | 'de' | 'pl' = 'en';
   let languageMenuOpen = false;
@@ -22,7 +23,7 @@
       title: 'Meeting Your Inner World',
       theme: 'Awareness • Grounding',
       description: 'Begin your journey by gently noticing and naming your emotions. Learn to slow down, meet the parts of yourself you often overlook, and let honesty lead the way.',
-      image: introBg
+      image: day1Img
     },
     {
       id: 'day2', 
@@ -75,11 +76,21 @@
   ];
   
   function nextSlide() {
-    currentSlide = (currentSlide + 1) % Math.ceil(courseDays.length / 4);
+    // On desktop, move by 3 cards at a time, on mobile move by 1
+    const maxSlide = window.innerWidth >= 1024 ? Math.max(0, courseDays.length - 3) : courseDays.length - 1;
+    const increment = window.innerWidth >= 1024 ? 3 : 1;
+    
+    if (currentSlide < maxSlide) {
+      currentSlide = Math.min(currentSlide + increment, maxSlide);
+    }
   }
   
   function prevSlide() {
-    currentSlide = currentSlide === 0 ? Math.ceil(courseDays.length / 4) - 1 : currentSlide - 1;
+    const increment = window.innerWidth >= 1024 ? 3 : 1;
+    
+    if (currentSlide > 0) {
+      currentSlide = Math.max(currentSlide - increment, 0);
+    }
   }
   
   // Scroll to CTA
@@ -117,53 +128,88 @@
 </svelte:head>
 
 <div class="min-h-screen">
-  <!-- Navigation Header -->
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-12">
-        <div class="flex items-center gap-3">
-          <img src={logo} alt="Self Coaching Tools Logo" class="w-10 h-10 object-contain" />
-          <span class="text-white font-bold text-lg">Shadow Work Journey</span>
+  <!-- SVG Gradient Definition (hidden, reusable) -->
+  <svg class="absolute w-0 h-0" aria-hidden="true">
+    <defs>
+      <linearGradient id="golden-gradient-svg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#FBCA29;stop-opacity:1" />
+        <stop offset="1%" style="stop-color:#EBD27B;stop-opacity:1" />
+        <stop offset="15%" style="stop-color:#D7B860;stop-opacity:1" />
+        <stop offset="25%" style="stop-color:#E7CE77;stop-opacity:1" />
+        <stop offset="30%" style="stop-color:#EBD27B;stop-opacity:1" />
+        <stop offset="60%" style="stop-color:#C2922E;stop-opacity:1" />
+        <stop offset="87%" style="stop-color:#D0B057;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#AB7B2A;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+  </svg>
+  
+  <!-- Header -->
+  <header class="relative bg-gradient-to-r from-primary via-secondary to-primary-dark">
+    <div class="absolute inset-0 bg-black/10"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex items-center justify-between">
+        <!-- Logo and Brand -->
+        <div class="flex items-center space-x-4">
+          <button on:click={() => goto('/')} class="flex items-center space-x-3 group">
+            <img src={logo} alt="Self Coaching Tools Logo" class="w-12 h-12 object-contain" />
+            <div class="text-left">
+              <h1 class="text-2xl font-bold text-white font-primary group-hover:text-accent transition-colors duration-200">Shadow Work Journey</h1>
+            </div>
+          </button>
         </div>
         
-        <div class="flex items-center gap-4">
+        <!-- Navigation -->
+        <nav class="hidden md:flex items-center space-x-8">
+          <a href="/#courses" class="text-white/90 hover:text-white transition-colors duration-200 font-medium font-secondary">Courses</a>
+          <a href="/#about" class="text-white/90 hover:text-white transition-colors duration-200 font-medium font-secondary">About</a>
+          <a href="/contact" class="text-white/90 hover:text-white transition-colors duration-200 font-medium font-secondary">Contact</a>
+        </nav>
+        
+        <!-- Right side actions -->
+        <div class="flex items-center space-x-4">
           <!-- Language Selector -->
-          <div class="relative">
-            <button
-              class="inline-flex items-center px-2.5 py-1 text-xs font-semibold bg-white/15 border border-white/30 text-white/90"
-              on:click={() => (languageMenuOpen = !languageMenuOpen)}
-              title="Change language"
-            >
-              {currentLanguage.toUpperCase()}
+          <div class="relative" role="button" tabindex="0" on:click={() => (languageMenuOpen = !languageMenuOpen)} on:keydown={(e) => e.key === 'Enter' && (languageMenuOpen = !languageMenuOpen)}>
+            <button class="flex items-center space-x-2 text-white/90 hover:text-white transition-colors duration-200 px-3 py-2 hover:bg-white/10">
+              <span class="text-sm font-medium font-secondary">
+                {currentLanguage === 'en' ? 'EN' : currentLanguage === 'de' ? 'DE' : 'PL'}
+              </span>
+              <svg class="w-4 h-4 transition-transform duration-200 {languageMenuOpen ? 'rotate-180' : ''}" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
             </button>
+            
             {#if languageMenuOpen}
-              <div class="absolute right-0 mt-2 min-w-[9rem] bg-white/15 border border-white/30 shadow-lg backdrop-blur-md p-1">
-                <button class="w-full text-left px-3 py-2 text-sm hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => changeLanguage('en')}>
-                  English
-                </button>
-                <button class="w-full text-left px-3 py-2 text-sm hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => changeLanguage('de')}>
-                  Deutsch
-                </button>
-                <button class="w-full text-left px-3 py-2 text-sm hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => changeLanguage('pl')}>
-                  Polski
-                </button>
+              <div class="absolute right-0 mt-2 w-32 bg-white shadow-lg z-50">
+                <div class="py-1">
+                  <button on:click={() => changeLanguage('en')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'en' ? 'bg-primary/10 text-primary' : ''} font-secondary">
+                    English
+                  </button>
+                  <button on:click={() => changeLanguage('de')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'de' ? 'bg-primary/10 text-primary' : ''} font-secondary">
+                    Deutsch
+                  </button>
+                  <button on:click={() => changeLanguage('pl')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'pl' ? 'bg-primary/10 text-primary' : ''} font-secondary">
+                    Polski
+                  </button>
+                </div>
               </div>
             {/if}
           </div>
           
-          <button
+          <!-- Get Started Button -->
+          <button 
             on:click={scrollToCTA}
-            class="hidden sm:block px-4 py-2 text-sm font-bold text-white bg-white/15 border border-white/30 hover:bg-white/25 transition-all duration-200"
+            class="btn-primary golden-border px-6 py-2 font-medium font-primary"
           >
             Get Started
           </button>
         </div>
       </div>
     </div>
-  </nav>
+  </header>
 
   <!-- Hero Section -->
-  <section class="relative bg-gradient-to-br from-primary-light via-primary to-secondary-dark py-16 min-h-[600px] overflow-hidden">
+  <section class="relative bg-gradient-to-br from-primary-light via-primary to-secondary-dark pt-16 pb-16 min-h-[600px] overflow-hidden">
     <!-- Background Image -->
     <div class="absolute inset-0 opacity-10">
       <img src={introBg} alt="" class="w-full h-full object-cover" />
@@ -182,39 +228,39 @@
             <span class="text-sm font-semibold uppercase tracking-wide">Limited Time Offer</span>
           </div>
           
-          <h1 class="text-4xl md:text-5xl font-bold golden-shimmer font-primary mb-4">
-            Transform Your Inner World in Just 7 Days
+          <h1 class="text-4xl md:text-5xl font-bold golden-shimmer font-primary mb-4 leading-tight">
+            Stop Self-Sabotage and Unlock Your Full Potential Without Years of Therapy
           </h1>
           
-          <p class="text-xl text-white/90 max-w-2xl mx-auto lg:mx-0 mb-6">
-            Discover the hidden parts of yourself that hold you back and unlock the power, authenticity, and clarity you've been seeking.
+          <p class="text-xl text-white/90 max-w-2xl mx-auto lg:mx-0 mb-6 font-secondary leading-relaxed">
+            A 7-day guided journaling course that helps you uncover hidden patterns and finally become who you're meant to be.
           </p>
           
           <!-- Price Section -->
           <div class="flex flex-col lg:flex-row items-center lg:items-baseline gap-4 mb-6">
             <div class="flex items-baseline gap-3">
-              <span class="text-white/60 text-2xl line-through">$297</span>
+              <span class="text-white/60 text-2xl line-through font-secondary">$297</span>
               <span class="text-5xl font-bold font-primary golden-shimmer">$27</span>
             </div>
-            <div class="inline-flex items-center px-4 py-2 bg-green-500/20 border border-[#D4AF37]/60 text-white">
-              <span class="font-bold">Save 90% Today</span>
+            <div class="inline-flex items-center px-4 py-2 bg-green-500/20 text-white">
+              <span class="font-bold font-secondary">Save $270 Today - 90% OFF</span>
             </div>
           </div>
           
           <!-- Primary CTA -->
           <button
             on:click={handleGetStarted}
-            class="btn-cart golden-border px-8 py-4 text-lg font-bold font-primary"
+            class="btn-primary golden-border px-8 py-4 text-lg font-bold font-primary"
           >
             <span class="flex items-center gap-2">
-              Start Your Journey Now
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              Get Instant Access For $27
+              <svg class="w-5 h-5" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
               </svg>
             </span>
           </button>
           
-          <p class="text-white/70 text-sm mt-4">No credit card required to start • Instant access</p>
+          <p class="text-white/70 text-sm mt-4 font-secondary">Instant access • Secure payment</p>
         </div>
         
         <!-- Right side - Dashboard image -->
@@ -248,8 +294,8 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Benefit 1 -->
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300">
-          <div class="w-12 h-12 bg-[#D4AF37]/20 border border-[#D4AF37]/60 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 golden-icon" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
             </svg>
@@ -262,8 +308,8 @@
         
         <!-- Benefit 2 -->
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300">
-          <div class="w-12 h-12 bg-[#D4AF37]/20 border border-[#D4AF37]/60 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 golden-icon" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
           </div>
@@ -275,8 +321,8 @@
         
         <!-- Benefit 3 -->
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300">
-          <div class="w-12 h-12 bg-[#D4AF37]/20 border border-[#D4AF37]/60 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 golden-icon" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
             </svg>
           </div>
@@ -288,8 +334,8 @@
         
         <!-- Benefit 4 -->
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300">
-          <div class="w-12 h-12 bg-[#D4AF37]/20 border border-[#D4AF37]/60 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 golden-icon" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
             </svg>
           </div>
@@ -301,8 +347,8 @@
         
         <!-- Benefit 5 -->
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300">
-          <div class="w-12 h-12 bg-[#D4AF37]/20 border border-[#D4AF37]/60 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 golden-icon" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
             </svg>
           </div>
@@ -314,8 +360,8 @@
         
         <!-- Benefit 6 -->
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300">
-          <div class="w-12 h-12 bg-[#D4AF37]/20 border border-[#D4AF37]/60 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 golden-icon" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
           </div>
@@ -342,154 +388,82 @@
       
       <!-- Carousel Container -->
       <div class="relative">
-        <!-- Desktop: 4 days per slide, Mobile: 2 days per slide -->
-        <div class="overflow-hidden">
+        <div class="overflow-hidden px-4">
           <div 
-            class="flex transition-transform duration-500 ease-in-out"
-            style="transform: translateX(-{currentSlide * 100}%)"
+            class="carousel-track flex transition-transform duration-500 ease-in-out gap-6"
+            style="--slide-index: {currentSlide};"
           >
-            <!-- Desktop slides (4 days each) -->
-            <div class="w-full flex-shrink-0 hidden md:block">
-              <div class="grid grid-cols-4 gap-6">
-                {#each courseDays.slice(0, 4) as day}
-                  <div class="group bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-white/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl">
-                    <!-- Image Container with Overlay -->
-                    <div class="relative aspect-square mb-6 overflow-hidden group">
-                      <img 
-                        src={day.image} 
-                        alt="Day {day.number}" 
-                        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <!-- Gradient Overlay -->
-                      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                      
-                      <!-- Day Badge -->
-                      <div class="absolute top-4 left-4">
-                        <div class="bg-accent/90 backdrop-blur-sm border border-accent px-3 py-1 shadow-lg">
-                          <span class="text-black font-bold text-sm tracking-wide">DAY {day.number}</span>
-                        </div>
-                      </div>
-                    </div>
+            {#each courseDays as day}
+              <div class="w-full lg:w-1/3 flex-shrink-0">
+                <div class="group bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/15 hover:border-white/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl h-full flex flex-col">
+                  <!-- Image Container with Overlay -->
+                  <div class="relative overflow-hidden">
+                    <img 
+                      src={day.image} 
+                      alt="Day {day.number}" 
+                      class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <!-- Gradient Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                     
-                    <!-- Content -->
-                    <div class="text-center space-y-3">
-                        <h3 class="text-white font-bold text-lg mb-2 group-hover:text-accent transition-colors duration-300 font-primary">{day.title}</h3>
-                      <div class="inline-flex items-center px-3 py-1 bg-white/10 border border-white/20 text-white/80 text-xs uppercase tracking-wider font-medium">
-                        {day.theme}
+                    <!-- Day Badge -->
+                    <div class="absolute top-2 left-2 sm:top-4 sm:left-4">
+                      <div class="btn-primary golden-border px-2 py-0.5 sm:px-3 sm:py-1 shadow-lg">
+                        <span class="font-bold text-xs sm:text-sm tracking-wide">DAY {day.number}</span>
                       </div>
-                      <p class="text-white/80 text-sm leading-relaxed line-clamp-4 font-secondary">{day.description}</p>
                     </div>
                   </div>
-                {/each}
-              </div>
-            </div>
-            
-            <!-- Second desktop slide (remaining days) -->
-            <div class="w-full flex-shrink-0 hidden md:block">
-              <div class="grid grid-cols-4 gap-6">
-                {#each courseDays.slice(4, 8) as day}
-                  <div class="group bg-white/10 backdrop-blur-sm border border-white/20 p-6 hover:bg-white/15 hover:border-white/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl">
-                    <!-- Image Container with Overlay -->
-                    <div class="relative aspect-square mb-6 overflow-hidden group">
-                      <img 
-                        src={day.image} 
-                        alt="Day {day.number}" 
-                        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <!-- Gradient Overlay -->
-                      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                      
-                      <!-- Day Badge -->
-                      <div class="absolute top-4 left-4">
-                        <div class="bg-accent/90 backdrop-blur-sm border border-accent px-3 py-1 shadow-lg">
-                          <span class="text-black font-bold text-sm tracking-wide">DAY {day.number}</span>
-                        </div>
-                      </div>
+                  
+                  <!-- Content -->
+                  <div class="text-center space-y-3 p-6 flex-1 flex flex-col">
+                    <h3 class="text-white font-bold text-lg lg:text-xl group-hover:text-accent transition-colors duration-300 font-primary">{day.title}</h3>
+                    <div class="inline-flex items-center justify-center px-3 py-1 bg-white/10 border border-white/20 text-white/80 text-xs uppercase tracking-wider font-medium">
+                      {day.theme}
                     </div>
-                    
-                    <!-- Content -->
-                    <div class="text-center space-y-3">
-                        <h3 class="text-white font-bold text-lg mb-2 group-hover:text-accent transition-colors duration-300 font-primary">{day.title}</h3>
-                      <div class="inline-flex items-center px-3 py-1 bg-white/10 border border-white/20 text-white/80 text-xs uppercase tracking-wider font-medium">
-                        {day.theme}
-                      </div>
-                      <p class="text-white/80 text-sm leading-relaxed line-clamp-4 font-secondary">{day.description}</p>
-                    </div>
+                    <p class="text-white/80 text-sm lg:text-base leading-relaxed font-secondary flex-1">{day.description}</p>
                   </div>
-                {/each}
-              </div>
-            </div>
-            
-            <!-- Mobile slides (2 days each) -->
-            {#each Array(Math.ceil(courseDays.length / 2)) as _, slideIndex}
-              <div class="w-full flex-shrink-0 md:hidden">
-                <div class="grid grid-cols-2 gap-4">
-                  {#each courseDays.slice(slideIndex * 2, (slideIndex + 1) * 2) as day}
-                    <div class="group bg-white/10 backdrop-blur-sm border border-white/20 p-4 hover:bg-white/15 hover:border-white/40 transition-all duration-300 hover:scale-105">
-                      <!-- Image Container with Overlay -->
-                      <div class="relative aspect-square mb-3 overflow-hidden group">
-                        <img 
-                          src={day.image} 
-                          alt="Day {day.number}" 
-                          class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <!-- Gradient Overlay -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                        
-                        <!-- Day Badge -->
-                        <div class="absolute top-2 left-2">
-                          <div class="bg-[#D4AF37]/90 backdrop-blur-sm border border-[#D4AF37] px-2 py-1 shadow-lg">
-                            <span class="text-black font-bold text-xs tracking-wide">DAY {day.number}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- Content -->
-                      <div class="text-center space-y-2">
-                        <h3 class="text-white font-bold text-sm mb-1 group-hover:text-[#D4AF37] transition-colors duration-300 font-primary">{day.title}</h3>
-                        <div class="inline-flex items-center px-2 py-1 bg-white/10 border border-white/20 text-white/80 text-xs uppercase tracking-wider font-medium">
-                          {day.theme}
-                        </div>
-                        <p class="text-white/80 text-xs leading-relaxed line-clamp-3 font-secondary">{day.description}</p>
-                      </div>
-                    </div>
-                  {/each}
                 </div>
               </div>
             {/each}
           </div>
         </div>
         
-        <!-- Navigation Arrows -->
-        <button 
-          on:click={prevSlide}
-          class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 w-12 h-12 bg-white/15 backdrop-blur-sm border border-white/30 text-white hover:bg-white/25 hover:border-[#D4AF37]/50 hover:text-[#D4AF37] transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 group"
-          aria-label="Previous slide"
-        >
-          <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-          </svg>
-        </button>
-        
-        <button 
-          on:click={nextSlide}
-          class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 w-12 h-12 bg-white/15 backdrop-blur-sm border border-white/30 text-white hover:bg-white/25 hover:border-[#D4AF37]/50 hover:text-[#D4AF37] transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 group"
-          aria-label="Next slide"
-        >
-          <svg class="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
-        </button>
-        
-        <!-- Dots Indicator -->
-        <div class="flex justify-center mt-8 gap-3">
-          {#each Array(Math.ceil(courseDays.length / 4)) as _, index}
-            <button 
-              on:click={() => currentSlide = index}
-              class="w-3 h-3 transition-all duration-300 {currentSlide === index ? 'bg-[#D4AF37] shadow-lg shadow-[#D4AF37]/50' : 'bg-white/30 hover:bg-white/50'} hover:scale-125"
-              aria-label="Go to slide {index + 1}"
-            ></button>
-          {/each}
+        <!-- Navigation Controls (Arrows + Dots) -->
+        <div class="flex justify-center items-center mt-8 gap-6">
+          <!-- Previous Arrow -->
+          <button 
+            on:click={prevSlide}
+            disabled={currentSlide === 0}
+            class="w-10 h-10 bg-white/15 backdrop-blur-sm border border-white/30 text-white hover:bg-white/25 hover:border-[#D4AF37]/50 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+            aria-label="Previous slide"
+          >
+            <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-0.5" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+          
+          <!-- Dots Indicator -->
+          <div class="flex justify-center gap-3">
+            {#each Array.from({length: Math.ceil(courseDays.length / 3)}) as _, groupIndex}
+              <button 
+                on:click={() => currentSlide = groupIndex * 3}
+                class="w-3 h-3 transition-all duration-300 {(currentSlide === groupIndex * 3) || (currentSlide > groupIndex * 3 && currentSlide < (groupIndex + 1) * 3) ? 'bg-[#D4AF37] shadow-lg shadow-[#D4AF37]/50' : 'bg-white/30 hover:bg-white/50'} hover:scale-125"
+                aria-label="Go to group {groupIndex + 1}"
+              ></button>
+            {/each}
+          </div>
+          
+          <!-- Next Arrow -->
+          <button 
+            on:click={nextSlide}
+            disabled={currentSlide >= courseDays.length - 3}
+            class="w-10 h-10 bg-white/15 backdrop-blur-sm border border-white/30 text-white hover:bg-white/25 hover:border-[#D4AF37]/50 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+            aria-label="Next slide"
+          >
+            <svg class="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -509,7 +483,7 @@
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8">
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
-              <svg class="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-8 h-8" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
@@ -526,7 +500,7 @@
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8">
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
-              <svg class="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-8 h-8" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
@@ -543,7 +517,7 @@
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8">
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
-              <svg class="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-8 h-8" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
               </svg>
             </div>
@@ -560,7 +534,7 @@
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8">
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
-              <svg class="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-8 h-8" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
               </svg>
             </div>
@@ -590,7 +564,7 @@
       
       <div class="space-y-4">
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex items-start gap-4">
-          <svg class="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-6 h-6 flex-shrink-0 mt-1" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
           <p class="text-white/90 text-lg">
@@ -599,7 +573,7 @@
         </div>
         
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex items-start gap-4">
-          <svg class="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-6 h-6 flex-shrink-0 mt-1" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
           <p class="text-white/90 text-lg">
@@ -608,7 +582,7 @@
         </div>
         
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex items-start gap-4">
-          <svg class="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-6 h-6 flex-shrink-0 mt-1" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
           <p class="text-white/90 text-lg">
@@ -617,7 +591,7 @@
         </div>
         
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex items-start gap-4">
-          <svg class="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-6 h-6 flex-shrink-0 mt-1" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
           <p class="text-white/90 text-lg">
@@ -626,7 +600,7 @@
         </div>
         
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex items-start gap-4">
-          <svg class="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-6 h-6 flex-shrink-0 mt-1" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
           <p class="text-white/90 text-lg">
@@ -635,7 +609,7 @@
         </div>
         
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex items-start gap-4">
-          <svg class="w-6 h-6 text-[#D4AF37] flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-6 h-6 flex-shrink-0 mt-1" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
           <p class="text-white/90 text-lg">
@@ -665,17 +639,17 @@
             <span class="text-5xl sm:text-6xl font-bold animate-gradient-x">$27</span>
           </div>
           <div class="inline-flex items-center px-4 py-2 bg-green-500/20 border border-[#D4AF37]/60 text-white">
-            <span class="font-bold">90% OFF - Limited Time Only</span>
+            <span class="font-bold">90% OFF - Save $270 - Limited Time Only</span>
           </div>
         </div>
         
         <button
           on:click={handleGetStarted}
-          class="btn-cart golden-border px-8 sm:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold mb-4"
+          class="btn-primary golden-border px-8 sm:px-10 py-4 sm:py-5 text-lg sm:text-xl font-bold mb-4"
         >
           <span class="flex items-center gap-2">
-            Yes, I'm Ready to Start
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            Get Instant Access For $27
+            <svg class="w-5 h-5" fill="none" stroke="url(#golden-gradient-svg)" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
             </svg>
           </span>
@@ -769,6 +743,18 @@
   /* Ensure square corners for all elements */
   * {
     border-radius: 0 !important;
+  }
+
+  /* Carousel transform - mobile (1 card at a time, full width) */
+  .carousel-track {
+    transform: translateX(calc(-1 * var(--slide-index) * 100% - var(--slide-index) * 1.5rem));
+  }
+
+  /* Carousel transform - desktop (3 cards visible, move by groups of 3) */
+  @media (min-width: 1024px) {
+    .carousel-track {
+      transform: translateX(calc(-1 * var(--slide-index) * 100% - var(--slide-index) * 1.5rem));
+    }
   }
 
   /* Animated gradient for headline */

@@ -163,21 +163,25 @@
   </header>
 
   <!-- Hero Section -->
-  <section class="relative bg-gradient-to-br from-primary-light via-primary to-secondary-dark py-16 min-h-[600px]">
+  <section class="relative bg-gradient-to-br from-primary-light via-primary to-secondary-dark pt-16 pb-16 min-h-[600px] overflow-hidden">
+    <!-- Background Image -->
+    <div class="absolute inset-0 opacity-10">
+      <img src={introBg} alt="" class="w-full h-full object-cover" />
+    </div>
     <div class="absolute inset-0 bg-black/10"></div>
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[500px]">
         <!-- Left side - Text content -->
         <div class="text-center lg:text-left">
-          <h2 class="text-4xl md:text-5xl font-bold golden-shimmer font-primary mb-4">
+          <h2 class="text-4xl md:text-5xl font-bold golden-shimmer font-primary mb-4 leading-tight">
             Transform Your Life Through Self-Coaching
           </h2>
-          <p class="text-xl text-white/90 max-w-2xl mx-auto lg:mx-0 mb-8">
+          <p class="text-xl text-white/90 max-w-2xl mx-auto lg:mx-0 mb-8 font-secondary leading-relaxed">
             Discover powerful tools and guided courses designed to help you overcome limiting beliefs, improve relationships, and achieve lasting personal transformation.
           </p>
           <button 
             on:click={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })}
-            class="btn-primary golden-border px-8 py-4"
+            class="btn-primary golden-border px-8 py-4 font-bold"
           >
             <span class="flex items-center gap-2">
               Choose your Course
