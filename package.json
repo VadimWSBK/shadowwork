@@ -27,6 +27,8 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.74.0",
     "@tailwindcss/vite": "^4.1.13",
-    "jspdf": "^3.0.3"
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
+    "pdfmake": "^0.2.20"
   }
 }

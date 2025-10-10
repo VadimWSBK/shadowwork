@@ -539,15 +539,27 @@
     if (!completedDay) return;
     
     try {
-      // Dynamic import of jsPDF
-      const { jsPDF } = await import('jspdf');
+      // Dynamic import of pdfmake
+      const pdfMakeModule = await import('pdfmake/build/pdfmake');
+      
+      // Access the default export
+      const pdfMake = pdfMakeModule.default;
+      
+      // Set up fonts - pdfmake comes with default fonts
+      pdfMake.fonts = {
+        Roboto: {
+          normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/fonts/Roboto/Roboto-Regular.ttf',
+          bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/fonts/Roboto/Roboto-Medium.ttf',
+          italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/fonts/Roboto/Roboto-Italic.ttf',
+          bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/fonts/Roboto/Roboto-MediumItalic.ttf'
+        }
+      };
+      
+      console.log('pdfMake setup complete');
       
       // Get answers for this day
       const dayAnswers = $answersStore[completedDay.id] || [];
       const dayIndex = courseData.findIndex(day => day.id === completedDay.id);
-      
-      // Create PDF with proper Unicode support
-      const pdf = new jsPDF();
       
       // Get localized date format
       const dateFormat = currentLanguage === 'en' ? 'en-US' : currentLanguage === 'de' ? 'de-DE' : 'pl-PL';
@@ -562,115 +574,155 @@
       const translatedDay = translatedCourseData.find(day => day.id === completedDay.id);
       const questionsToUse = translatedDay ? translatedDay.questions : completedDay.questions;
       
-      // Set up fonts and colors
-      pdf.setFontSize(24);
-      pdf.setTextColor(12, 110, 120); // Teal color
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(t(currentLanguage, 'pdf.title'), 20, 30);
-      
-      pdf.setFontSize(18);
-      pdf.setTextColor(60, 60, 60);
-      pdf.text(t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: completedDay.subtitle }), 20, 50);
-      
-      pdf.setFontSize(12);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(t(currentLanguage, 'pdf.completedOn', { date: formattedDate }), 20, 65);
-      
       const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
       const totalWords = dayAnswers.reduce((sum, answer) => {
         if (!answer || answer.trim().length === 0) return sum;
         return sum + answer.trim().split(/\s+/).length;
       }, 0);
       
-      pdf.text(t(currentLanguage, 'pdf.progress', { answered: answeredCount, total: questionsToUse.length }), 20, 80);
-      pdf.text(t(currentLanguage, 'pdf.totalWords', { words: totalWords }), 20, 90);
-      
-      // Add a line separator with better styling
-      pdf.setDrawColor(12, 110, 120);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 105, 190, 105);
-      
-      // Add questions and answers with improved formatting
-      let yPosition = 120;
-      const maxWidth = 170;
-      const lineHeight = 7;
-      
-      questionsToUse.forEach((question, index) => {
-        // Check if we need a new page
-        if (yPosition > 270) {
-          pdf.addPage();
-          yPosition = 20;
+      // Build the document content
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 60, 40, 60],
+        defaultStyle: {
+          font: 'Roboto',
+          fontSize: 11,
+          lineHeight: 1.3
+        },
+        content: [
+          // Title
+          {
+            text: t(currentLanguage, 'pdf.title'),
+            style: 'header',
+            margin: [0, 0, 0, 20]
+          },
+          
+          // Day title
+          {
+            text: t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: completedDay.subtitle }),
+            style: 'subheader',
+            margin: [0, 0, 0, 15]
+          },
+          
+          // Completion info
+          {
+            columns: [
+              {
+                text: t(currentLanguage, 'pdf.completedOn', { date: formattedDate }).replace(':', ':\n'),
+                style: 'info'
+              },
+              {
+                text: t(currentLanguage, 'pdf.progress', { answered: answeredCount, total: questionsToUse.length }).replace(':', ':\n'),
+                style: 'info'
+              },
+              {
+                text: t(currentLanguage, 'pdf.totalWords', { words: totalWords }).replace(':', ':\n'),
+                style: 'info'
+              }
+            ],
+            margin: [0, 0, 0, 20]
+          },
+          
+          // Questions and answers
+          ...questionsToUse.map((question, index) => {
+            const answer = dayAnswers[index] || t(currentLanguage, 'answers.noResponse');
+            
+            return [
+              // Question separator line (except for first question)
+              ...(index > 0 ? [{
+                canvas: [{
+                  type: 'line',
+                  x1: 0, y1: 0,
+                  x2: 515, y2: 0,
+                  lineWidth: 0.5,
+                  lineColor: '#cccccc'
+                }],
+                margin: [0, 20, 0, 20]
+              }] : []),
+              
+              // Question number and text
+              {
+                text: t(currentLanguage, 'questionnaire.questionNumber', { number: index + 1 }),
+                style: 'questionNumber',
+                margin: [0, index > 0 ? 0 : 10, 0, 5]
+              },
+              {
+                text: question.text,
+                style: 'questionText',
+                margin: [0, 0, 0, 8]
+              },
+              
+              // Question explanation (if available)
+              ...(question.explanation ? [{
+                text: question.explanation,
+                style: 'explanation',
+                margin: [0, 0, 0, 10]
+              }] : []),
+              
+              // Answer
+              {
+                text: t(currentLanguage, 'pdf.answer'),
+                style: 'answerLabel',
+                margin: [0, 5, 0, 3]
+              },
+              {
+                text: answer,
+                style: 'answerText',
+                margin: [0, 0, 0, 15]
+              }
+            ];
+          }).flat()
+        ],
+        styles: {
+          header: {
+            fontSize: 24,
+            bold: true,
+            color: '#0c6e78',
+            alignment: 'center'
+          },
+          subheader: {
+            fontSize: 18,
+            bold: true,
+            color: '#3c3c3c'
+          },
+          info: {
+            fontSize: 12,
+            color: '#646464'
+          },
+          questionNumber: {
+            fontSize: 13,
+            bold: true,
+            color: '#0c6e78'
+          },
+          questionText: {
+            fontSize: 11,
+            color: '#282828'
+          },
+          explanation: {
+            fontSize: 9,
+            italics: true,
+            color: '#646464'
+          },
+          answerLabel: {
+            fontSize: 10,
+            bold: true,
+            color: '#3c3c3c'
+          },
+          answerText: {
+            fontSize: 10,
+            color: '#282828'
+          }
         }
-        
-        const answer = dayAnswers[index] || t(currentLanguage, 'answers.noResponse');
-        
-        // Question number and text with better formatting
-        pdf.setFontSize(13);
-        pdf.setTextColor(12, 110, 120);
-        pdf.setFont('helvetica', 'bold');
-        const questionNumber = t(currentLanguage, 'questionnaire.questionNumber', { number: index + 1 });
-        pdf.text(questionNumber, 20, yPosition);
-        yPosition += 8;
-        
-        // Question text
-        pdf.setFontSize(11);
-        pdf.setTextColor(40, 40, 40);
-        pdf.setFont('helvetica', 'normal');
-        // Ensure proper encoding for special characters
-        const questionText = question.text.replace(/[^\x00-\x7F]/g, (char) => {
-          return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        });
-        const questionLines = pdf.splitTextToSize(questionText, maxWidth);
-        pdf.text(questionLines, 20, yPosition);
-        yPosition += questionLines.length * lineHeight + 5;
-        
-        // Question Explanation (if available)
-        if (question.explanation) {
-          pdf.setFontSize(9);
-          pdf.setTextColor(100, 100, 100);
-          pdf.setFont('helvetica', 'italic');
-          // Ensure proper encoding for special characters in explanations
-          const explanationText = question.explanation.replace(/[^\x00-\x7F]/g, (char) => {
-            return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          });
-          const explanationLines = pdf.splitTextToSize(explanationText, maxWidth);
-          pdf.text(explanationLines, 20, yPosition);
-          yPosition += explanationLines.length * lineHeight + 8;
-        }
-        
-        // Answer with better formatting
-        pdf.setFontSize(10);
-        pdf.setTextColor(60, 60, 60);
-        pdf.setFont('helvetica', 'bold');
-        const answerLabel = t(currentLanguage, 'pdf.answer');
-        pdf.text(answerLabel, 20, yPosition);
-        yPosition += 6;
-        
-        pdf.setFontSize(10);
-        pdf.setTextColor(40, 40, 40);
-        pdf.setFont('helvetica', 'normal');
-        // Ensure proper encoding for special characters in answers
-        const answerText = answer.replace(/[^\x00-\x7F]/g, (char) => {
-          return char.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        });
-        const answerLines = pdf.splitTextToSize(answerText, maxWidth);
-        pdf.text(answerLines, 20, yPosition);
-        yPosition += answerLines.length * lineHeight + 15;
-        
-        // Add subtle separator between questions
-        if (index < questionsToUse.length - 1) {
-          pdf.setDrawColor(220, 220, 220);
-          pdf.setLineWidth(0.2);
-          pdf.line(20, yPosition - 5, 190, yPosition - 5);
-        }
-      });
+      };
       
-      // Save the PDF with localized filename
+      // Generate and download PDF
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
       const fileName = t(currentLanguage, 'pdf.fileName', { 
         day: dayIndex, 
         date: new Date().toISOString().split('T')[0] 
       });
-      pdf.save(fileName);
+      
+      pdfDocGenerator.download(fileName);
       
     } catch (error) {
       console.error('Error downloading day summary:', error);
