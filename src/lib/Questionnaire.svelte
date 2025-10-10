@@ -395,9 +395,9 @@
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div class="text-center sm:text-left">
           <div class="flex items-baseline justify-center sm:justify-start gap-3">
-            <h2 class="text-xl lg:text-2xl font-bold text-white bounce-in">{currentDay.title}</h2>
+            <h2 class="text-xl lg:text-2xl font-bold text-white bounce-in font-primary">{currentDay.title}</h2>
           </div>
-          <p class="text-white/80 text-base lg:text-lg transition-all duration-300 mt-1">{currentDay.subtitle}</p>
+          <p class="text-white/80 text-base lg:text-lg transition-all duration-300 mt-1 font-secondary">{currentDay.subtitle}</p>
         </div>
         <div class="text-center sm:text-right">
           <div class="text-xl lg:text-2xl font-bold text-white transition-all duration-500 bounce-in" style="animation-delay: 0.2s;">{completionRate}%</div>
@@ -427,7 +427,7 @@
                 <div class="text-white text-base lg:text-lg font-semibold mb-2 bounce-in" style="animation-delay: 0.08s;">
                   {t(currentLanguage, 'questionnaire.questionXofY', { x: displayIndex + 1, y: questions.length })}
                 </div>
-                <h2 class="text-lg lg:text-xl font-bold text-white leading-tight mb-5 bounce-in" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
+                <h2 class="text-lg lg:text-xl font-bold text-white leading-tight mb-5 bounce-in font-primary" style="animation-delay: 0.1s;">{questions[displayIndex].text}</h2>
                 <p class="text-white/70 text-sm mt-2 italic">{questions[displayIndex].explanation}</p>
               </div>
             </div>
@@ -490,7 +490,7 @@
                   <div class="mb-1">
                     <span class="inline-flex items-center px-3 py-1 rounded bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase">{currentDay.subtitle}</span>
                   </div>
-                  <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white leading-tight mb-2 sm:mb-3 lg:mb-4">{questions[displayIndex].text}</h2>
+                  <h2 class="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white leading-tight mb-2 sm:mb-3 lg:mb-4 font-primary">{questions[displayIndex].text}</h2>
                 </div>
                 <button 
                   type="button" 
@@ -628,8 +628,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 id="modal-title" class="text-2xl font-bold text-white mb-3 drop-shadow-sm">Complete this day?</h3>
-        <p class="text-white/90 text-base leading-relaxed">
+        <h3 id="modal-title" class="text-2xl font-bold text-white mb-3 drop-shadow-sm font-primary">Complete this day?</h3>
+        <p class="text-white/90 text-base leading-relaxed font-secondary">
           You have <span class="font-bold text-white bg-white/20 px-2 py-1 rounded">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
         </p>
       </div>
@@ -646,7 +646,7 @@
         </button>
         <button
           on:click={confirmComplete}
-          class="px-8 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+          class="px-8 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
           style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
         >
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>

@@ -70,17 +70,17 @@
 <div class="mb-6 sm:mb-8">
   <!-- Day Title and Description -->
   <div class="mb-4">
-    <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{getDayIntro(currentLanguage, currentDay.id)?.title ?? currentDay.title}</h1>
-    <p class="text-white/80 text-sm lg:text-base">{getDayIntro(currentLanguage, currentDay.id)?.theme ?? currentDay.subtitle}</p>
+    <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1 font-primary">{getDayIntro(currentLanguage, currentDay.id)?.title ?? currentDay.title}</h1>
+    <p class="text-white/80 text-sm lg:text-base font-secondary">{getDayIntro(currentLanguage, currentDay.id)?.theme ?? currentDay.subtitle}</p>
   </div>
   
   <div class="flex justify-between items-center">
     <div>
-      <p class="text-white/80">{t(currentLanguage, 'answers.byUser', { username })}</p>
+      <p class="text-white/80 font-secondary">{t(currentLanguage, 'answers.byUser', { username })}</p>
     </div>
     <button
       on:click={onBack}
-      class="px-6 py-3 text-sm font-medium text-white rounded shadow-lg transition-all duration-200 hover:opacity-90"
+      class="px-6 py-3 text-sm font-medium text-white rounded shadow-lg transition-all duration-200 hover:opacity-90 font-primary"
       style="background-color: #0C6E78;"
     >
       <span class="relative z-10 flex items-center gap-2">
@@ -100,14 +100,14 @@
       <!-- Question Header -->
       <div class="p-4 sm:p-5 lg:p-6 border-b border-white/20">
         <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 text-white/80 font-bold text-lg">
+          <div class="flex-shrink-0 text-white/80 font-bold text-lg font-primary">
             {i + 1}
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="text-lg font-semibold text-white leading-relaxed mb-2">
+            <h3 class="text-lg font-semibold text-white leading-relaxed mb-2 font-primary">
               {question.text}
             </h3>
-            <p class="text-sm text-white/70 italic leading-relaxed">
+            <p class="text-sm text-white/70 italic leading-relaxed font-secondary">
               {question.explanation}
             </p>
           </div>
@@ -128,14 +128,14 @@
             <div class="flex justify-end gap-3">
               <button
                 on:click={cancelEdit}
-                class="px-4 py-2 text-sm font-medium text-white/80 bg-white/20 hover:bg-white/30 rounded transition-all duration-200 border border-white/30"
+                class="px-4 py-2 text-sm font-medium text-white/80 bg-white/20 hover:bg-white/30 rounded transition-all duration-200 border border-white/30 font-secondary"
               >
                 {t(currentLanguage, 'answers.cancel')}
               </button>
               <button
                 on:click={saveEdit}
                 disabled={isSaving}
-                class="px-6 py-2 text-sm font-bold text-white rounded shadow-md transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-6 py-2 text-sm font-bold text-white rounded shadow-md transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed font-primary"
                 style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
               >
                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -160,7 +160,7 @@
             {#if answers[i] && answers[i].trim()}
               <div class="relative">
                 <div class="bg-white/20 rounded p-6 border border-white/30 shadow-inner min-h-[120px] relative group-hover:border-white/50 transition-all duration-200 backdrop-blur-sm">
-                  <p class="text-white/90 leading-relaxed whitespace-pre-wrap text-base">
+                  <p class="text-white/90 leading-relaxed whitespace-pre-wrap text-base font-secondary">
                     {answers[i]}
                   </p>
                   
@@ -178,17 +178,17 @@
                 </div>
                 
                 <!-- Character Count -->
-                <div class="mt-2 text-xs text-white/60 text-right">
+                <div class="mt-2 text-xs text-white/60 text-right font-secondary">
                   {t(currentLanguage, 'questionnaire.characters', { count: answers[i].length })}
                 </div>
               </div>
             {:else}
               <div class="bg-white/10 rounded p-6 border-2 border-dashed border-white/30 text-center min-h-[120px] flex items-center justify-center relative group-hover:border-white/50 transition-all duration-200 backdrop-blur-sm">
                 <div>
-                  <p class="text-white/70 italic mb-3">{t(currentLanguage, 'answers.noResponse')}</p>
+                  <p class="text-white/70 italic mb-3 font-secondary">{t(currentLanguage, 'answers.noResponse')}</p>
                   <button
                     on:click={() => startEditing(i)}
-                    class="px-4 py-2 text-sm font-medium text-white rounded shadow-md transition-all duration-200"
+                    class="px-4 py-2 text-sm font-medium text-white rounded shadow-md transition-all duration-200 font-primary"
                     style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
                   >
                     {t(currentLanguage, 'answers.addResponse')}
@@ -204,31 +204,31 @@
 </div>
 <!-- Summary Stats -->
 <div class="mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-7 lg:pt-8 border-t border-white/30">
-  <h2 class="text-xl font-semibold text-white mb-4 sm:mb-5 lg:mb-6 text-center">{t(currentLanguage, 'answers.daySummary')}</h2>
+  <h2 class="text-xl font-semibold text-white mb-4 sm:mb-5 lg:mb-6 text-center font-primary">{t(currentLanguage, 'answers.daySummary')}</h2>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
     <div class="text-center p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-white/10 to-white/20 rounded border border-white/30 shadow-sm backdrop-blur-sm">
-      <div class="text-3xl font-bold text-white mb-2">
+      <div class="text-3xl font-bold text-white mb-2 font-primary">
         {answers.filter(a => a && a.trim()).length}
       </div>
-      <div class="text-sm text-white/90 font-medium">
+      <div class="text-sm text-white/90 font-medium font-secondary">
         {t(currentLanguage, 'answers.questionsAnswered')}
       </div>
     </div>
     
     <div class="text-center p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-white/10 to-white/20 rounded border border-white/30 shadow-sm backdrop-blur-sm">
-      <div class="text-3xl font-bold text-white mb-2">
+      <div class="text-3xl font-bold text-white mb-2 font-primary">
         {answers.filter(a => a && a.trim()).reduce((total, answer) => total + answer.length, 0).toLocaleString()}
       </div>
-      <div class="text-sm text-white/90 font-medium">
+      <div class="text-sm text-white/90 font-medium font-secondary">
         {t(currentLanguage, 'answers.totalCharacters')}
       </div>
     </div>
     
     <div class="text-center p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-white/10 to-white/20 rounded border border-white/30 shadow-sm backdrop-blur-sm">
-      <div class="text-3xl font-bold text-white mb-2">
+      <div class="text-3xl font-bold text-white mb-2 font-primary">
         {Math.round((answers.filter(a => a && a.trim()).length / questions.length) * 100)}%
       </div>
-      <div class="text-sm text-white/90 font-medium">
+      <div class="text-sm text-white/90 font-medium font-secondary">
         {t(currentLanguage, 'answers.completionRate')}
       </div>
     </div>
@@ -236,7 +236,7 @@
         
         <div class="mt-6 sm:mt-7 lg:mt-8 text-center">
           <div class="bg-gradient-to-r from-white/10 to-white/20 rounded p-4 sm:p-5 lg:p-6 border border-white/30">
-            <p class="text-white/90 text-base leading-relaxed max-w-3xl mx-auto">
+            <p class="text-white/90 text-base leading-relaxed max-w-3xl mx-auto font-secondary">
               {t(currentLanguage, 'answers.summaryParagraph')}
             </p>
           </div>

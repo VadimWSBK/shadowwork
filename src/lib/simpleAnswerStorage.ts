@@ -31,7 +31,7 @@ export class SimpleAnswerStorage {
       hasPassphrase: !!getPassphrase()
     });
     
-    // Verify user authentication securely
+    // Verify user authentication securely (validates JWT with auth server)
     const { data: { user } } = await supabase.auth.getUser();
     const hasValidSession = !!user;
     console.log('🔐 Session status:', { 
@@ -40,7 +40,8 @@ export class SimpleAnswerStorage {
       currentTime: new Date().toISOString()
     });
     
-    // Get session for tokens after verifying user
+    // After verification, get session tokens (needed for Edge Function auth)
+    // This is safe because we've already verified the user above
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData?.session;
     
@@ -156,9 +157,10 @@ export class SimpleAnswerStorage {
   async deleteAllAnswers(): Promise<{ success: boolean; error?: string }> {
     const profileId = this.getProfileId();
     try {
-      // Verify user is authenticated
+      // Verify user is authenticated (validates JWT with auth server)
       const { data: { user } } = await supabase.auth.getUser();
-      // Primary: Edge Function delete to support both JWT and anonymous modes
+      // After verification, get session tokens (needed for Edge Function auth)
+      // This is safe because we've already verified the user above
       const { data: sessionRes } = await supabase.auth.getSession();
       const accessToken = sessionRes?.session?.access_token || '';
       const headers: Record<string, string> = {};

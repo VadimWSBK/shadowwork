@@ -78,10 +78,13 @@
     } catch {}
 
     // Bridge client session to server cookies so server-side guards allow app routes
+    // Verify user is authenticated (validates JWT with auth server)
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       isVerifying = true;
       verifyMessage = 'Redirecting to dashboard…';
+      // After verification, get session tokens (needed for cookie bridging)
+      // This is safe because we've already verified the user above
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         isVerifying = false;

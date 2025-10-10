@@ -64,8 +64,9 @@
 
       // With detectSessionInUrl enabled, Supabase may have already exchanged the code.
       // If nothing was processed, ensure a session exists before proceeding.
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!processed && !session) {
+      // Verify user is authenticated (validates JWT with auth server)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!processed && !user) {
         throw new Error('Missing or invalid reset parameters');
       }
     } catch (e: any) {
@@ -75,8 +76,11 @@
 
     // Persist session cookies on the server so guarded routes work
     try {
+      // Verify user is authenticated (validates JWT with auth server)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // After verification, get session tokens (needed for cookie bridging)
+        // This is safe because we've already verified the user above
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await fetch('/auth/cookie', {

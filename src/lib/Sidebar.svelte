@@ -69,8 +69,8 @@
     <div class="flex items-center justify-between">
       {#if !isCollapsed}
         <div>
-          <h1 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'sidebar.title')}</h1>
-          <p class="text-white/80 text-sm">{t(currentLanguage, 'sidebar.subtitle')}</p>
+          <h1 class="text-xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'sidebar.title')}</h1>
+          <p class="text-white/80 text-sm font-secondary">{t(currentLanguage, 'sidebar.subtitle')}</p>
         </div>
       {/if}
       
@@ -108,8 +108,8 @@
     <div class="p-6 border-b border-white/30">
       <div class="mb-3">
         <div class="flex justify-between items-center mb-2">
-          <span class="text-white text-sm font-medium">{t(currentLanguage, 'sidebar.overallProgress')}</span>
-          <span class="text-white text-sm font-bold">{Math.round(overallProgress)}%</span>
+          <span class="text-white text-sm font-medium font-secondary">{t(currentLanguage, 'sidebar.overallProgress')}</span>
+          <span class="text-white text-sm font-bold font-primary">{Math.round(overallProgress)}%</span>
         </div>
         <div class="w-full bg-white/25 rounded h-2">
           <div 
@@ -118,7 +118,7 @@
           ></div>
         </div>
       </div>
-      <p class="text-white/70 text-xs">{t(currentLanguage, 'sidebar.completedOf100', { count: Math.round((overallProgress / 100) * 100) })}</p>
+      <p class="text-white/70 text-xs font-secondary">{t(currentLanguage, 'sidebar.completedOf100', { count: Math.round((overallProgress / 100) * 100) })}</p>
     </div>
   {:else}
     <!-- Collapsed progress indicator -->
@@ -141,7 +141,7 @@
             ></circle>
           </svg>
           <div class="absolute inset-0 flex items-center justify-center">
-            <span class="text-white text-xs font-bold">{Math.round(overallProgress)}%</span>
+            <span class="text-white text-xs font-bold font-primary">{Math.round(overallProgress)}%</span>
           </div>
         </div>
       </div>
@@ -201,7 +201,7 @@
             <div class="flex items-center justify-between">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">{day.title}</span>
+                  <span class="font-medium font-primary">{day.title}</span>
                   {#if day.id !== 'intro'}
                     <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded text-white/90 {completion === 100 ? 'bg-green-500' : 'bg-white/20'}">
                       {completion}%
@@ -209,11 +209,11 @@
                   {/if}
                 </div>
                 {#if day.subtitle}
-                  <div class="text-xs text-white/70 mt-1">{day.subtitle}</div>
+                  <div class="text-xs text-white/70 mt-1 font-secondary">{day.subtitle}</div>
                 {/if}
               </div>
               {#if day.id !== 'intro'}
-                <div class="flex flex-col items-end text-xs text-white/70 ml-2">
+                <div class="flex flex-col items-end text-xs text-white/70 ml-2 font-secondary">
                   <div>{t(currentLanguage, 'sidebar.questionsCount', { count: day.questions.length })}</div>
                 </div>
               {/if}
@@ -231,8 +231,8 @@
   {#if !isCollapsed}
     <div class="p-6 border-t border-white/30">
       <div class="text-center">
-        <p class="text-white/70 text-xs">{t(currentLanguage, 'sidebar.footerLine1')}</p>
-        <p class="text-white/70 text-xs">{t(currentLanguage, 'sidebar.footerLine2')}</p>
+        <p class="text-white/70 text-xs font-secondary">{t(currentLanguage, 'sidebar.footerLine1')}</p>
+        <p class="text-white/70 text-xs font-secondary">{t(currentLanguage, 'sidebar.footerLine2')}</p>
       </div>
     </div>
   {/if}

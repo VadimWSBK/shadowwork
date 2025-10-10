@@ -61,7 +61,7 @@
     
     <!-- Content Card -->
     <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded shadow-2xl p-8">
-      <h1 class="text-4xl font-bold text-white mb-2">{t(currentLanguage, 'pages.disclaimer')}</h1>
+      <h1 class="text-4xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'pages.disclaimer')}</h1>
       <p class="text-white/60 text-sm mb-8">{t(currentLanguage, 'pages.lastUpdated', { date: getFormattedDate() })}</p>
       
       <div class="prose prose-invert max-w-none space-y-6 text-white/90">
@@ -73,7 +73,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-              <h3 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'disclaimer.important.title')}</h3>
+              <h3 class="text-xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'disclaimer.important.title')}</h3>
               <p class="text-white/90 leading-relaxed">
                 {t(currentLanguage, 'disclaimer.important.content')}
               </p>
@@ -82,7 +82,7 @@
         </div>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section1.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section1.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section1.intro')}
           </p>
@@ -98,7 +98,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section2.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section2.title')}</h2>
           <p class="leading-relaxed">
             <strong>{t(currentLanguage, 'disclaimer.section2.intro')}</strong>
           </p>
@@ -115,7 +115,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section3.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section3.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section3.intro')}
           </p>
@@ -132,7 +132,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section4.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section4.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section4.intro')}
           </p>
@@ -148,7 +148,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section5.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section5.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section5.intro')}
           </p>
@@ -164,7 +164,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section6.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section6.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section6.intro')}
           </p>
@@ -177,7 +177,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section7.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section7.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section7.intro')}
           </p>
@@ -191,14 +191,14 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section8.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section8.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section8.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section9.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section9.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section9.intro')}
           </p>
@@ -211,28 +211,28 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section10.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section10.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section10.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section11.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section11.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section11.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section12.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section12.title')}</h2>
           <p class="leading-relaxed font-semibold">
             {t(currentLanguage, 'disclaimer.section12.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'disclaimer.section13.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'disclaimer.section13.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'disclaimer.section13.intro')}
           </p>

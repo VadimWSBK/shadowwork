@@ -281,7 +281,7 @@
       <div class="flex items-center justify-center py-20">
         <div class="text-center">
           <div class="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p class="text-white/70">Loading your journey...</p>
+          <p class="text-white/70 font-secondary">Loading your journey...</p>
         </div>
       </div>
     {:else}
@@ -289,10 +289,10 @@
     <!-- Welcome Header -->
     <div class="relative overflow-hidden rounded bg-gradient-to-br from-white/20 via-white/10 to-white/5 backdrop-blur-xl border border-white/30 p-8 shadow-2xl">
       <div class="relative z-10">
-        <h1 class="text-3xl lg:text-4xl font-bold text-white mb-2">
+        <h1 class="text-3xl lg:text-4xl font-bold text-white mb-2 font-primary">
           {t(currentLanguage, 'dashboard.welcomeBack', { username })}
         </h1>
-        <p class="text-white/80 text-lg">
+        <p class="text-white/80 text-lg font-secondary">
           {#if overallCompletion === 100}
             {t(currentLanguage, 'dashboard.congratulationsComplete')}
           {:else if overallCompletion === 0}
@@ -317,12 +317,12 @@
       <!-- Overall Progress -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.overallProgress')}</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.overallProgress')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
         </div>
-        <div class="text-4xl font-bold text-white mb-2">{overallCompletion}%</div>
+        <div class="text-4xl font-bold text-white mb-2 font-primary">{overallCompletion}%</div>
         <div class="w-full bg-white/20 rounded-full h-2">
           <div 
             class="bg-green-500 h-2 rounded-full"
@@ -334,37 +334,37 @@
       <!-- Questions Answered -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.questions')}</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.questions')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <div class="text-4xl font-bold text-white mb-1">{totalAnswered}/{totalQuestions}</div>
-        <p class="text-white/60 text-sm">{t(currentLanguage, 'dashboard.questionsAnswered')}</p>
+        <div class="text-4xl font-bold text-white mb-1 font-primary">{totalAnswered}/{totalQuestions}</div>
+        <p class="text-white/60 text-sm font-secondary">{t(currentLanguage, 'dashboard.questionsAnswered')}</p>
       </div>
 
       <!-- Days Completed -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.daysDone')}</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.daysDone')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <div class="text-4xl font-bold text-white mb-1">{daysCompleted}/7</div>
-        <p class="text-white/60 text-sm">{t(currentLanguage, 'dashboard.daysCompleted')}</p>
+        <div class="text-4xl font-bold text-white mb-1 font-primary">{daysCompleted}/7</div>
+        <p class="text-white/60 text-sm font-secondary">{t(currentLanguage, 'dashboard.daysCompleted')}</p>
       </div>
 
       <!-- Total Words -->
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide">{t(currentLanguage, 'dashboard.written')}</h3>
+          <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.written')}</h3>
           <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
         </div>
-        <div class="text-4xl font-bold text-white mb-1">{totalWords}</div>
-        <p class="text-white/60 text-sm">{t(currentLanguage, 'dashboard.wordsWritten')}</p>
+        <div class="text-4xl font-bold text-white mb-1 font-primary">{totalWords}</div>
+        <p class="text-white/60 text-sm font-secondary">{t(currentLanguage, 'dashboard.wordsWritten')}</p>
       </div>
     </div>
 
@@ -373,17 +373,17 @@
       <div class="bg-gradient-to-br from-[#0C6E78]/30 to-[#0A5A63]/30 backdrop-blur-xl border border-[#0C6E78]/50 rounded p-6 shadow-lg mt-4">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'app.continueJourneyButton')}</h2>
-            <p class="text-white/80 text-sm">
+            <h2 class="text-xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'app.continueJourneyButton')}</h2>
+            <p class="text-white/80 text-sm font-secondary">
               {currentDay.title}: {currentDay.subtitle}
             </p>
-            <p class="text-white/60 text-sm mt-1">
+            <p class="text-white/60 text-sm mt-1 font-secondary">
               {getDayCompletion(currentDay.id)}% {t(currentLanguage, 'dashboard.percentComplete')}
             </p>
           </div>
           <button
             on:click={() => onDayChange(currentDay)}
-            class="px-6 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border whitespace-nowrap"
+            class="px-6 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border whitespace-nowrap font-primary"
             style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
           >
             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
@@ -400,14 +400,14 @@
       <div class="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'dashboard.readyToBeginTitle')}</h2>
-            <p class="text-white/80 text-sm">
+            <h2 class="text-xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'dashboard.readyToBeginTitle')}</h2>
+            <p class="text-white/80 text-sm font-secondary">
               {t(currentLanguage, 'dashboard.readyToBeginDescription')}
             </p>
           </div>
           <button
             on:click={onStartIntro}
-            class="px-6 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border whitespace-nowrap"
+            class="px-6 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border whitespace-nowrap font-primary"
             style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
           >
             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
@@ -429,8 +429,8 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white mb-1">{t(currentLanguage, 'dashboard.journeyComplete')}</h2>
-            <p class="text-white/80 text-sm">
+            <h2 class="text-xl font-bold text-white mb-1 font-primary">{t(currentLanguage, 'dashboard.journeyComplete')}</h2>
+            <p class="text-white/80 text-sm font-secondary">
               {t(currentLanguage, 'dashboard.journeyCompleteDescription')}
             </p>
           </div>
@@ -441,7 +441,7 @@
     <!-- Days Overview -->
     <div class="mt-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-white">{t(currentLanguage, 'dashboard.yourJourney')}</h2>
+        <h2 class="text-2xl font-bold text-white font-primary">{t(currentLanguage, 'dashboard.yourJourney')}</h2>
         <button
           on:click={onStartIntro}
           class="text-white/70 hover:text-white text-sm flex items-center gap-2 transition-colors"
@@ -480,7 +480,7 @@
                 <div class="text-white text-sm font-semibold uppercase tracking-wide mb-1">
                   Day {index + 1}
                 </div>
-                <h3 class="text-lg font-bold text-white mb-1">{day.subtitle}</h3>
+                <h3 class="text-lg font-bold text-white mb-1 font-primary">{day.subtitle}</h3>
               </div>
               
               {#if isComplete}

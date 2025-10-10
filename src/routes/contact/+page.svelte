@@ -142,7 +142,7 @@
     
     <!-- Header -->
     <div class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-white mb-4">{t(currentLanguage, 'contact.title')}</h1>
+      <h1 class="text-4xl font-bold text-white mb-4 font-primary">{t(currentLanguage, 'contact.title')}</h1>
       <p class="text-white/70 text-lg">{t(currentLanguage, 'contact.subtitle')}</p>
     </div>
     
@@ -160,7 +160,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <div>
-                  <h3 class="text-lg font-semibold text-white mb-2">{t(currentLanguage, 'contact.form.success.title')}</h3>
+                  <h3 class="text-lg font-semibold text-white mb-2 font-primary">{t(currentLanguage, 'contact.form.success.title')}</h3>
                   <p class="text-white/80">
                     {t(currentLanguage, 'contact.form.success.message')}
                   </p>
@@ -183,7 +183,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3l-6.928-12c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                 </svg>
                 <div>
-                  <h3 class="text-lg font-semibold text-white mb-2">{t(currentLanguage, 'contact.form.error.title')}</h3>
+                  <h3 class="text-lg font-semibold text-white mb-2 font-primary">{t(currentLanguage, 'contact.form.error.title')}</h3>
                   <p class="text-white/80">
                     {t(currentLanguage, 'contact.form.error.message')}
                   </p>
@@ -299,7 +299,7 @@
         
         <!-- Response Time -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.responseTime.title')}</h3>
+          <h3 class="text-lg font-semibold text-white mb-3 font-primary">{t(currentLanguage, 'contact.info.responseTime.title')}</h3>
           <p class="text-white/70 text-sm leading-relaxed">
             {t(currentLanguage, 'contact.info.responseTime.message')}
           </p>
@@ -307,7 +307,7 @@
         
         <!-- Alternative Contact -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.alternativeContact.title')}</h3>
+          <h3 class="text-lg font-semibold text-white mb-3 font-primary">{t(currentLanguage, 'contact.info.alternativeContact.title')}</h3>
           <div class="space-y-3 text-sm">
             <div class="flex items-center gap-3 text-white/70">
               <svg class="w-4 h-4 text-[#0C6E78]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@
         
         <!-- FAQ Link -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.quickHelp.title')}</h3>
+          <h3 class="text-lg font-semibold text-white mb-3 font-primary">{t(currentLanguage, 'contact.info.quickHelp.title')}</h3>
           <p class="text-white/70 text-sm mb-3">
             {t(currentLanguage, 'contact.info.quickHelp.message')}
           </p>
@@ -337,7 +337,7 @@
         
         <!-- Privacy Notice -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6">
-          <h3 class="text-lg font-semibold text-white mb-3">{t(currentLanguage, 'contact.info.privacy.title')}</h3>
+          <h3 class="text-lg font-semibold text-white mb-3 font-primary">{t(currentLanguage, 'contact.info.privacy.title')}</h3>
           <p class="text-white/70 text-sm leading-relaxed">
             {t(currentLanguage, 'contact.info.privacy.message')}
           </p>

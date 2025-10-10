@@ -61,20 +61,20 @@
     
     <!-- Content Card -->
     <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded shadow-2xl p-8">
-      <h1 class="text-4xl font-bold text-white mb-2">{t(currentLanguage, 'pages.termsOfService')}</h1>
+      <h1 class="text-4xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'pages.termsOfService')}</h1>
       <p class="text-white/60 text-sm mb-8">{t(currentLanguage, 'pages.lastUpdated', { date: getFormattedDate() })}</p>
       
       <div class="prose prose-invert max-w-none space-y-6 text-white/90">
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section1.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section1.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section1.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section2.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section2.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section2.intro')}
           </p>
@@ -84,7 +84,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section3.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section3.title')}</h2>
           <p class="leading-relaxed">{t(currentLanguage, 'terms.section3.intro')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li>{t(currentLanguage, 'terms.section3.age')}</li>
@@ -98,7 +98,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section4.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section4.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section4.intro')}
           </p>
@@ -108,7 +108,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section5.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section5.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section5.intro')}
           </p>
@@ -122,7 +122,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section6.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section6.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section6.intro')}
           </p>
@@ -132,7 +132,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section7.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section7.title')}</h2>
           <p class="leading-relaxed">{t(currentLanguage, 'terms.section7.intro')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li>{t(currentLanguage, 'terms.section7.illegal')}</li>
@@ -145,7 +145,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section8.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section8.title')}</h2>
           <p class="leading-relaxed font-semibold">
             {t(currentLanguage, 'terms.section8.important')}
           </p>
@@ -162,7 +162,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section9.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section9.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section9.intro')}
           </p>
@@ -172,7 +172,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section10.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section10.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section10.intro')}
           </p>
@@ -185,7 +185,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section11.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section11.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section11.intro')}
           </p>
@@ -195,21 +195,21 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section12.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section12.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section12.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section13.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section13.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section13.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'terms.section14.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'terms.section14.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'terms.section14.intro')}
           </p>

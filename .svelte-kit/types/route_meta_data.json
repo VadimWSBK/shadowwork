@@ -8,6 +8,12 @@
 		"src/routes/+layout.server.ts",
 		"src/routes/+layout.server.ts"
 	],
+	"/api/resend-invite": [
+		"src/routes/api/resend-invite/+server.ts"
+	],
+	"/api/stripe-webhook": [
+		"src/routes/api/stripe-webhook/+server.ts"
+	],
 	"/auth/cookie": [
 		"src/routes/auth/cookie/+server.ts"
 	],
@@ -31,10 +37,16 @@
 		"src/routes/login/+page.server.ts",
 		"src/routes/+layout.server.ts"
 	],
+	"/payment-confirmation": [
+		"src/routes/+layout.server.ts"
+	],
 	"/privacy": [
 		"src/routes/+layout.server.ts"
 	],
 	"/reset": [
+		"src/routes/+layout.server.ts"
+	],
+	"/sales": [
 		"src/routes/+layout.server.ts"
 	],
 	"/signup": [

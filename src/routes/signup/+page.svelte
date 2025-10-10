@@ -95,9 +95,8 @@
           processed = true;
         }
 
-        // Verify we have a valid session
+        // Verify we have a valid session (validates JWT with auth server)
         const { data: { user } } = await supabase.auth.getUser();
-        const { data: { session } } = await supabase.auth.getSession();
         
         if (!processed && !user) {
           throw new Error('Missing or invalid invite parameters');
@@ -107,6 +106,9 @@
 
         // Bridge client session to server cookies for guarded routes
         try {
+          // After verification, get session tokens (needed for cookie bridging)
+          // This is safe because we've already verified the user above
+          const { data: { session } } = await supabase.auth.getSession();
           if (session) {
             await fetch('/auth/cookie', {
               method: 'POST',
@@ -175,6 +177,8 @@
       infoMessage = t(currentLanguage, 'signup.success');
       // Ensure server cookies are set
       try {
+        // Get session tokens for cookie bridging (user already verified above)
+        // This is safe because we've already called getUser() and updated the user
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await fetch('/auth/cookie', {

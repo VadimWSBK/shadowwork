@@ -3,6 +3,10 @@ export default {
   content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
     extend: {
+      fontFamily: {
+        'primary': ['Playfair Display', 'ui-serif', 'Georgia', 'serif'],
+        'secondary': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+      },
       colors: {
         primary: {
           DEFAULT: '#12656B', // deep teal (left swatch)

@@ -878,11 +878,13 @@
     try {
       console.log('🗑️ Starting profile deletion process...');
       
-      // Verify user is authenticated and get access token
+      // Verify user is authenticated (validates JWT with auth server)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('No authenticated user found');
       }
+      // After verification, get session tokens (needed for Edge Function auth)
+      // This is safe because we've already verified the user above
       const { data: sessionRes } = await supabase.auth.getSession();
       const accessToken = sessionRes?.session?.access_token || '';
       const headers: Record<string, string> = {};
@@ -1080,7 +1082,7 @@
           <div class="flex items-center gap-3 ml-auto">
             <div class="relative">
               <button
-                class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90"
+                class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90 font-secondary"
                 on:click={() => (languageMenuOpen = !languageMenuOpen)}
                 bind:this={languageMenuButtonEl}
                 aria-haspopup="menu"
@@ -1091,19 +1093,19 @@
               </button>
               {#if languageMenuOpen}
                 <div class="absolute right-0 mt-2 min-w-[9rem] max-w-[90vw] bg-white/15 border border-white/30 rounded shadow-lg backdrop-blur-md p-1" bind:this={languageMenuEl}>
-                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white font-secondary {currentLanguage==='en' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('en'); languageMenuOpen = false; }}>
                     English
                   </button>
-                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white font-secondary {currentLanguage==='de' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('de'); languageMenuOpen = false; }}>
                     Deutsch
                   </button>
-                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
+                  <button class="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/20 text-white font-secondary {currentLanguage==='pl' ? 'bg-white/10' : ''}" on:click={() => { changeLanguage('pl'); languageMenuOpen = false; }}>
                     Polski
                   </button>
                 </div>
               {/if}
             </div>
-            <span class="text-white/80 text-sm font-medium hidden sm:block">{username}</span>
+            <span class="text-white/80 text-sm font-medium hidden sm:block font-secondary">{username}</span>
             <div class="flex items-center">
               <button 
                 class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded flex items-center justify-center border-2 border-white/30 shadow-lg hover:bg-white/25 transition-all duration-200"
@@ -1111,7 +1113,7 @@
                 aria-label={t(currentLanguage, 'settings.title')}
                 title={t(currentLanguage, 'settings.title')}
               >
-                <span class="text-white font-semibold text-sm">
+                <span class="text-white font-semibold text-sm font-primary">
                   {username.split(' ').map(name => name.charAt(0).toUpperCase()).join('').slice(0, 2)}
                 </span>
               </button>
@@ -1171,34 +1173,34 @@
                   <div class="absolute top-0 right-0">
                     <div class="bg-white/20 backdrop-blur-sm border border-white/30 rounded px-4 py-2 shadow-lg">
                       <div class="text-center">
-                        <div class="text-2xl font-bold text-white">{calculateCompletionRate(currentDay.id)}%</div>
-                        <div class="text-xs text-white/80 font-medium">{t(currentLanguage, 'questionnaire.complete')}</div>
+                        <div class="text-2xl font-bold text-white font-primary">{calculateCompletionRate(currentDay.id)}%</div>
+                        <div class="text-xs text-white/80 font-medium font-secondary">{t(currentLanguage, 'questionnaire.complete')}</div>
                       </div>
                     </div>
                   </div>
                 {/if}
                 <div class="flex items-center gap-3 mb-1">
-                  <h1 class="text-2xl lg:text-3xl font-bold text-white">{currentDay.title}</h1>
+                  <h1 class="text-2xl lg:text-3xl font-bold text-white font-primary">{currentDay.title}</h1>
                   {#if currentDay.id !== 'intro'}
                     <span class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded bg-white/20 text-white/90 border border-white/30">
                       {calculateCompletionRate(currentDay.id)}%
                     </span>
                   {/if}
                 </div>
-                <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
+                <p class="text-white/70 text-sm lg:text-base font-secondary">{currentDay.subtitle}</p>
               </div>
               
               <div class="grid grid-cols-1 gap-8 lg:gap-12 items-center">
                 <!-- Copy -->
                 <div class="border-l border-white/10 pl-6">
-                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded after:mt-3">
+                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 relative after:content-[''] after:block after:w-20 after:h-[3px] after:bg-white/25 after:rounded after:mt-3 font-primary">
                   {t(currentLanguage, 'app.welcomeTitle')}
                 </h2>
                 
                 <div class="mt-4 mb-6">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base font-bold text-white rounded shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                    class="px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base font-bold text-white rounded shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
                     style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                   >
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
@@ -1215,7 +1217,7 @@
                   <div class="grid grid-cols-1 gap-8">
                     <div class="relative overflow-hidden rounded p-6 lg:p-8 bg-cover bg-center bg-no-repeat ring-1 ring-white/10 w-full" style={`background-image: linear-gradient(to bottom right, rgba(0,68,75,0.65), rgba(0,68,75,0.75)), url('${introBg}')`}>
                       <img src={sittingWomanShadow} alt="silhouette" class="pointer-events-none select-none absolute -right-24 bottom-0 w-[22rem] sm:w-[26rem] md:w-[30rem] opacity-20" />
-                      <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-4">{t(currentLanguage, 'app.whatIsShadowWorkTitle')}</p>
+                      <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-4 font-secondary">{t(currentLanguage, 'app.whatIsShadowWorkTitle')}</p>
                       <div class="space-y-5 text-white/90 leading-relaxed">
                         <p>{t(currentLanguage, 'app.whatIsShadowWorkP1')}</p>
                         <p>{t(currentLanguage, 'app.whatIsShadowWorkP2')}</p>
@@ -1227,28 +1229,28 @@
                 </div>
 
                 <div class="mt-4 mb-6">
-                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">{t(currentLanguage, 'app.overviewTitle')}</p>
+                  <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2 font-secondary">{t(currentLanguage, 'app.overviewTitle')}</p>
                   <ul class="space-y-4">
                     {#each courseData.slice(1) as day}
                       <li class="flex items-start gap-3">
                         <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
                         <div>
-                          <p class="text-white font-semibold text-sm sm:text-base">{day.title}: {day.subtitle}</p>
-                          <p class="text-white/90 text-sm">{getDaySummary(currentLanguage, day.id)}</p>
+                          <p class="text-white font-semibold text-sm sm:text-base font-primary">{day.title}: {day.subtitle}</p>
+                          <p class="text-white/90 text-sm font-secondary">{getDaySummary(currentLanguage, day.id)}</p>
                         </div>
                       </li>
                     {/each}
                   </ul>
                 </div>
 
-                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-8 max-w-2xl">
+                <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-8 max-w-2xl font-secondary">
                   {t(currentLanguage, 'app.takeYourTimeLine')}
                 </p>
 
                 <div class="flex justify-start">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
                     style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                   >
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
@@ -1258,31 +1260,31 @@
                 </div>
               </div>
             <div class="mt-10 pt-6 border-t border-white/10">
-              <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2">{t(currentLanguage, 'app.howToUseTitle')}</p>
+              <p class="uppercase tracking-wide text-white/80 text-xs sm:text-sm mb-2 font-secondary">{t(currentLanguage, 'app.howToUseTitle')}</p>
               <ul class="space-y-3">
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">{t(currentLanguage, 'app.howTo1')}</span>
+                  <span class="text-white/90 font-secondary">{t(currentLanguage, 'app.howTo1')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">{t(currentLanguage, 'app.howTo2')}</span>
+                  <span class="text-white/90 font-secondary">{t(currentLanguage, 'app.howTo2')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">{t(currentLanguage, 'app.howTo3')}</span>
+                  <span class="text-white/90 font-secondary">{t(currentLanguage, 'app.howTo3')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">{t(currentLanguage, 'app.howTo4')}</span>
+                  <span class="text-white/90 font-secondary">{t(currentLanguage, 'app.howTo4')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">{t(currentLanguage, 'app.howTo5')}</span>
+                  <span class="text-white/90 font-secondary">{t(currentLanguage, 'app.howTo5')}</span>
                 </li>
                 <li class="flex items-start gap-3">
                   <span class="mt-2 inline-block w-2.5 h-2.5 rounded bg-white/80 ring-2 ring-white/30 shadow-sm flex-shrink-0"></span>
-                  <span class="text-white/90">{t(currentLanguage, 'app.howTo6')}</span>
+                  <span class="text-white/90 font-secondary">{t(currentLanguage, 'app.howTo6')}</span>
                 </li>
               </ul>
             </div>
@@ -1293,18 +1295,18 @@
             <div class=" flex items-center justify-center p-2 sm:p-4 lg:p-10" transition:slide={{ duration: 400, easing: quintOut }}>
               <div class="w-full max-w-6xl mx-auto">
                 <div class="mb-6 text-left">
-                  <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1">{currentDay.title}</h1>
-                  <p class="text-white/70 text-sm lg:text-base">{currentDay.subtitle}</p>
+                  <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1 font-primary">{currentDay.title}</h1>
+                  <p class="text-white/70 text-sm lg:text-base font-secondary">{currentDay.subtitle}</p>
                 </div>
                 
                 <div class="grid grid-cols-1 gap-8 lg:gap-12 items-start">
                   <div class="border-l border-white/10 pl-6">
-                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4">
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/70 drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] mb-4 font-primary">
                       {getDayIntro(currentLanguage, currentDay.id)?.title ?? ''}
                     </h2>
                     <div class="flex flex-wrap items-start gap-3 mb-3">
-                      <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
-                      <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
+                      <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90 font-secondary">{t(currentLanguage, 'app.themeLabel', { theme: getDayIntro(currentLanguage, currentDay.id)?.theme ?? '' })}</span>
+                      <span class="inline-flex items-start px-3 py-1 text-xs font-semibold rounded bg-white/15 border border-white/30 text-white/90 font-secondary">{t(currentLanguage, 'app.questionsLabel', { count: currentDay.questions.length })}</span>
                     </div>
                     {#if getDayImage(currentDay.id)}
                       <div class="relative w-3xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mb-4">
@@ -1327,15 +1329,15 @@
                       </div>
                     {/if}
                     
-                    <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl">
+                    <p class="text-white/90 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 max-w-2xl font-secondary">
                       {getDayIntro(currentLanguage, currentDay.id)?.intro}
                     </p>
-                    <p class="text-white/80 text-sm mb-6">{t(currentLanguage, 'app.dayIntroTip')}</p>
+                    <p class="text-white/80 text-sm mb-6 font-secondary">{t(currentLanguage, 'app.dayIntroTip')}</p>
                   
                     <div class="flex gap-3 justify-start mb-6">
                       <button
                         on:click={() => currentView = 'questionnaire'}
-                        class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border"
+                        class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
                         style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
                       >
                         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
@@ -1346,7 +1348,7 @@
                       {#if getDayStats(currentDay.id).progress === 100}
                         <button
                           on:click={() => { completedDay = currentDay; showCompletionPage = true; currentView = 'day-completion'; }}
-                          class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-semibold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-110 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                          class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-semibold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-110 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2 font-primary"
                         >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -1360,23 +1362,23 @@
                     {#if getDayStats(currentDay.id).totalQuestions > 0}
                       {@const stats = getDayStats(currentDay.id)}
                       <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded p-4">
-                        <h3 class="text-white font-semibold text-sm mb-3">{t(currentLanguage, 'app.dayStats')}</h3>
+                        <h3 class="text-white font-semibold text-sm mb-3 font-primary">{t(currentLanguage, 'app.dayStats')}</h3>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                           <div class="text-center">
-                            <div class="text-2xl font-bold text-white">{stats.answeredQuestions}</div>
-                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.questionsAnswered')}</div>
+                            <div class="text-2xl font-bold text-white font-primary">{stats.answeredQuestions}</div>
+                            <div class="text-xs text-white/70 font-secondary">{t(currentLanguage, 'app.questionsAnswered')}</div>
                           </div>
                           <div class="text-center">
-                            <div class="text-2xl font-bold text-white">{stats.progress}%</div>
-                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.progress')}</div>
+                            <div class="text-2xl font-bold text-white font-primary">{stats.progress}%</div>
+                            <div class="text-xs text-white/70 font-secondary">{t(currentLanguage, 'app.progress')}</div>
                           </div>
                           <div class="text-center">
-                            <div class="text-2xl font-bold text-white">{stats.totalWords}</div>
-                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.totalWords')}</div>
+                            <div class="text-2xl font-bold text-white font-primary">{stats.totalWords}</div>
+                            <div class="text-xs text-white/70 font-secondary">{t(currentLanguage, 'app.totalWords')}</div>
                           </div>
                           <div class="text-center">
-                            <div class="text-2xl font-bold text-white">{stats.totalCharacters}</div>
-                            <div class="text-xs text-white/70">{t(currentLanguage, 'app.totalCharacters')}</div>
+                            <div class="text-2xl font-bold text-white font-primary">{stats.totalCharacters}</div>
+                            <div class="text-xs text-white/70 font-secondary">{t(currentLanguage, 'app.totalCharacters')}</div>
                           </div>
                         </div>
                       </div>
@@ -1423,7 +1425,7 @@
                   <div class="mb-4">
                     <button
                       on:click={() => { currentView = 'questionnaire'; }}
-                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2 font-secondary"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -1435,14 +1437,14 @@
                   <!-- Page Header Container -->
                   <div class="flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
                     <!-- Day Summary Title -->
-                    <div class="text-2xl font-bold text-white text-center sm:text-left">
+                    <div class="text-2xl font-bold text-white text-center sm:text-left font-primary">
 {t(currentLanguage, 'summary.daySummaryTitle', { day: courseData.findIndex(day => day.id === completedDay.id) })}
                     </div>
                     
                     <!-- Download Button -->
                     <button
                       on:click={downloadDayPDF}
-                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2 font-secondary"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -1460,9 +1462,9 @@
                       </svg>
                     </div>
                     
-                    <h1 class="text-3xl font-bold text-white mb-4">{t(currentLanguage, 'summary.congratulations')}</h1>
-                    <p class="text-white/90 text-lg mb-3">{t(currentLanguage, 'summary.completedDay', { day: courseData.findIndex(day => day.id === completedDay.id) })}</p>
-                    <h2 class="text-xl font-semibold text-white">{completedDay.subtitle}</h2>
+                    <h1 class="text-3xl font-bold text-white mb-4 font-primary">{t(currentLanguage, 'summary.congratulations')}</h1>
+                    <p class="text-white/90 text-lg mb-3 font-secondary">{t(currentLanguage, 'summary.completedDay', { day: courseData.findIndex(day => day.id === completedDay.id) })}</p>
+                    <h2 class="text-xl font-semibold text-white font-primary">{completedDay.subtitle}</h2>
                   </div>
 
                   <!-- Day Summary Stats -->
@@ -1478,26 +1480,26 @@
                       {@const completionRate = Math.round((answeredCount / completedDay.questions.length) * 100)}
                       
                       <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
-                        <div class="text-2xl font-bold text-white mb-2">{answeredCount}/{completedDay.questions.length}</div>
-                        <p class="text-white/70 text-sm">{t(currentLanguage, 'summary.questionsAnswered')}</p>
+                        <div class="text-2xl font-bold text-white mb-2 font-primary">{answeredCount}/{completedDay.questions.length}</div>
+                        <p class="text-white/70 text-sm font-secondary">{t(currentLanguage, 'summary.questionsAnswered')}</p>
                       </div>
                       
                       <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
-                        <div class="text-2xl font-bold text-white mb-2">{totalWords}</div>
-                        <p class="text-white/70 text-sm">{t(currentLanguage, 'summary.wordsWritten')}</p>
+                        <div class="text-2xl font-bold text-white mb-2 font-primary">{totalWords}</div>
+                        <p class="text-white/70 text-sm font-secondary">{t(currentLanguage, 'summary.wordsWritten')}</p>
                       </div>
                       
                       <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 text-center shadow-lg hover:bg-white/15 transition-all duration-300">
-                        <div class="text-2xl font-bold text-white mb-2">{completionRate}%</div>
-                        <p class="text-white/70 text-sm">{t(currentLanguage, 'summary.completionRate')}</p>
+                        <div class="text-2xl font-bold text-white mb-2 font-primary">{completionRate}%</div>
+                        <p class="text-white/70 text-sm font-secondary">{t(currentLanguage, 'summary.completionRate')}</p>
                       </div>
                     {/if}
                   </div>
 
                   <!-- Day Summary -->
                   <div class="bg-white/10 backdrop-blur-xl border border-white/30 p-6 mb-8 shadow-lg">
-                    <h3 class="text-lg font-semibold text-white mb-4">{t(currentLanguage, 'summary.daySummary')}</h3>
-                    <p class="text-white/80 leading-relaxed text-base">
+                    <h3 class="text-lg font-semibold text-white mb-4 font-primary">{t(currentLanguage, 'summary.daySummary')}</h3>
+                    <p class="text-white/80 leading-relaxed text-base font-secondary">
                       {@html t(currentLanguage, 'summary.daySummaryText', { 
                         day: courseData.findIndex(day => day.id === completedDay.id),
                         theme: `<strong class="text-white">${completedDay.subtitle}</strong>`

@@ -267,8 +267,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
-        <h1 class="text-3xl font-bold text-white mb-2">{t(currentLanguage, 'login.title')}</h1>
-        <p class="text-white/80">{t(currentLanguage, 'login.subtitle')}</p>
+        <h1 class="text-3xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'login.title')}</h1>
+        <p class="text-white/80 font-secondary">{t(currentLanguage, 'login.subtitle')}</p>
       </div>
       
       {#if mounted}
@@ -319,7 +319,7 @@
         <button
           type="submit"
           disabled={!email.trim() || loading}
-          class="w-full px-6 py-3 text-sm font-bold text-white rounded shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2 border"
+          class="w-full px-6 py-3 text-sm font-bold text-white rounded shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group flex items-center justify-center gap-2 border font-primary"
           style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
         >
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -344,6 +344,15 @@
         </button>
 
       </form>
+      
+      <div class="mt-6 text-center">
+        <a
+          href="/sales"
+          class="text-sm text-white/80 hover:text-white underline underline-offset-4 transition-colors"
+        >
+          {t(currentLanguage, 'login.learnMore')}
+        </a>
+      </div>
       {/if}
 
       {#if showResetConfirm}
@@ -353,7 +362,7 @@
                on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') showResetConfirm = false; }}
           ></div>
           <div class="relative z-10 w-full max-w-md mx-auto rounded shadow-xl p-6 text-white" style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);">
-            <h3 class="text-lg font-semibold mb-2">{t(currentLanguage, 'login.resetConfirmTitle')}</h3>
+            <h3 class="text-lg font-semibold mb-2 font-primary">{t(currentLanguage, 'login.resetConfirmTitle')}</h3>
             <p class="text-sm text-white/80 mb-4">
               {t(currentLanguage, 'login.resetConfirmBody', { email: email.trim().toLowerCase() })}
             </p>

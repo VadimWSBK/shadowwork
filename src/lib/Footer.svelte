@@ -11,7 +11,7 @@
     
     <!-- Disclaimer Notice -->
     <div class="border-t border-white/10 pt-6 mb-8">
-      <p class="text-white/60 text-xs leading-relaxed">
+      <p class="text-white/60 text-xs leading-relaxed font-secondary">
         <strong>{t(currentLanguage, 'footer.disclaimerTitle')}</strong> {t(currentLanguage, 'footer.disclaimerText')}
       </p>
       <p class="text-white/50 text-xs leading-relaxed mt-2">
@@ -24,15 +24,15 @@
       
       <!-- About -->
       <div>
-        <h3 class="text-white font-semibold mb-3">{t(currentLanguage, 'footer.aboutTitle')}</h3>
-        <p class="text-white/70 text-sm leading-relaxed">
+        <h3 class="text-white font-semibold mb-3 font-primary">{t(currentLanguage, 'footer.aboutTitle')}</h3>
+        <p class="text-white/70 text-sm leading-relaxed font-secondary">
           {t(currentLanguage, 'footer.aboutText')}
         </p>
       </div>
       
       <!-- Legal -->
       <div>
-        <h3 class="text-white font-semibold mb-3">{t(currentLanguage, 'footer.legalTitle')}</h3>
+        <h3 class="text-white font-semibold mb-3 font-primary">{t(currentLanguage, 'footer.legalTitle')}</h3>
         <ul class="space-y-2 text-sm">
           <li>
             <a href="/privacy" class="text-white/70 hover:text-white transition-colors">
@@ -54,7 +54,7 @@
       
       <!-- Support -->
       <div>
-        <h3 class="text-white font-semibold mb-3">{t(currentLanguage, 'footer.supportTitle')}</h3>
+        <h3 class="text-white font-semibold mb-3 font-primary">{t(currentLanguage, 'footer.supportTitle')}</h3>
         <ul class="space-y-2 text-sm">
           <li>
             <a href="/contact" class="text-white/70 hover:text-white transition-colors">

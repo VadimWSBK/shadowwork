@@ -61,13 +61,13 @@
     
     <!-- Content Card -->
     <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded shadow-2xl p-8">
-      <h1 class="text-4xl font-bold text-white mb-2">{t(currentLanguage, 'pages.privacyPolicy')}</h1>
+      <h1 class="text-4xl font-bold text-white mb-2 font-primary">{t(currentLanguage, 'pages.privacyPolicy')}</h1>
       <p class="text-white/60 text-sm mb-8">{t(currentLanguage, 'pages.lastUpdated', { date: getFormattedDate() })}</p>
       
       <div class="prose prose-invert max-w-none space-y-6 text-white/90">
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section1.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section1.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section1.intro')}
           </p>
@@ -79,7 +79,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section2.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section2.title')}</h2>
           <p class="leading-relaxed">{t(currentLanguage, 'privacy.section2.intro')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li>{t(currentLanguage, 'privacy.section2.provide')}</li>
@@ -91,7 +91,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section3.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section3.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section3.intro')}
           </p>
@@ -104,7 +104,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section4.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section4.title')}</h2>
           <p class="leading-relaxed">
             <strong>{t(currentLanguage, 'privacy.section4.noSharing')}</strong>
           </p>
@@ -119,7 +119,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section5.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section5.title')}</h2>
           <p class="leading-relaxed">{t(currentLanguage, 'privacy.section5.intro')}</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li><strong>{t(currentLanguage, 'privacy.section5.access')}</strong></li>
@@ -134,7 +134,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section6.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section6.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section6.intro')}
           </p>
@@ -151,7 +151,7 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section7.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section7.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section7.intro')}
           </p>
@@ -165,28 +165,28 @@
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section8.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section8.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section8.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section9.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section9.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section9.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section10.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section10.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section10.content')}
           </p>
         </section>
         
         <section>
-          <h2 class="text-2xl font-bold text-white mb-3">{t(currentLanguage, 'privacy.section11.title')}</h2>
+          <h2 class="text-2xl font-bold text-white mb-3 font-primary">{t(currentLanguage, 'privacy.section11.title')}</h2>
           <p class="leading-relaxed">
             {t(currentLanguage, 'privacy.section11.intro')}
           </p>

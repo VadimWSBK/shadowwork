@@ -32,14 +32,16 @@ export const handle: Handle = async ({ event, resolve }) => {
   });
 
   event.locals.getSession = async () => {
-    // First verify the user is authenticated (secure check)
-    const { data: { user } } = await event.locals.supabase.auth.getUser();
-    // Only return session if user is verified
-    if (user) {
-      const { data: { session } } = await event.locals.supabase.auth.getSession();
-      return session;
+    // Verify the user is authenticated (secure check)
+    // getUser() validates the JWT with the auth server
+    const { data: { user }, error } = await event.locals.supabase.auth.getUser();
+    if (error || !user) {
+      return null;
     }
-    return null;
+    // After verification, get session data (needed for server-side operations)
+    // This is safe because we've already verified the user above
+    const { data: { session } } = await event.locals.supabase.auth.getSession();
+    return session;
   };
 
   return resolve(event, {
