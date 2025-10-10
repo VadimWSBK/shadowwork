@@ -822,19 +822,32 @@
 
   async function handleChangeName(event: CustomEvent<{ newName: string }>) {
     const { newName } = event.detail;
-    username = newName;
-    localStorage.setItem('shadowwork_username', newName);
     
-    // Update profile in Supabase and notify Settings of result
+    // Validate the new name
+    if (!newName.trim()) {
+      nameSaveStatus = { success: false, message: t(currentLanguage, 'settings.usernameEmpty') };
+      return;
+    }
+    
+    // Update profile in Supabase first
     const email = currentUser?.email as string | undefined;
     if (email) {
-      const { error } = await updateProfileSettings({ email, username: newName });
+      const { error } = await updateProfileSettings({ email, username: newName.trim() });
       if (error) {
-        nameSaveStatus = { success: false, message: error.message || 'Could not save name' };
-        return;
+        let errorMessage = error.message || t(currentLanguage, 'settings.changeNameErrorTitle');
+        if (error.message === 'USERNAME_TAKEN') {
+          errorMessage = t(currentLanguage, 'settings.usernameTaken');
+        }
+        nameSaveStatus = { success: false, message: errorMessage };
+      } else {
+        // Only update local state if database update succeeded
+        username = newName.trim();
+        localStorage.setItem('shadowwork_username', newName.trim());
+        nameSaveStatus = { success: true };
       }
+    } else {
+      nameSaveStatus = { success: false, message: 'No email found for user' };
     }
-    nameSaveStatus = { success: true };
   }
 
   async function handleDeleteAllData() {

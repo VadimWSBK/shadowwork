@@ -60,22 +60,52 @@ export async function updateProfileSettings(params: { email: string; username?: 
   try {
     const { data: profile, error: fetchError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, username')
       .eq('email', email)
       .single();
     if (fetchError || !profile?.id) {
       console.error('Profile not found for update:', fetchError?.message || 'No profile');
       return { error: fetchError || new Error('Profile not found') };
     }
+
+    // If trying to change username, check if it's different from current and if it's available
+    if (username && username !== profile.username) {
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .neq('id', profile.id) // Exclude current user
+        .limit(1);
+      
+      if (checkError) {
+        console.error('Error checking username availability:', checkError);
+        return { error: new Error('Could not check username availability') };
+      }
+      
+      if (existingUser && existingUser.length > 0) {
+        return { error: new Error('USERNAME_TAKEN') };
+      }
+    }
+
     const updates: Record<string, any> = {};
     if (username) updates.username = username;
     if (language) updates.language = language;
     if (Object.keys(updates).length === 0) return { error: null };
+    
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', profile.id);
-    return { error };
+    
+    if (error) {
+      // Handle specific constraint violations
+      if (error.message.includes('profiles_username_unique')) {
+        return { error: new Error('USERNAME_TAKEN') };
+      }
+      return { error };
+    }
+    
+    return { error: null };
   } catch (e) {
     console.error('Update profile settings failed:', e);
     return { error: e as Error };

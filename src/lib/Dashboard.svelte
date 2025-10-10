@@ -373,7 +373,7 @@
       <div class="bg-gradient-to-br from-[#0C6E78]/30 to-[#0A5A63]/30 backdrop-blur-xl border border-[#0C6E78]/50 rounded p-6 shadow-lg mt-4">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-white mb-2">Continue Your Journey</h2>
+            <h2 class="text-xl font-bold text-white mb-2">{t(currentLanguage, 'app.continueJourneyButton')}</h2>
             <p class="text-white/80 text-sm">
               {currentDay.title}: {currentDay.subtitle}
             </p>
@@ -388,7 +388,7 @@
           >
             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
             <span class="relative z-10 flex items-center gap-2">
-              Continue
+              {t(currentLanguage, 'app.continue')}
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
               </svg>
@@ -470,7 +470,7 @@
             >
             {#if isCurrent}
               <div class="absolute top-3 right-3 px-2 py-1 bg-[#0C6E78] text-white text-xs font-bold rounded">
-                CURRENT
+                {t(currentLanguage, 'dashboard.current')}
               </div>
             {/if}
             
