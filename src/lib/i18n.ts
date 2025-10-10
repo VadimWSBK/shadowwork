@@ -157,7 +157,8 @@ type I18nBundle = {
     'questionnaire.reflectionLabel': 'Your reflection:',
     'questionnaire.reflectionPlaceholder': 'Take your time to reflect deeply on this question...',
     'questionnaire.characters': '{count} characters',
-    'questionnaire.aimForDetail': '• Aim for 300+ characters. The more detailed, the better.',
+    'questionnaire.words': '{count} words',
+    'questionnaire.aimForDetail': '• Aim for 50+ words. The more detailed, the better.',
     'questionnaire.autoSaved': 'Auto-saved',
 
     'answers.byUser': 'Reflections by {username}',
@@ -583,6 +584,9 @@ type I18nBundle = {
     
     // Additional PDF keys
     'questionnaire.questionNumber': 'Question {number}:',
+    'questionnaire.previous': 'Previous',
+    'questionnaire.next': 'Next',
+    'questionnaire.day': 'Day',
     'errors.pdfDownloadFailed': 'Error downloading your day summary. Please try again.'
   },
   daySummaries: {
@@ -745,12 +749,13 @@ const de: I18nBundle = {
 
     'questionnaire.viewAnswers': 'Antworten ansehen',
     'questionnaire.questionXofY': 'Frage {x} von {y}',
-    'questionnaire.complete': 'Abgeschlossen',
+    'questionnaire.complete': 'Abschließen',
     'questionnaire.progressAria': 'Fortschritt',
     'questionnaire.reflectionLabel': 'Deine Reflexion:',
     'questionnaire.reflectionPlaceholder': 'Nimm dir Zeit, um diese Frage tiefgehend zu reflektieren...',
     'questionnaire.characters': '{count} Zeichen',
-    'questionnaire.aimForDetail': '• Ziel: 300+ Zeichen. Je detaillierter, desto besser.',
+    'questionnaire.words': '{count} Wörter',
+    'questionnaire.aimForDetail': '• Ziel: 50+ Wörter. Je detaillierter, desto besser.',
     'questionnaire.autoSaved': 'Automatisch gespeichert',
 
     'answers.byUser': 'Reflexionen von {username}',
@@ -1176,6 +1181,9 @@ const de: I18nBundle = {
     
     // Additional PDF keys
     'questionnaire.questionNumber': 'Frage {number}:',
+    'questionnaire.previous': 'Zurück',
+    'questionnaire.next': 'Weiter',
+    'questionnaire.day': 'Tag',
     'errors.pdfDownloadFailed': 'Fehler beim Herunterladen deiner Tag-Zusammenfassung. Bitte versuche es erneut.'
   },
   daySummaries: {
@@ -1338,12 +1346,13 @@ const pl: I18nBundle = {
 
     'questionnaire.viewAnswers': 'Zobacz odpowiedzi',
     'questionnaire.questionXofY': 'Pytanie {x} z {y}',
-    'questionnaire.complete': 'Ukończono',
+    'questionnaire.complete': 'Ukończ',
     'questionnaire.progressAria': 'Postęp',
     'questionnaire.reflectionLabel': 'Twoja refleksja:',
     'questionnaire.reflectionPlaceholder': 'Poświęć czas na głęboką refleksję nad tym pytaniem...',
     'questionnaire.characters': '{count} znaków',
-    'questionnaire.aimForDetail': '• Cel: 300+ znaków. Im bardziej szczegółowo, tym lepiej.',
+    'questionnaire.words': '{count} słów',
+    'questionnaire.aimForDetail': '• Cel: 50+ słów. Im bardziej szczegółowo, tym lepiej.',
     'questionnaire.autoSaved': 'Zapisano automatycznie',
 
     'answers.byUser': 'Refleksje użytkownika {username}',
@@ -1659,7 +1668,7 @@ const pl: I18nBundle = {
     // FAQ Page
     'faq.backToDashboard': 'Wróć do Panelu',
     'faq.title': 'Najczęściej zadawane pytania',
-    'faq.subtitle': 'Znajdź odpowiedzi na często zadawane pytania dotyczące Kursu Shadow Work. Nie możesz znaleźć tego, czego szukasz?',
+    'faq.subtitle': 'Znajdź odpowiedzi na często zadawane pytania dotyczące Kursu Pracy z Cieniem. Nie możesz znaleźć tego, czego szukasz?',
     'faq.contactSupport': 'Skontaktuj się z naszym zespołem wsparcia',
     'faq.searchPlaceholder': 'Przeszukaj FAQ...',
     'faq.noResults.title': 'Nie znaleziono wyników',
@@ -1679,8 +1688,8 @@ const pl: I18nBundle = {
     'faq.category.billingRefunds': 'Płatności i Zwroty',
     
     // Getting Started Questions
-    'faq.gettingStarted.q1': 'Czym jest Kurs Shadow Work?',
-    'faq.gettingStarted.a1': 'Kurs Shadow Work to 7-dniowy program prowadzenia dziennika, zaprojektowany aby pomóc Ci zbadać Twój wewnętrzny świat poprzez refleksyjne pytania i ćwiczenia. Jest oparty na psychologicznej koncepcji pracy z cieniem, która polega na badaniu części siebie, które mogłeś ukryć lub zignorować.',
+    'faq.gettingStarted.q1': 'Czym jest Kurs Pracy z Cieniem?',
+    'faq.gettingStarted.a1': 'Kurs Pracy z Cieniem to 7-dniowy program prowadzenia dziennika, zaprojektowany aby pomóc Ci zbadać Twój wewnętrzny świat poprzez refleksyjne pytania i ćwiczenia. Jest oparty na psychologicznej koncepcji pracy z cieniem, która polega na badaniu części siebie, które mogłeś ukryć lub zignorować.',
     
     'faq.gettingStarted.q2': 'Jak długo trwa ukończenie kursu?',
     'faq.gettingStarted.a2': 'Kurs został zaprojektowany do ukończenia w ciągu 7 dni, z jednym dniem treści dziennie. Możesz jednak iść we własnym tempie - poświęć więcej czasu, jeśli to potrzebne, lub pomiń dni w razie potrzeby. Najważniejsze to angażować się w pytania w sposób znaczący.',
@@ -1754,12 +1763,12 @@ const pl: I18nBundle = {
     'summary.wordsWritten': 'Słowa Napisane',
     'summary.completionRate': 'Wskaźnik Ukończenia',
     'summary.daySummary': 'Podsumowanie Dnia',
-    'summary.daySummaryText': 'Pomyślnie ukończyłeś Dzień {day} swojej podróży shadow work. Ten dzień koncentrował się na {theme} i pomógł Ci zbadać ważne aspekty Twojego wewnętrznego świata.',
+    'summary.daySummaryText': 'Pomyślnie ukończyłeś Dzień {day} swojej podróży pracy z cieniem. Ten dzień koncentrował się na {theme} i pomógł Ci zbadać ważne aspekty Twojego wewnętrznego świata.',
     'summary.goToDashboard': 'Przejdź do Panelu',
     'summary.continueToNextDay': 'Kontynuuj do Dnia {nextDay}',
     
     // PDF Content
-    'pdf.title': 'PODRÓŻ SHADOW WORK',
+    'pdf.title': 'PODRÓŻ PRACY Z CIENIEM',
     'pdf.dayTitle': 'Dzień {day}: {theme}',
     'pdf.completedOn': 'Ukończono: {date}',
     'pdf.progress': 'Postęp: {answered}/{total} pytań odpowiedzianych',
@@ -1769,6 +1778,9 @@ const pl: I18nBundle = {
     
     // Additional PDF keys
     'questionnaire.questionNumber': 'Pytanie {number}:',
+    'questionnaire.previous': 'Poprzednie',
+    'questionnaire.next': 'Dalej',
+    'questionnaire.day': 'Dzień',
     'errors.pdfDownloadFailed': 'Błąd podczas pobierania podsumowania dnia. Spróbuj ponownie.'
   },
   daySummaries: {

@@ -574,6 +574,9 @@
       const translatedDay = translatedCourseData.find(day => day.id === completedDay.id);
       const questionsToUse = translatedDay ? translatedDay.questions : completedDay.questions;
       
+      // Get the translated theme from dayIntros
+      const translatedTheme = translatedDay?.subtitle || completedDay.subtitle;
+      
       const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
       const totalWords = dayAnswers.reduce((sum, answer) => {
         if (!answer || answer.trim().length === 0) return sum;
@@ -599,7 +602,7 @@
           
           // Day title
           {
-            text: t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: completedDay.subtitle }),
+            text: t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: translatedTheme }),
             style: 'subheader',
             margin: [0, 0, 0, 15]
           },
@@ -1062,7 +1065,7 @@
   {#if currentView !== 'login'}
     <nav 
       bind:this={navElement}
-      class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20 transition-all duration-500 {sidebarCollapsed ? 'lg:left-20' : 'lg:left-80'}"
+      class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-t border-white/20 transition-all duration-500 {sidebarCollapsed ? 'lg:left-20' : 'lg:left-80'}"
     >
       <div class="max-w-none px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
@@ -1200,16 +1203,12 @@
                 <div class="mt-4 mb-6">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base font-bold text-white rounded shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
-                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                    class="btn-primary golden-border px-5 sm:px-6 lg:px-7 py-3 sm:py-4 lg:py-4.5 text-sm sm:text-base shadow-xl hover:shadow-2xl font-primary"
                   >
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                    <span class="relative z-10 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                      {getJourneyButtonText()}
-                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                    {getJourneyButtonText()}
                   </button>
                 </div>
 
@@ -1250,11 +1249,9 @@
                 <div class="flex justify-start">
                   <button
                     on:click={() => handleDayChange(courseData[1])}
-                    class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
-                    style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                    class="btn-primary golden-border px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base shadow-lg hover:shadow-xl font-primary"
                   >
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                    <span class="relative z-10">{getJourneyButtonText()}</span>
+                    {getJourneyButtonText()}
                   </button>
                 </div>
                 </div>
@@ -1337,18 +1334,16 @@
                     <div class="flex gap-3 justify-start mb-6">
                       <button
                         on:click={() => currentView = 'questionnaire'}
-                        class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
-                        style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                        class="btn-primary golden-border px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base shadow-lg hover:shadow-xl font-primary"
                       >
-                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                        <span class="relative z-10">{getDayButtonText(currentDay.id)}</span>
+                        {getDayButtonText(currentDay.id)}
                       </button>
                       
                       <!-- View Summary Button - Only show when day is 100% completed -->
                       {#if getDayStats(currentDay.id).progress === 100}
                         <button
                           on:click={() => { completedDay = currentDay; showCompletionPage = true; currentView = 'day-completion'; }}
-                          class="px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base font-semibold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-110 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2 font-primary"
+                          class="btn-primary px-5 sm:px-6 lg:px-7 py-2.5 sm:py-3 lg:py-3.5 text-sm sm:text-base shadow-lg hover:shadow-xl font-primary"
                         >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -1425,7 +1420,7 @@
                   <div class="mb-4">
                     <button
                       on:click={() => { currentView = 'questionnaire'; }}
-                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2 font-secondary"
+                      class="btn-primary px-4 py-2 text-sm font-secondary"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -1444,7 +1439,7 @@
                     <!-- Download Button -->
                     <button
                       on:click={downloadDayPDF}
-                      class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2 font-secondary"
+                      class="btn-primary px-4 py-2 text-sm font-secondary"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -1454,18 +1449,34 @@
                   </div>
 
                   <!-- Congratulations Section -->
-                  <div class="text-center mb-8">
-                    <!-- Success icon -->
-                    <div class="w-16 h-16 bg-white/15 backdrop-blur-xl border border-white/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    </div>
+                  {#if completedDay}
+                    {@const dayAnswers = $answersStore[completedDay.id] || []}
+                    {@const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length}
+                    {@const totalQuestions = completedDay.questions.length}
+                    {@const allAnswered = answeredCount === totalQuestions}
                     
-                    <h1 class="text-3xl font-bold text-white mb-4 font-primary">{t(currentLanguage, 'summary.congratulations')}</h1>
-                    <p class="text-white/90 text-lg mb-3 font-secondary">{t(currentLanguage, 'summary.completedDay', { day: courseData.findIndex(day => day.id === completedDay.id) })}</p>
-                    <h2 class="text-xl font-semibold text-white font-primary">{completedDay.subtitle}</h2>
-                  </div>
+                    <div class="text-center mb-8">
+                      <!-- Success icon -->
+                      <div class="w-16 h-16 bg-white/15 backdrop-blur-xl border border-white/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                      </div>
+                      
+                      {#if allAnswered}
+                        <h1 class="text-3xl font-bold text-white mb-4 font-primary">{t(currentLanguage, 'summary.congratulations')}</h1>
+                        <p class="text-white/90 text-lg mb-3 font-secondary">{t(currentLanguage, 'summary.completedDay', { day: courseData.findIndex(day => day.id === completedDay.id) })}</p>
+                        <h2 class="text-xl font-semibold text-white font-primary">{completedDay.subtitle}</h2>
+                      {:else if answeredCount > 0}
+                        <h1 class="text-3xl font-bold text-white mb-4 font-primary">Good job!</h1>
+                        <p class="text-white/90 text-lg mb-3 font-secondary">You have completed {answeredCount} question{answeredCount !== 1 ? 's' : ''} out of {totalQuestions}. Keep going.</p>
+                        <h2 class="text-xl font-semibold text-white font-primary">{completedDay.subtitle}</h2>
+                      {:else}
+                        <h1 class="text-3xl font-bold text-white mb-4 font-primary">{completedDay.subtitle}</h1>
+                        <p class="text-white/90 text-lg mb-3 font-secondary">You have completed 0 questions out of {totalQuestions}. Keep going.</p>
+                      {/if}
+                    </div>
+                  {/if}
 
                   <!-- Day Summary Stats -->
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -1512,7 +1523,7 @@
                     <!-- Go to Dashboard - Left -->
                     <button
                       on:click={goToDashboard}
-                      class="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center justify-center gap-2"
+                      class="btn-primary flex-1 px-6 py-3 text-sm"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
@@ -1524,11 +1535,9 @@
                     {#if courseData.findIndex(day => day.id === completedDay.id) < courseData.length - 1}
                       <button
                         on:click={continueToNextDay}
-                        class="flex-1 px-6 py-3 text-white font-semibold text-sm shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-110 relative overflow-hidden group border"
-                        style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                        class="btn-primary golden-border flex-1 px-6 py-3 text-sm shadow-lg hover:shadow-xl"
                       >
-                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-                        <span class="relative z-10">{t(currentLanguage, 'summary.continueToNextDay', { nextDay: courseData.findIndex(day => day.id === completedDay.id) + 1 })}</span>
+                        {t(currentLanguage, 'summary.continueToNextDay', { nextDay: courseData.findIndex(day => day.id === completedDay.id) + 1 })}
                       </button>
                     {/if}
                   </div>
@@ -1560,7 +1569,7 @@
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all duration-300 border border-white/30 hover:border-white/50 backdrop-blur-xl flex items-center gap-2"
+                  class="btn-primary px-6 py-3 text-sm"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>

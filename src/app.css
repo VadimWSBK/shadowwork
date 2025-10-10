@@ -133,3 +133,182 @@ img {
 .font-secondary {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
 }
+
+/* Golden Gradient Class */
+.golden-gradient {
+  background: linear-gradient(135deg, 
+    #FBCA29 0%, 
+    #EBD27B 1%, 
+    #D7B860 15%, 
+    #E7CE77 25%, 
+    #EBD27B 30%, 
+    #C2922E 60%, 
+    #C2922E 60%, 
+    #D0B057 87%, 
+    #AB7B2A 100%
+  );
+}
+
+.golden-gradient-text {
+  background: linear-gradient(135deg, 
+    #FBCA29 0%, 
+    #EBD27B 1%, 
+    #D7B860 15%, 
+    #E7CE77 25%, 
+    #EBD27B 30%, 
+    #C2922E 60%, 
+    #C2922E 60%, 
+    #D0B057 87%, 
+    #AB7B2A 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Golden gradient for SVG icons */
+.golden-icon {
+  stroke: url(#golden-gradient-svg);
+}
+
+/* Simplified button class with teal background */
+.btn-primary {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-radius: 0; /* Square corners */
+  background-color: #1F6E70; /* Teal background */
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  transform: scale(1.03);
+  background-color: #2A7F82; /* Slightly lighter teal on hover */
+}
+
+.btn-primary.golden-border {
+  border-image: linear-gradient(135deg, 
+    #FBCA29 0%, 
+    #EBD27B 1%, 
+    #D7B860 15%, 
+    #E7CE77 25%, 
+    #EBD27B 30%, 
+    #C2922E 60%, 
+    #C2922E 60%, 
+    #D0B057 87%, 
+    #AB7B2A 100%
+  ) 1;
+}
+
+/* Green button for add to cart actions */
+.btn-cart {
+  position: relative;
+  border: 0.5px solid transparent;
+  background-clip: padding-box;
+  border-radius: 0; /* Square corners */
+  background-color: #15803d; /* Green-700 */
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-cart:hover {
+  transform: scale(1.01);
+  background-color: #16a34a; /* Slightly lighter green on hover */
+}
+
+.btn-cart.golden-border {
+  border-image: linear-gradient(135deg, 
+    #FBCA29 0%, 
+    #EBD27B 1%, 
+    #D7B860 15%, 
+    #E7CE77 25%, 
+    #EBD27B 30%, 
+    #C2922E 60%, 
+    #C2922E 60%, 
+    #D0B057 87%, 
+    #AB7B2A 100%
+  ) 1;
+}
+
+.btn-cart.golden-border:hover {
+  background-color: #16a34a !important;
+}
+
+.golden-shimmer {
+  background: linear-gradient(135deg, 
+    #ffffff 0%, 
+    #ffffff 5%,
+    #F5E8C7 12%, 
+    #ffffff 20%, 
+    #ffffff 30%,
+    #EBD27B 40%, 
+    #ffffff 50%, 
+    #ffffff 60%,
+    #E7CE77 70%, 
+    #ffffff 80%,
+    #ffffff 90%, 
+    #ffffff 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 12s ease-in-out infinite;
+  line-height: 1.1;
+  padding-bottom: 0.2em;
+}
+
+.golden-border {
+  border-image: linear-gradient(135deg, 
+    #FBCA29 0%, 
+    #EBD27B 1%, 
+    #D7B860 15%, 
+    #E7CE77 25%, 
+    #EBD27B 30%, 
+    #C2922E 60%, 
+    #C2922E 60%, 
+    #D0B057 87%, 
+    #AB7B2A 100%
+  ) 1;
+}
+
+/* Thin golden border for sidebar dividers */
+.golden-border-subtle {
+  border-width: 0.5px;
+  border-style: solid;
+  border-image: linear-gradient(135deg, 
+    rgba(251, 202, 41, 0.3) 0%, 
+    rgba(235, 210, 123, 0.3) 1%, 
+    rgba(215, 184, 96, 0.3) 15%, 
+    rgba(231, 206, 119, 0.3) 25%, 
+    rgba(235, 210, 123, 0.3) 30%, 
+    rgba(194, 146, 46, 0.3) 60%, 
+    rgba(194, 146, 46, 0.3) 60%, 
+    rgba(208, 176, 87, 0.3) 87%, 
+    rgba(171, 123, 42, 0.3) 100%
+  ) 1;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}

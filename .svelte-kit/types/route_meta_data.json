@@ -23,6 +23,10 @@
 	"/contact": [
 		"src/routes/+layout.server.ts"
 	],
+	"/course/[slug]": [
+		"src/routes/course/[slug]/+page.server.ts",
+		"src/routes/+layout.server.ts"
+	],
 	"/(app)/dashboard": [
 		"src/routes/(app)/+layout.server.ts",
 		"src/routes/+layout.server.ts"
@@ -47,6 +51,10 @@
 		"src/routes/+layout.server.ts"
 	],
 	"/sales": [
+		"src/routes/+layout.server.ts"
+	],
+	"/shadowwork": [
+		"src/routes/shadowwork/+page.server.ts",
 		"src/routes/+layout.server.ts"
 	],
 	"/signup": [

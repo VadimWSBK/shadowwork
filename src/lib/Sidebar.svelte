@@ -65,7 +65,7 @@
 <div class="fixed top-16 left-0 bg-white/15 backdrop-blur-md border-r border-white/30 h-[calc(100vh-4rem)] flex flex-col z-40 transform transition-all duration-500 sidebar-container {isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen'} {isCollapsed ? 'w-20' : 'w-80'}">
   
   <!-- Header -->
-  <div class="border-b border-white/30 relative z-50 transition-all duration-300 {isCollapsed ? 'p-4' : 'p-6'}">
+  <div class="border-b golden-border-subtle relative z-50 transition-all duration-300 {isCollapsed ? 'p-4' : 'p-6'}">
     <div class="flex items-center justify-between">
       {#if !isCollapsed}
         <div>
@@ -105,7 +105,7 @@
   
   <!-- Overall Progress -->
   {#if !isCollapsed}
-    <div class="p-6 border-b border-white/30">
+    <div class="p-6 border-b border-white/20">
       <div class="mb-3">
         <div class="flex justify-between items-center mb-2">
           <span class="text-white text-sm font-medium font-secondary">{t(currentLanguage, 'sidebar.overallProgress')}</span>
@@ -122,7 +122,7 @@
     </div>
   {:else}
     <!-- Collapsed progress indicator -->
-    <div class="p-2 border-b border-white/30">
+    <div class="p-2 border-b border-white/20">
       <div class="flex flex-col items-center gap-2">
         <div class="relative w-12 h-12">
           <svg class="w-12 h-12 transform -rotate-90">
@@ -171,7 +171,7 @@
         {/if}
       </button>
       
-      <div class="border-b border-white/15 my-3 {isCollapsed ? 'mx-2' : 'mx-3'}"></div>
+      <div class="border-b golden-border-subtle my-3 {isCollapsed ? 'mx-2' : 'mx-3'}"></div>
       
       {#each courseData as day, index}
         {@const completion = day.id !== 'intro' ? Math.round((($answersStore[day.id] || []).filter(answer => answer && answer.trim().length > 0).length / day.questions.length) * 100) : 0}
@@ -221,7 +221,7 @@
           {/if}
         </button>
         {#if index < courseData.length - 1}
-          <div class="border-b border-white/15 my-2 {isCollapsed ? 'mx-2' : 'mx-3'}"></div>
+          <div class="border-b golden-border-subtle my-2 {isCollapsed ? 'mx-2' : 'mx-3'}"></div>
         {/if}
       {/each}
     </nav>
@@ -229,7 +229,7 @@
   
   <!-- Footer -->
   {#if !isCollapsed}
-    <div class="p-6 border-t border-white/30">
+    <div class="p-6 border-t golden-border-subtle">
       <div class="text-center">
         <p class="text-white/70 text-xs font-secondary">{t(currentLanguage, 'sidebar.footerLine1')}</p>
         <p class="text-white/70 text-xs font-secondary">{t(currentLanguage, 'sidebar.footerLine2')}</p>

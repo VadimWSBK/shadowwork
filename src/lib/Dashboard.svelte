@@ -3,6 +3,7 @@
   import { getCourseData, type DayData } from './questions';
   import type { Writable } from 'svelte/store';
   import Footer from './Footer.svelte';
+  import logo from '../assets/LOGO_SELF_COACHING_TOOLS.svg';
   
   export let courseData: DayData[];
   export let answersStore: Writable<Record<string, string[]>>;
@@ -116,6 +117,9 @@
       const translatedDay = translatedCourseData.find(d => d.id === day.id);
       const questionsToUse = translatedDay ? translatedDay.questions : day.questions;
       
+      // Get the translated theme from dayIntros
+      const translatedTheme = translatedDay?.subtitle || day.subtitle;
+      
       const answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
       const totalWords = dayAnswers.reduce((sum, answer) => {
         if (!answer || answer.trim().length === 0) return sum;
@@ -141,7 +145,7 @@
           
           // Day title
           {
-            text: t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: day.subtitle }),
+            text: t(currentLanguage, 'pdf.dayTitle', { day: dayIndex, theme: translatedTheme }),
             style: 'subheader',
             margin: [0, 0, 0, 15]
           },
@@ -288,28 +292,52 @@
     
     <!-- Welcome Header -->
     <div class="relative overflow-hidden rounded bg-gradient-to-br from-white/20 via-white/10 to-white/5 backdrop-blur-xl border border-white/30 p-8 shadow-2xl">
-      <div class="relative z-10">
-        <h1 class="text-3xl lg:text-4xl font-bold text-white mb-2 font-primary">
-          {t(currentLanguage, 'dashboard.welcomeBack', { username })}
-        </h1>
-        <p class="text-white/80 text-lg font-secondary">
-          {#if overallCompletion === 100}
-            {t(currentLanguage, 'dashboard.congratulationsComplete')}
-          {:else if overallCompletion === 0}
-            {t(currentLanguage, 'dashboard.readyToBegin')}
-          {:else if overallCompletion < 30}
-            {t(currentLanguage, 'dashboard.justGettingStarted')}
-          {:else if overallCompletion < 70}
-            {t(currentLanguage, 'dashboard.greatProgress')}
-          {:else}
-            {t(currentLanguage, 'dashboard.almostThere')}
-          {/if}
-        </p>
+      <div class="relative z-10 flex items-center gap-6">
+        <!-- Logo -->
+        <img src={logo} alt="Self Coaching Tools Logo" class="w-20 h-20 lg:w-24 lg:h-24 object-contain flex-shrink-0" />
+        
+        <!-- Text Content -->
+        <div>
+          <h1 class="text-3xl lg:text-4xl font-bold mb-2 font-primary">
+            <span class="golden-shimmer">
+              {t(currentLanguage, 'dashboard.welcomeBack', { username })}
+            </span>
+          </h1>
+          <p class="text-white/80 text-lg font-secondary">
+            {#if overallCompletion === 100}
+              {t(currentLanguage, 'dashboard.congratulationsComplete')}
+            {:else if overallCompletion === 0}
+              {t(currentLanguage, 'dashboard.readyToBegin')}
+            {:else if overallCompletion < 30}
+              {t(currentLanguage, 'dashboard.justGettingStarted')}
+            {:else if overallCompletion < 70}
+              {t(currentLanguage, 'dashboard.greatProgress')}
+            {:else}
+              {t(currentLanguage, 'dashboard.almostThere')}
+            {/if}
+          </p>
+        </div>
       </div>
       
       <!-- Background decoration -->
       <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl opacity-50"></div>
     </div>
+
+    <!-- SVG Gradient Definition (hidden, reusable) -->
+    <svg class="absolute w-0 h-0" aria-hidden="true">
+      <defs>
+        <linearGradient id="golden-gradient-svg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#FBCA29;stop-opacity:1" />
+          <stop offset="1%" style="stop-color:#EBD27B;stop-opacity:1" />
+          <stop offset="15%" style="stop-color:#D7B860;stop-opacity:1" />
+          <stop offset="25%" style="stop-color:#E7CE77;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#EBD27B;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#C2922E;stop-opacity:1" />
+          <stop offset="87%" style="stop-color:#D0B057;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#AB7B2A;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+    </svg>
 
     <!-- Statistics Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -318,7 +346,7 @@
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.overallProgress')}</h3>
-          <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 golden-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
         </div>
@@ -335,7 +363,7 @@
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.questions')}</h3>
-          <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 golden-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
@@ -347,7 +375,7 @@
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.daysDone')}</h3>
-          <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 golden-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
@@ -359,7 +387,7 @@
       <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded p-6 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-white/80 text-sm font-medium uppercase tracking-wide font-secondary">{t(currentLanguage, 'dashboard.written')}</h3>
-          <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 golden-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
         </div>
@@ -383,10 +411,8 @@
           </div>
           <button
             on:click={() => onDayChange(currentDay)}
-            class="px-6 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border whitespace-nowrap font-primary"
-            style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+            class="btn-primary golden-border px-6 py-3 text-base font-bold whitespace-nowrap font-primary"
           >
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
             <span class="relative z-10 flex items-center gap-2">
               {t(currentLanguage, 'app.continue')}
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,11 +433,9 @@
           </div>
           <button
             on:click={onStartIntro}
-            class="px-6 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border whitespace-nowrap font-primary"
-            style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+            class="btn-primary golden-border px-6 py-3 text-base shadow-lg hover:shadow-xl whitespace-nowrap font-primary"
           >
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-            <span class="relative z-10 flex items-center gap-2">
+            <span class="flex items-center gap-2">
               {t(currentLanguage, 'dashboard.viewIntroduction')}
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
@@ -440,7 +464,7 @@
 
     <!-- Days Overview -->
     <div class="mt-6">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-start justify-between mb-4">
         <h2 class="text-2xl font-bold text-white font-primary">{t(currentLanguage, 'dashboard.yourJourney')}</h2>
         <button
           on:click={onStartIntro}
@@ -453,7 +477,7 @@
         </button>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
         {#each courseData.slice(1) as day, index}
           {@const completion = getDayCompletion(day.id)}
           {@const isComplete = completion === 100}
@@ -461,26 +485,28 @@
           {@const isCurrent = currentDay?.id === day.id}
           {@const words = getDayWords(day.id)}
           
-          <div class="group relative">
+          <div class="group relative w-full">
             <button
               on:click={() => onDayChange(day)}
-              class="w-full h-64 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/30 hover:border-white/40 rounded p-6 shadow-lg transition-all duration-300 text-left hover:scale-[1.02] hover:shadow-lg flex flex-col"
+              class="btn-primary w-full min-h-[16rem] p-6 text-left flex flex-col items-start"
+              class:golden-border={isCurrent}
               class:ring-2={isCurrent}
               class:ring-[#0C6E78]={isCurrent}
             >
+              <div class="shimmer-effect"></div>
             {#if isCurrent}
-              <div class="absolute top-3 right-3 px-2 py-1 bg-[#0C6E78] text-white text-xs font-bold rounded">
+              <div class="absolute top-3 right-3 px-2 py-1 bg-[#0C6E78] text-white text-xs font-bold golden-border border">
                 {t(currentLanguage, 'dashboard.current')}
               </div>
             {/if}
             
             <!-- Header Section -->
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <div class="text-white text-sm font-semibold uppercase tracking-wide mb-1">
+            <div class="flex items-start justify-between mb-3 w-full">
+              <div class="text-left">
+                <div class="text-white text-sm font-semibold uppercase tracking-wide mb-1 text-left">
                   Day {index + 1}
                 </div>
-                <h3 class="text-lg font-bold text-white mb-1 font-primary">{day.subtitle}</h3>
+                <h3 class="text-lg font-bold text-white mb-1 font-primary text-left">{day.subtitle}</h3>
               </div>
               
               {#if isComplete}
@@ -505,14 +531,14 @@
             </div>
             
             <!-- Description Section - Takes up available space -->
-            <div class="flex-1 mb-4">
-              <p class="text-white/70 text-sm line-clamp-3">
+            <div class="flex-1 mb-4 w-full">
+              <p class="text-white/70 text-sm line-clamp-3 text-left">
                 {getDaySummary(currentLanguage, day.id)}
               </p>
             </div>
             
             <!-- Progress Bar Section -->
-            <div class="space-y-2">
+            <div class="space-y-2 w-full">
               <div class="flex items-center justify-between text-xs">
                 <span class="text-white/60">{completion}% {t(currentLanguage, 'dashboard.percentComplete')}</span>
                 <span class="text-white/60">{day.questions.length} questions</span>
@@ -524,11 +550,10 @@
                 ></div>
               </div>
               
-              {#if words > 0}
                 <div class="text-xs text-white/50">
                   {words} words written
                 </div>
-              {/if}
+            
             </div>
             
               <!-- Hover effect -->
@@ -560,4 +585,25 @@
     {/if}
   </div>
 </div>
+
+<style>
+  /* Animated gradient for headline */
+  @keyframes gradient-x {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient-x {
+    background: linear-gradient(-45deg, #ffffff, #D4AF37, #ffffff, #D4AF37);
+    background-size: 300% 300%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-x 6s ease-in-out infinite;
+  }
+</style>
 

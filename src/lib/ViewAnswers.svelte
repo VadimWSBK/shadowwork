@@ -80,8 +80,7 @@
     </div>
     <button
       on:click={onBack}
-      class="px-6 py-3 text-sm font-medium text-white rounded shadow-lg transition-all duration-200 hover:opacity-90 font-primary"
-      style="background-color: #0C6E78;"
+      class="btn-primary golden-border px-6 py-3 text-sm font-medium font-primary"
     >
       <span class="relative z-10 flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

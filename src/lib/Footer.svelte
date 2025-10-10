@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t, type Language } from './i18n';
+  import logo from '../assets/LOGO_SELF_COACHING_TOOLS.svg';
   
   export let currentLanguage: Language = 'en';
   
@@ -22,9 +23,12 @@
     <!-- Links Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
       
-      <!-- About -->
+      <!-- About with Logo -->
       <div>
-        <h3 class="text-white font-semibold mb-3 font-primary">{t(currentLanguage, 'footer.aboutTitle')}</h3>
+        <div class="flex items-center gap-4 mb-3">
+          <img src={logo} alt="Self Coaching Tools Logo" class="w-12 h-12 object-contain flex-shrink-0" />
+          <h3 class="text-white font-semibold font-primary">{t(currentLanguage, 'footer.aboutTitle')}</h3>
+        </div>
         <p class="text-white/70 text-sm leading-relaxed font-secondary">
           {t(currentLanguage, 'footer.aboutText')}
         </p>

@@ -2,7 +2,7 @@
   import { courseData, type DayData } from './questions';
   import { type Writable } from 'svelte/store';
   import { tick, onMount, onDestroy } from 'svelte';
-  import { fade, fly, slide } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
   import { cubicInOut, quintOut } from 'svelte/easing';
   import { t } from './i18n';
   import { answerStorage } from './simpleAnswerStorage';
@@ -22,8 +22,6 @@
   let isTransitioning = false;
   let direction: 'forward' | 'backward' = 'forward';
   let displayIndex = 0; // Separate display index for smoother transitions
-  let showConfirmModal = false;
-  let unansweredCount = 0;
 
   // Autosave state
   let autosaveTimer: number;
@@ -55,8 +53,19 @@
   $: explanation = current.explanation;
   $: dayAnswers = $answersStore[currentDay.id] || [];
   $: charCount = (dayAnswers[currentIndex] || '').length;
+  $: wordCount = countWords(dayAnswers[currentIndex] || '');
   $: answeredCount = dayAnswers.filter(answer => answer && answer.trim().length > 0).length;
   $: completionRate = Math.round((answeredCount / questions.length) * 100);
+
+  // Function to count words across different languages
+  function countWords(text: string): number {
+    if (!text || text.trim().length === 0) return 0;
+    
+    // Remove extra whitespace and split by whitespace
+    // This works for most languages including English, German, Polish, etc.
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    return words.length;
+  }
 
   // Update display index after transition completes
   $: if (!isTransitioning) {
@@ -101,23 +110,9 @@
       currentIndex++;
       tick().then(() => answerEl?.focus());
     } else {
-      const unanswered = dayAnswers.filter((a) => !a || a.trim().length === 0).length;
-      if (unanswered > 0) {
-        unansweredCount = unanswered;
-        showConfirmModal = true;
-      } else {
-        onDayComplete(currentDay.id);
-      }
+      // Always go to summary page regardless of unanswered questions
+      onDayComplete(currentDay.id);
     }
-  }
-
-  function confirmComplete() {
-    showConfirmModal = false;
-    onDayComplete(currentDay.id);
-  }
-
-  function cancelComplete() {
-    showConfirmModal = false;
   }
 
   async function prev() {
@@ -353,26 +348,6 @@
   .bounce-in {
     animation: bounce-in 0.3s ease-out;
   }
-  
-  .progress-bar-animated {
-    background-size: 20px 20px;
-    background-image: linear-gradient(
-      45deg,
-      rgba(255, 255, 255, 0.1) 25%,
-      transparent 25%,
-      transparent 50%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.1) 75%,
-      transparent 75%,
-      transparent
-    );
-    animation: progress-stripes 1s linear infinite;
-  }
-  
-  @keyframes progress-stripes {
-    0% { background-position: 0 0; }
-    100% { background-position: 20px 0; }
-  }
 </style>
 
 <div class="flex items-center justify-center p-2 sm:p-4 lg:p-10">
@@ -384,10 +359,8 @@
       <div class="flex justify-end mb-4">
         <button 
           on:click={onShowAnswers}
-          class="px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors duration-200 rounded backdrop-blur-sm border relative overflow-hidden group"
-          style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+          class="btn-primary golden-border px-4 py-2 text-sm font-medium"
         >
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <span class="relative z-10">{t(currentLanguage, 'questionnaire.viewAnswers')}</span>
         </button>
       </div>
@@ -449,13 +422,12 @@
                 autocapitalize="sentences"
                 inputmode="text"
                 enterkeyhint="next"
-                class="w-full px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border rounded focus:outline-none transition-all duration-200 resize-y shadow-inner backdrop-blur-sm text-base min-h-[140px]"
-                style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+                class="w-full golden-border px-4 py-3 leading-relaxed text-white placeholder-white/60 bg-white/20 border rounded focus:outline-none transition-all duration-200 resize-y shadow-inner backdrop-blur-sm text-base min-h-[140px]"
               ></textarea>
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bounce-in" style="animation-delay: 0.6s;">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                  <span class="text-white/60 text-sm transition-all duration-300">{t(currentLanguage, 'questionnaire.characters', { count: (dayAnswers[displayIndex] || '').length })}</span>
+                  <span class="text-white/60 text-sm transition-all duration-300">{t(currentLanguage, 'questionnaire.words', { count: countWords(dayAnswers[displayIndex] || '') })}</span>
                   <span class="text-white/40 text-xs">{t(currentLanguage, 'questionnaire.aimForDetail')}</span>
                 </div>
                 <div class="text-white/50 text-sm">
@@ -515,7 +487,7 @@
               
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 text-sm lg:text-base xl:text-base">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 lg:gap-5 xl:gap-6">
-                  <span class="text-white/60 text-xs sm:text-sm lg:text-base xl:text-base">{t(currentLanguage, 'questionnaire.characters', { count: (dayAnswers[displayIndex] || '').length })}</span>
+                  <span class="text-white/60 text-xs sm:text-sm lg:text-base xl:text-base">{t(currentLanguage, 'questionnaire.words', { count: countWords(dayAnswers[displayIndex] || '') })}</span>
                 </div>
                 <div class="text-white/50 text-xs sm:text-xs lg:text-sm xl:text-base">
                   {#if isSaving}
@@ -542,11 +514,9 @@
           <button 
             on:click={prev} 
             disabled={currentIndex === 0 || isTransitioning}
-            class="order-1 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded backdrop-blur-sm border relative overflow-hidden group"
-            style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+            class="btn-primary golden-border order-1 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <span class="relative z-10">← Previous</span>
+            <span class="relative z-10">← {t(currentLanguage, 'questionnaire.previous')}</span>
           </button>
           
           <div class="hidden sm:flex items-center space-x-3 order-2">
@@ -573,10 +543,9 @@
           <button 
             on:click={next} 
             disabled={isTransitioning || nextSaving}
-            class="order-2 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white rounded shadow-lg transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed border"
-            style="background-color: #0C6E78; border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
+            class="btn-primary golden-border order-2 w-auto flex-1 sm:flex-none px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span class="flex items-center justify-center gap-2">
+            <span class="flex items-center justify-center gap-2 relative z-10">
               {#if nextSaving}
                 <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -584,7 +553,7 @@
                 </svg>
                 Saving…
               {:else}
-                {currentIndex === questions.length - 1 ? `Complete ${currentDay.title}` : 'Next'}
+                {currentIndex === questions.length - 1 ? `${t(currentLanguage, 'questionnaire.complete')} ${t(currentLanguage, 'questionnaire.day')} ${courseData.findIndex(day => day.id === currentDay.id)}` : t(currentLanguage, 'questionnaire.next')}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -596,63 +565,3 @@
     </div>
   </div>
 </div>
-
-<!-- Confirmation Modal -->
-{#if showConfirmModal}
-  <div 
-    class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-    transition:fade={{ duration: 300 }}
-    on:click={cancelComplete}
-    on:keydown={(e) => { if (e.key === 'Escape') cancelComplete(); }}
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modal-title"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
-    <div 
-      class="bg-gradient-to-br from-white/25 via-white/20 to-white/15 backdrop-blur-xl rounded shadow-2xl border border-white/30 p-8 max-w-lg w-full mx-4 relative overflow-hidden"
-      transition:fly={{ y: 30, duration: 400, easing: cubicInOut }}
-      on:click|stopPropagation
-      role="document"
-    >
-      <!-- Subtle background pattern -->
-      <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-50"></div>
-      
-      <!-- Modal Header -->
-      <div class="text-center mb-8 relative z-10">
-        <div class="w-20 h-20 mx-auto mb-6 rounded flex items-center justify-center shadow-lg relative overflow-hidden group" 
-             style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%);">
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12"></div>
-          <svg class="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-        <h3 id="modal-title" class="text-2xl font-bold text-white mb-3 drop-shadow-sm font-primary">Complete this day?</h3>
-        <p class="text-white/90 text-base leading-relaxed font-secondary">
-          You have <span class="font-bold text-white bg-white/20 px-2 py-1 rounded">{unansweredCount}</span> unanswered {unansweredCount === 1 ? 'question' : 'questions'}. Do you want to finish this day?
-        </p>
-      </div>
-
-      <!-- Modal Actions -->
-      <div class="flex gap-4 justify-center relative z-10">
-        <button
-          on:click={cancelComplete}
-          class="px-8 py-3 text-base font-semibold text-white/90 bg-white/20 hover:bg-white/30 rounded transition-all duration-300 border hover:border-white/60 hover:scale-105 hover:shadow-lg backdrop-blur-sm relative overflow-hidden group"
-          style="border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
-        >
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <span class="relative z-10">Cancel</span>
-        </button>
-        <button
-          on:click={confirmComplete}
-          class="px-8 py-3 text-base font-bold text-white rounded shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 hover:brightness-110 relative overflow-hidden group border font-primary"
-          style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 50%, #0C6E78 100%); border-image: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%) 1;"
-        >
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-          <span class="relative z-10">OK</span>
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
