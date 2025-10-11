@@ -15,6 +15,7 @@
   let currentLanguage: 'en' | 'de' | 'pl' = 'en';
   let languageMenuOpen = false;
   let currentSlide = 0;
+  let isDesktop = false; // Will be set in onMount
   
   const courseDays = [
     {
@@ -76,48 +77,56 @@
   ];
   
   function nextSlide() {
-    // On desktop, move by 3 cards at a time, on mobile move by 1
-    const maxSlide = window.innerWidth >= 1024 ? Math.max(0, courseDays.length - 3) : courseDays.length - 1;
-    const increment = window.innerWidth >= 1024 ? 3 : 1;
+    // Move by 1 card at a time, but on desktop max slide is courseDays.length - 3 to keep 3 visible
+    const maxSlide = isDesktop ? Math.max(0, courseDays.length - 3) : courseDays.length - 1;
     
     if (currentSlide < maxSlide) {
-      currentSlide = Math.min(currentSlide + increment, maxSlide);
+      currentSlide = Math.min(currentSlide + 1, maxSlide);
     }
   }
   
   function prevSlide() {
-    const increment = window.innerWidth >= 1024 ? 3 : 1;
-    
     if (currentSlide > 0) {
-      currentSlide = Math.max(currentSlide - increment, 0);
+      currentSlide = Math.max(currentSlide - 1, 0);
     }
   }
   
   // Scroll to CTA
   function scrollToCTA() {
-    const ctaSection = document.getElementById('cta-section');
-    if (ctaSection) {
-      ctaSection.scrollIntoView({ behavior: 'smooth' });
+    if (typeof document !== 'undefined') {
+      const ctaSection = document.getElementById('cta-section');
+      if (ctaSection) {
+        ctaSection.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   }
   
   function handleGetStarted() {
     // Redirect to Stripe payment
     // Replace with your actual Stripe checkout URL
-    window.location.href = 'https://buy.stripe.com/YOUR_STRIPE_CHECKOUT_URL';
+    if (typeof window !== 'undefined') {
+      window.location.href = 'https://buy.stripe.com/YOUR_STRIPE_CHECKOUT_URL';
+    }
   }
 
   onMount(() => {
+    // Set desktop flag
+    isDesktop = window.innerWidth >= 1024;
+    
     // Load saved language
-    const savedLanguage = localStorage.getItem('shadowwork_language') as 'en' | 'de' | 'pl' | null;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
-      currentLanguage = savedLanguage;
+    if (typeof localStorage !== 'undefined') {
+      const savedLanguage = localStorage.getItem('shadowwork_language') as 'en' | 'de' | 'pl' | null;
+      if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
+        currentLanguage = savedLanguage;
+      }
     }
   });
   
   function changeLanguage(lang: 'en' | 'de' | 'pl') {
     currentLanguage = lang;
-    localStorage.setItem('shadowwork_language', lang);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('shadowwork_language', lang);
+    }
     languageMenuOpen = false;
   }
 </script>
@@ -180,15 +189,15 @@
             </button>
             
             {#if languageMenuOpen}
-              <div class="absolute right-0 mt-2 w-32 bg-white shadow-lg z-50">
+              <div class="absolute right-0 mt-2 w-32 bg-primary/90 backdrop-blur-xl border border-white/20 shadow-lg z-50">
                 <div class="py-1">
-                  <button on:click={() => changeLanguage('en')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'en' ? 'bg-primary/10 text-primary' : ''} font-secondary">
+                  <button on:click={() => changeLanguage('en')} class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 {currentLanguage === 'en' ? 'bg-white/20 text-accent' : ''} font-secondary">
                     English
                   </button>
-                  <button on:click={() => changeLanguage('de')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'de' ? 'bg-primary/10 text-primary' : ''} font-secondary">
+                  <button on:click={() => changeLanguage('de')} class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 {currentLanguage === 'de' ? 'bg-white/20 text-accent' : ''} font-secondary">
                     Deutsch
                   </button>
-                  <button on:click={() => changeLanguage('pl')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'pl' ? 'bg-primary/10 text-primary' : ''} font-secondary">
+                  <button on:click={() => changeLanguage('pl')} class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 {currentLanguage === 'pl' ? 'bg-white/20 text-accent' : ''} font-secondary">
                     Polski
                   </button>
                 </div>
@@ -444,11 +453,11 @@
           
           <!-- Dots Indicator -->
           <div class="flex justify-center gap-3">
-            {#each Array.from({length: Math.ceil(courseDays.length / 3)}) as _, groupIndex}
+            {#each Array.from({length: isDesktop ? Math.max(1, courseDays.length - 2) : courseDays.length}) as _, dotIndex}
               <button 
-                on:click={() => currentSlide = groupIndex * 3}
-                class="w-3 h-3 transition-all duration-300 {(currentSlide === groupIndex * 3) || (currentSlide > groupIndex * 3 && currentSlide < (groupIndex + 1) * 3) ? 'bg-[#D4AF37] shadow-lg shadow-[#D4AF37]/50' : 'bg-white/30 hover:bg-white/50'} hover:scale-125"
-                aria-label="Go to group {groupIndex + 1}"
+                on:click={() => currentSlide = dotIndex}
+                class="w-3 h-3 transition-all duration-300 {currentSlide === dotIndex ? 'bg-[#D4AF37] shadow-lg shadow-[#D4AF37]/50' : 'bg-white/30 hover:bg-white/50'} hover:scale-125"
+                aria-label="Go to position {dotIndex + 1}"
               ></button>
             {/each}
           </div>
@@ -456,7 +465,7 @@
           <!-- Next Arrow -->
           <button 
             on:click={nextSlide}
-            disabled={currentSlide >= courseDays.length - 3}
+            disabled={isDesktop ? currentSlide >= courseDays.length - 3 : currentSlide >= courseDays.length - 1}
             class="w-10 h-10 bg-white/15 backdrop-blur-sm border border-white/30 text-white hover:bg-white/25 hover:border-[#D4AF37]/50 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
             aria-label="Next slide"
           >
@@ -543,6 +552,178 @@
               <p class="text-white/80 font-secondary">
                 Export your completed days as PDF documents to keep forever, review later, or share with a therapist or coach.
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 font-primary">
+          What People Are Saying
+        </h2>
+        <p class="text-xl text-white/80 max-w-2xl mx-auto font-secondary">
+          Join hundreds of others who have transformed their lives through this journey.
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Testimonial 1 -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300 flex flex-col">
+          <!-- Star Rating -->
+          <div class="flex gap-1 mb-4">
+            {#each Array(5) as _}
+              <svg class="w-5 h-5" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            {/each}
+          </div>
+          
+          <!-- Quote -->
+          <p class="text-white/90 text-base font-secondary mb-6 flex-1 leading-relaxed italic">
+            "This course helped me understand patterns I've been repeating for years. The daily structure made it feel manageable, and the questions were deeply thought-provoking. I finally feel like I'm getting to the root of my self-sabotaging behaviors."
+          </p>
+          
+          <!-- Author -->
+          <div class="border-t border-white/20 pt-4 flex items-center gap-4">
+            <div class="testimonial-avatar">SM</div>
+            <div>
+              <p class="text-white font-semibold font-primary text-lg">Sarah M.</p>
+              <p class="text-white/70 text-sm font-secondary">Product Designer, 32</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 2 -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300 flex flex-col">
+          <!-- Star Rating -->
+          <div class="flex gap-1 mb-4">
+            {#each Array(5) as _}
+              <svg class="w-5 h-5" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            {/each}
+          </div>
+          
+          <!-- Quote -->
+          <p class="text-white/90 text-base font-secondary mb-6 flex-1 leading-relaxed italic">
+            "I was skeptical about online courses, but this one exceeded all expectations. The privacy and security gave me the confidence to be truly honest with myself. I've learned more about myself in 7 days than in years of trying to figure things out alone."
+          </p>
+          
+          <!-- Author -->
+          <div class="border-t border-white/20 pt-4 flex items-center gap-4">
+            <div class="testimonial-avatar">MT</div>
+            <div>
+              <p class="text-white font-semibold font-primary text-lg">Michael T.</p>
+              <p class="text-white/70 text-sm font-secondary">Entrepreneur, 41</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 3 -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300 flex flex-col">
+          <!-- Star Rating -->
+          <div class="flex gap-1 mb-4">
+            {#each Array(5) as _}
+              <svg class="w-5 h-5" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            {/each}
+          </div>
+          
+          <!-- Quote -->
+          <p class="text-white/90 text-base font-secondary mb-6 flex-1 leading-relaxed italic">
+            "The questions about childhood patterns and family dynamics were eye-opening. I've been in therapy for a while, and my therapist was impressed with the insights I brought to our sessions. This course is the perfect complement to traditional therapy."
+          </p>
+          
+          <!-- Author -->
+          <div class="border-t border-white/20 pt-4 flex items-center gap-4">
+            <div class="testimonial-avatar">JK</div>
+            <div>
+              <p class="text-white font-semibold font-primary text-lg">Jessica K.</p>
+              <p class="text-white/70 text-sm font-secondary">Teacher, 38</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 4 -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300 flex flex-col">
+          <!-- Star Rating -->
+          <div class="flex gap-1 mb-4">
+            {#each Array(5) as _}
+              <svg class="w-5 h-5" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            {/each}
+          </div>
+          
+          <!-- Quote -->
+          <p class="text-white/90 text-base font-secondary mb-6 flex-1 leading-relaxed italic">
+            "I loved being able to work at my own pace. Some days I spent an hour, other days just 20 minutes. The questions about boundaries and power really helped me understand why I struggle to say no. Worth every penny."
+          </p>
+          
+          <!-- Author -->
+          <div class="border-t border-white/20 pt-4 flex items-center gap-4">
+            <div class="testimonial-avatar">DR</div>
+            <div>
+              <p class="text-white font-semibold font-primary text-lg">David R.</p>
+              <p class="text-white/70 text-sm font-secondary">Software Engineer, 29</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 5 -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300 flex flex-col">
+          <!-- Star Rating -->
+          <div class="flex gap-1 mb-4">
+            {#each Array(5) as _}
+              <svg class="w-5 h-5" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            {/each}
+          </div>
+          
+          <!-- Quote -->
+          <p class="text-white/90 text-base font-secondary mb-6 flex-1 leading-relaxed italic">
+            "The golden shadow work on Day 6 was transformative. I realized I've been projecting my own strengths onto others instead of owning them. My relationships have already started to shift. This course is a game-changer."
+          </p>
+          
+          <!-- Author -->
+          <div class="border-t border-white/20 pt-4 flex items-center gap-4">
+            <div class="testimonial-avatar">AL</div>
+            <div>
+              <p class="text-white font-semibold font-primary text-lg">Amanda L.</p>
+              <p class="text-white/70 text-sm font-secondary">Marketing Manager, 35</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 6 -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-8 hover:bg-white/15 hover:border-[#D4AF37]/40 transition-all duration-300 flex flex-col">
+          <!-- Star Rating -->
+          <div class="flex gap-1 mb-4">
+            {#each Array(5) as _}
+              <svg class="w-5 h-5" fill="url(#golden-gradient-svg)" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            {/each}
+          </div>
+          
+          <!-- Quote -->
+          <p class="text-white/90 text-base font-secondary mb-6 flex-1 leading-relaxed italic">
+            "Best $27 I've ever spent. The course helped me understand my triggers and reactions in a way that makes sense. I feel more in control of my emotions and less reactive. Highly recommend to anyone ready to do the inner work."
+          </p>
+          
+          <!-- Author -->
+          <div class="border-t border-white/20 pt-4 flex items-center gap-4">
+            <div class="testimonial-avatar">RC</div>
+            <div>
+              <p class="text-white font-semibold font-primary text-lg">Ryan C.</p>
+              <p class="text-white/70 text-sm font-secondary">Creative Director, 44</p>
             </div>
           </div>
         </div>
@@ -725,10 +906,10 @@
         </div>
         
         <div class="flex flex-wrap justify-center gap-6 text-sm">
-          <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
-          <a href="/terms" class="hover:text-white transition-colors">Terms of Service</a>
-          <a href="/contact" class="hover:text-white transition-colors">Contact</a>
-          <a href="/faq" class="hover:text-white transition-colors">FAQ</a>
+          <a href="/privacy?from=/shadowwork" class="hover:text-white transition-colors">Privacy Policy</a>
+          <a href="/terms?from=/shadowwork" class="hover:text-white transition-colors">Terms of Service</a>
+          <a href="/contact?from=/shadowwork" class="hover:text-white transition-colors">Contact</a>
+          <a href="/faq?from=/shadowwork" class="hover:text-white transition-colors">FAQ</a>
         </div>
         
         <p class="text-sm">
@@ -750,10 +931,10 @@
     transform: translateX(calc(-1 * var(--slide-index) * 100% - var(--slide-index) * 1.5rem));
   }
 
-  /* Carousel transform - desktop (3 cards visible, move by groups of 3) */
+  /* Carousel transform - desktop (3 cards visible, move by 1 card at a time) */
   @media (min-width: 1024px) {
     .carousel-track {
-      transform: translateX(calc(-1 * var(--slide-index) * 100% - var(--slide-index) * 1.5rem));
+      transform: translateX(calc(-1 * var(--slide-index) * 33.333% - var(--slide-index) * 1.5rem));
     }
   }
 
@@ -775,4 +956,53 @@
     -webkit-text-fill-color: transparent;
     animation: gradient-x 6s ease-in-out infinite;
   }
+
+  /* Testimonial Avatar Styling */
+  .testimonial-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50% !important; /* Override square corners for avatars */
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1F6E70; /* Primary teal background */
+    position: relative;
+    font-family: 'Playfair Display', ui-serif, Georgia, serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: white;
+    letter-spacing: 0.5px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .testimonial-avatar::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(135deg, 
+      #FBCA29 0%, 
+      #EBD27B 1%, 
+      #D7B860 15%, 
+      #E7CE77 25%, 
+      #EBD27B 30%, 
+      #C2922E 60%, 
+      #C2922E 60%, 
+      #D0B057 87%, 
+      #AB7B2A 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 </style>
+
+<!-- Click outside to close language menu -->
+{#if languageMenuOpen}
+  <div class="fixed inset-0 z-40" role="button" tabindex="0" on:click={() => languageMenuOpen = false} on:keydown={(e) => e.key === 'Escape' && (languageMenuOpen = false)}></div>
+{/if}

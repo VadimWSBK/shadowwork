@@ -14,8 +14,11 @@
   
   $: answers = $answersStore;
   
-  // Check if answers are loaded
+  // Check if answers are loaded - we always have the structure loaded, 
+  // so we consider it "loaded" once the store has been initialized
   $: answersLoaded = answers && Object.keys(answers).length > 0;
+  
+  // Answers reactive statement - removed debug logging to prevent console spam
   
   // Calculate overall statistics
   $: totalQuestions = courseData.slice(1).reduce((sum, day) => sum + day.questions.length, 0);
@@ -515,6 +518,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                   </svg>
                 </div>
+              {:else if isCurrent}
+                <!-- No icon for current day -->
+                <div class="w-10 h-10"></div>
               {:else if isStarted}
                 <div class="w-10 h-10 bg-[#0C6E78]/30 rounded-full flex items-center justify-center">
                   <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -597,13 +603,5 @@
     }
   }
 
-  .animate-gradient-x {
-    background: linear-gradient(-45deg, #ffffff, #D4AF37, #ffffff, #D4AF37);
-    background-size: 300% 300%;
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: gradient-x 6s ease-in-out infinite;
-  }
 </style>
 

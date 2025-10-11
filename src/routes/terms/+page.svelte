@@ -1,9 +1,13 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { t, type Language } from '$lib/i18n';
   import { onMount } from 'svelte';
   
   let currentLanguage: Language = 'en';
+  
+  // Get the 'from' query parameter, default to '/dashboard'
+  $: backUrl = $page.url.searchParams.get('from') || '/dashboard';
   
   function checkLanguage() {
     const savedLanguage = localStorage.getItem('shadowwork_language') as Language | null;
@@ -50,13 +54,13 @@
     
     <!-- Back Button -->
     <button 
-      on:click={() => goto('/dashboard')}
+      on:click={() => goto(backUrl)}
       class="mb-6 text-white/80 hover:text-white flex items-center gap-2 transition-colors"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
       </svg>
-      {t(currentLanguage, 'pages.backToDashboard')}
+      {backUrl === '/dashboard' ? t(currentLanguage, 'pages.backToDashboard') : t(currentLanguage, 'pages.back')}
     </button>
     
     <!-- Content Card -->

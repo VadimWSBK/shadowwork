@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { t, type Language } from '$lib/i18n';
   import { onMount } from 'svelte';
   
@@ -15,6 +16,9 @@
   let submitStatus = '';
   let errors: Record<string, string> = {};
   let currentLanguage: Language = 'en';
+  
+  // Get the 'from' query parameter, default to '/dashboard'
+  $: backUrl = $page.url.searchParams.get('from') || '/dashboard';
   
   let categories: Array<{ value: string; label: string }> = [];
   
@@ -131,13 +135,13 @@
     
     <!-- Back Button -->
     <button 
-      on:click={() => goto('/dashboard')}
+      on:click={() => goto(backUrl)}
       class="mb-6 text-white/80 hover:text-white flex items-center gap-2 transition-colors"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
       </svg>
-      {t(currentLanguage, 'pages.backToDashboard')}
+      {backUrl === '/dashboard' ? t(currentLanguage, 'pages.backToDashboard') : t(currentLanguage, 'pages.back')}
     </button>
     
     <!-- Header -->
@@ -310,7 +314,7 @@
           <h3 class="text-lg font-semibold text-white mb-3 font-primary">{t(currentLanguage, 'contact.info.alternativeContact.title')}</h3>
           <div class="space-y-3 text-sm">
             <div class="flex items-center gap-3 text-white/70">
-              <svg class="w-4 h-4 text-[#0C6E78]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
               </svg>
               <a href="mailto:support@shadowwork.com" class="hover:text-white transition-colors">support@shadowwork.com</a>

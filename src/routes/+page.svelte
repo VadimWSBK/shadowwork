@@ -134,15 +134,15 @@
             </button>
             
             {#if languageMenuOpen}
-              <div class="absolute right-0 mt-2 w-32 bg-white shadow-lg z-50">
+              <div class="absolute right-0 mt-2 w-32 bg-primary/90 backdrop-blur-xl border border-white/20 shadow-lg z-50">
                 <div class="py-1">
-                  <button on:click={() => handleLanguageChange('en')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'en' ? 'bg-primary/10 text-primary' : ''}">
+                  <button on:click={() => handleLanguageChange('en')} class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 {currentLanguage === 'en' ? 'bg-white/20 text-accent' : ''}">
                     English
                   </button>
-                  <button on:click={() => handleLanguageChange('de')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'de' ? 'bg-primary/10 text-primary' : ''}">
+                  <button on:click={() => handleLanguageChange('de')} class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 {currentLanguage === 'de' ? 'bg-white/20 text-accent' : ''}">
                     Deutsch
                   </button>
-                  <button on:click={() => handleLanguageChange('pl')} class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {currentLanguage === 'pl' ? 'bg-primary/10 text-primary' : ''}">
+                  <button on:click={() => handleLanguageChange('pl')} class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 {currentLanguage === 'pl' ? 'bg-white/20 text-accent' : ''}">
                     Polski
                   </button>
                 </div>
@@ -271,35 +271,11 @@
                            {course.status === 'available' 
                              ? 'btn-primary golden-border' 
                              : 'bg-white/20 text-white/70 cursor-not-allowed border-2 border-white/20'}">
-                {#if course.status === 'available'}
-                  Start Course
-                {:else}
-                  Coming Soon
-                {/if}
+                Learn More
               </button>
             </div>
           </div>
         {/each}
-      </div>
-      
-      <!-- Call to Action -->
-      <div class="mt-16 text-center">
-        <div class="bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl p-8 max-w-4xl mx-auto">
-          <h3 class="text-2xl font-bold text-white font-primary mb-4">Ready to Begin Your Journey?</h3>
-          <p class="text-lg text-white/90 mb-6">
-            Join thousands of people who have transformed their lives through our self-coaching tools. 
-            Start with the Shadow Work Journey and unlock your potential today.
-          </p>
-          <button on:click={() => goto('/login')} 
-                  class="btn-primary golden-border px-8 py-4">
-            <span class="flex items-center gap-2">
-              Get Started Now
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-              </svg>
-            </span>
-          </button>
-        </div>
       </div>
     </div>
   </main>
@@ -336,7 +312,7 @@
             <li><a href="/#courses" class="text-white/70 hover:text-white transition-colors duration-200">Courses</a></li>
             <li><a href="/shadowwork" class="text-white/70 hover:text-white transition-colors duration-200">Shadow Work Journey</a></li>
             <li><a href="/login" class="text-white/70 hover:text-white transition-colors duration-200">Login</a></li>
-            <li><a href="/contact" class="text-white/70 hover:text-white transition-colors duration-200">Contact</a></li>
+            <li><a href="/contact?from=/" class="text-white/70 hover:text-white transition-colors duration-200">Contact</a></li>
           </ul>
         </div>
         
@@ -344,10 +320,10 @@
         <div>
           <h5 class="text-lg font-semibold text-white mb-4">Support</h5>
           <ul class="space-y-3">
-            <li><a href="/faq" class="text-white/70 hover:text-white transition-colors duration-200">FAQ</a></li>
-            <li><a href="/privacy" class="text-white/70 hover:text-white transition-colors duration-200">Privacy Policy</a></li>
-            <li><a href="/terms" class="text-white/70 hover:text-white transition-colors duration-200">Terms of Service</a></li>
-            <li><a href="/disclaimer" class="text-white/70 hover:text-white transition-colors duration-200">Disclaimer</a></li>
+            <li><a href="/faq?from=/" class="text-white/70 hover:text-white transition-colors duration-200">FAQ</a></li>
+            <li><a href="/privacy?from=/" class="text-white/70 hover:text-white transition-colors duration-200">Privacy Policy</a></li>
+            <li><a href="/terms?from=/" class="text-white/70 hover:text-white transition-colors duration-200">Terms of Service</a></li>
+            <li><a href="/disclaimer?from=/" class="text-white/70 hover:text-white transition-colors duration-200">Disclaimer</a></li>
           </ul>
         </div>
       </div>

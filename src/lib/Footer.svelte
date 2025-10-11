@@ -3,6 +3,7 @@
   import logo from '../assets/LOGO_SELF_COACHING_TOOLS.svg';
   
   export let currentLanguage: Language = 'en';
+  export let fromPath: string = '/dashboard';
   
   const currentYear = new Date().getFullYear();
 </script>
@@ -39,17 +40,17 @@
         <h3 class="text-white font-semibold mb-3 font-primary">{t(currentLanguage, 'footer.legalTitle')}</h3>
         <ul class="space-y-2 text-sm">
           <li>
-            <a href="/privacy" class="text-white/70 hover:text-white transition-colors">
+            <a href="/privacy?from={fromPath}" class="text-white/70 hover:text-white transition-colors">
               {t(currentLanguage, 'footer.privacyPolicy')}
             </a>
           </li>
           <li>
-            <a href="/terms" class="text-white/70 hover:text-white transition-colors">
+            <a href="/terms?from={fromPath}" class="text-white/70 hover:text-white transition-colors">
               {t(currentLanguage, 'footer.termsOfService')}
             </a>
           </li>
           <li>
-            <a href="/disclaimer" class="text-white/70 hover:text-white transition-colors">
+            <a href="/disclaimer?from={fromPath}" class="text-white/70 hover:text-white transition-colors">
               {t(currentLanguage, 'footer.disclaimer')}
             </a>
           </li>
@@ -61,12 +62,12 @@
         <h3 class="text-white font-semibold mb-3 font-primary">{t(currentLanguage, 'footer.supportTitle')}</h3>
         <ul class="space-y-2 text-sm">
           <li>
-            <a href="/contact" class="text-white/70 hover:text-white transition-colors">
+            <a href="/contact?from={fromPath}" class="text-white/70 hover:text-white transition-colors">
               {t(currentLanguage, 'footer.contactSupport')}
             </a>
           </li>
           <li>
-            <a href="/faq" class="text-white/70 hover:text-white transition-colors">
+            <a href="/faq?from={fromPath}" class="text-white/70 hover:text-white transition-colors">
               {t(currentLanguage, 'footer.faq')}
             </a>
           </li>

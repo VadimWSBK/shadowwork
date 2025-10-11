@@ -149,6 +149,14 @@ type I18nBundle = {
       'login.resetConfirmBody': 'We\'ll email a password reset link to {email}.',
       'login.cancel': 'Cancel',
       'login.sendResetEmail': 'Send reset email',
+      
+      'auth.verifying': 'Verifying your credentials...',
+      'auth.noUser': 'No user found. Please try again.',
+      'auth.checkingAuthorization': 'Checking authorization...',
+      'auth.notAuthorized': 'Access denied. Please contact support.',
+      'auth.loadingData': 'Loading your data...',
+      'auth.complete': 'Welcome back!',
+      'auth.error': 'An error occurred. Please try again.',
 
     'questionnaire.viewAnswers': 'View Answers',
     'questionnaire.questionXofY': 'Question {x} of {y}',
@@ -193,6 +201,7 @@ type I18nBundle = {
     'footer.gdprCompliant': 'GDPR Compliant',
 
     'pages.backToDashboard': 'Back to Dashboard',
+    'pages.back': 'Back',
     'pages.lastUpdated': 'Last updated: {date}',
     'pages.privacyPolicy': 'Privacy Policy',
     'pages.termsOfService': 'Terms of Service',
@@ -746,6 +755,14 @@ const de: I18nBundle = {
       'login.resetConfirmBody': 'Wir senden einen Link zum Zurücksetzen des Passworts an {email}.',
       'login.cancel': 'Abbrechen',
       'login.sendResetEmail': 'Link zum Zurücksetzen senden',
+      
+      'auth.verifying': 'Ihre Anmeldedaten werden überprüft...',
+      'auth.noUser': 'Kein Benutzer gefunden. Bitte versuchen Sie es erneut.',
+      'auth.checkingAuthorization': 'Berechtigung wird überprüft...',
+      'auth.notAuthorized': 'Zugriff verweigert. Bitte kontaktieren Sie den Support.',
+      'auth.loadingData': 'Ihre Daten werden geladen...',
+      'auth.complete': 'Willkommen zurück!',
+      'auth.error': 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
 
     'questionnaire.viewAnswers': 'Antworten ansehen',
     'questionnaire.questionXofY': 'Frage {x} von {y}',
@@ -790,6 +807,7 @@ const de: I18nBundle = {
     'footer.gdprCompliant': 'DSGVO-konform',
 
     'pages.backToDashboard': 'Zurück zum Dashboard',
+    'pages.back': 'Zurück',
     'pages.lastUpdated': 'Zuletzt aktualisiert: {date}',
     'pages.privacyPolicy': 'Datenschutzrichtlinie',
     'pages.termsOfService': 'Nutzungsbedingungen',
@@ -1343,6 +1361,14 @@ const pl: I18nBundle = {
       'login.resetConfirmBody': 'Wyślemy link do resetu hasła na {email}.',
       'login.cancel': 'Anuluj',
       'login.sendResetEmail': 'Wyślij e‑mail resetujący hasło',
+      
+      'auth.verifying': 'Weryfikacja danych logowania...',
+      'auth.noUser': 'Nie znaleziono użytkownika. Spróbuj ponownie.',
+      'auth.checkingAuthorization': 'Sprawdzanie autoryzacji...',
+      'auth.notAuthorized': 'Odmowa dostępu. Skontaktuj się z pomocą techniczną.',
+      'auth.loadingData': 'Ładowanie danych...',
+      'auth.complete': 'Witamy ponownie!',
+      'auth.error': 'Wystąpił błąd. Spróbuj ponownie.',
 
     'questionnaire.viewAnswers': 'Zobacz odpowiedzi',
     'questionnaire.questionXofY': 'Pytanie {x} z {y}',
@@ -1387,6 +1413,7 @@ const pl: I18nBundle = {
     'footer.gdprCompliant': 'Zgodne z RODO',
 
     'pages.backToDashboard': 'Wróć do panelu',
+    'pages.back': 'Wróć',
     'pages.lastUpdated': 'Ostatnia aktualizacja: {date}',
     'pages.privacyPolicy': 'Polityka prywatności',
     'pages.termsOfService': 'Warunki świadczenia usług',

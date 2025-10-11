@@ -99,6 +99,7 @@
     }
 
     // If already authenticated, check authorization; if not authorized, sign out to allow new link
+    // Use the main supabase client directly
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const authorized = await isAuthorizedUser();
@@ -156,6 +157,7 @@
     }
     loading = true;
     loadingAction = 'login';
+    // Use the main supabase client directly
     const { data, error } = await supabase.auth.signInWithPassword({ email: e, password: p });
     if (error) {
       const msg = (error.message || '').toLowerCase();
@@ -170,10 +172,23 @@
     }
     // Get authenticated user data securely
     const { data: { user } } = await supabase.auth.getUser();
-    const authedEmail = user?.email ?? e;
-    dispatch('login', { username: authedEmail });
-    // Keep loading while the page bridges cookies and redirects
-    infoMessage = t(currentLanguage, 'login.redirecting');
+    if (user) {
+      const authedEmail = user.email ?? e;
+      dispatch('login', { username: authedEmail });
+      // Keep loading while the page bridges cookies and redirects
+      infoMessage = 'Authenticated. Redirecting...';
+      
+      // Add a small delay to ensure the auth state change is processed
+      setTimeout(() => {
+        if (browser) {
+          window.location.href = '/dashboard';
+        }
+      }, 500);
+    } else {
+      errorMessage = 'Authentication failed. Please try again.';
+      loading = false;
+      loadingAction = null;
+    }
   }
 
   async function handleForgotPassword() {
@@ -185,6 +200,7 @@
       return;
     }
     loading = true;
+    // Use the main supabase client directly
     const redirectTo = browser ? `${location.origin}/reset` : undefined;
     const { error } = await supabase.auth.resetPasswordForEmail(e, { redirectTo });
     loading = false;
@@ -309,7 +325,7 @@
             <a
               href="/login#forgot-password"
               on:click|preventDefault={openResetConfirm}
-              class={`text-xs text-white/70 hover:text-white underline underline-offset-4 ${(!email.trim() || loading) ? 'pointer-events-none opacity-50' : ''}`}
+              class={`text-xs text-white/80 hover:text-white underline underline-offset-4 ${(!email.trim() || loading) ? 'pointer-events-none opacity-50' : ''}`}
             >
               {t(currentLanguage, 'login.forgotPasswordLink')}
             </a>

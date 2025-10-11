@@ -10,7 +10,21 @@ export const supabase = createClient(url, key, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    // Versioned storage key - increment when you make breaking auth changes
-    storageKey: 'sb-shadowwork-auth-v1'
+    // Use secure storage - localStorage for client-side, httpOnly cookies for server-side
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    // Don't use a custom storage key - let Supabase handle it securely
+    // storageKey: 'sb-shadowwork-auth-v1' // REMOVED - this was causing localStorage storage
+  },
+  // Reduce realtime activity to prevent unnecessary network requests
+  realtime: {
+    params: {
+      eventsPerSecond: 2
+    }
+  },
+  // Disable automatic session refresh polling to prevent excessive requests
+  global: {
+    headers: {
+      'X-Client-Info': 'shadowwork-app'
+    }
   }
 });

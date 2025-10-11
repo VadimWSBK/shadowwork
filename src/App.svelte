@@ -22,6 +22,7 @@
   import day5Img from './assets/Day_Images/shadowwork_day_5.webp';
   import day6Img from './assets/Day_Images/shadowwork_day_6.webp';
   import day7Img from './assets/Day_Images/shadowwork_day_7.webp';
+  import logo from './assets/LOGO_SELF_COACHING_TOOLS.svg';
   import { t, getDaySummary, getDayIntro } from './lib/i18n';
   import { supabase } from './lib/supabaseClient';
   import { isAuthorizedUser, getProfileByEmail, updateProfileSettings } from './lib/supabaseHelpers';
@@ -30,7 +31,7 @@
   import { PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
   
 
-  let currentView: 'login' | 'dashboard' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' | 'day-completion' = 'login';
+  let currentView: 'checking' | 'login' | 'loading' | 'dashboard' | 'intro' | 'day-intro' | 'questionnaire' | 'view-answers' | 'day-completion' = 'checking';
   let username = '';
   let profileId = '';
   let currentLanguage: Language = 'en';
@@ -43,6 +44,10 @@
 
   let currentUser: any = null;
   let authorized = false;
+  let loadingMessage = '';
+  let loadingProgress = 0;
+  let authInitialized = false;
+  let authStateChangeInProgress = false;
   let navElement: HTMLElement;
   let languageMenuEl: HTMLElement | null = null;
   let languageMenuButtonEl: HTMLElement | null = null;
@@ -57,25 +62,24 @@
   let dayIntroImageLoaded = false;
   let isTransitioningDay = false;
 
-  // Cookie helpers for language persistence
-  const LANGUAGE_COOKIE = 'shadowwork_language';
-  function setLanguageCookie(lang: Language) {
+  // Language persistence helpers - using localStorage only
+  function getStoredLanguage(): Language | null {
     try {
-      const days = 365 * 2; // 2 years
-      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-      const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
-      document.cookie = `${LANGUAGE_COOKIE}=${encodeURIComponent(lang)}; Expires=${expires}; Path=/; SameSite=Lax${secure}`;
-    } catch {}
-  }
-  function getLanguageCookie(): Language | null {
-    try {
-      const m = document.cookie.match(/(?:^|;\s*)shadowwork_language=([^;]+)/);
-      const val = m ? decodeURIComponent(m[1]) : null;
-      if (val === 'en' || val === 'de' || val === 'pl') return val as Language;
+      if (typeof localStorage === 'undefined') return null;
+      const stored = localStorage.getItem('shadowwork_language') as Language | null;
+      if (stored === 'en' || stored === 'de' || stored === 'pl') return stored;
       return null;
     } catch {
       return null;
     }
+  }
+  
+  function setStoredLanguage(lang: Language) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('shadowwork_language', lang);
+      }
+    } catch {}
   }
 
   const daySummaries: Record<string, string> = {
@@ -123,22 +127,12 @@
 
   onMount(() => {
     // Load saved language
-    const cookieLang = getLanguageCookie();
-    const savedLanguage = (cookieLang ?? (localStorage.getItem('shadowwork_language') as Language | null));
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'de' || savedLanguage === 'pl')) {
+    const savedLanguage = getStoredLanguage();
+    if (savedLanguage) {
       currentLanguage = savedLanguage;
       if (typeof document !== 'undefined') {
         document.documentElement.lang = currentLanguage;
       }
-    }
-
-    // Check if user is already logged in
-    const savedUsername = localStorage.getItem('shadowwork_username');
-    if (savedUsername) {
-      username = savedUsername;
-      currentView = 'dashboard';
-      currentDay = courseData[0];
-      loadAnswers();
     }
 
     // Add click outside listener for mobile menu
@@ -164,110 +158,317 @@
     window.addEventListener('scroll', handleScroll);
     handleScroll(); // Initial check
 
+    // Initialize authentication flow
+    initializeAuth();
+
+    // Set up auth state listener (only once)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event, session ? 'session exists' : 'no session');
+      // Only handle auth changes if we're not already processing one
+      if (!authInitialized || authStateChangeInProgress) return;
+      
+      authStateChangeInProgress = true;
+      try {
+        // Don't pass session directly - let handleAuthStateChange verify with getUser()
+        await handleAuthStateChange(event, null);
+      } finally {
+        authStateChangeInProgress = false;
+      }
+    });
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('click', handleClickOutside);
-    };
-  });
-
-  onMount(() => {
-    // Restore profileId from localStorage on app initialization
-    try {
-      const storedProfileId = localStorage.getItem('shadowwork_profile_id');
-      if (storedProfileId) {
-        profileId = storedProfileId;
-        console.log('🔄 Restored profileId from localStorage:', profileId);
-      }
-    } catch (e) {
-      console.warn('Could not restore profileId from localStorage:', e);
-    }
-
-    (async () => {
-      const userInfo = await getAuthenticatedUser();
-      currentUser = userInfo as any;
-      await checkAuthAndRedirect();
-    })();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, _newSession) => {
-      const userInfo = await getAuthenticatedUser();
-      currentUser = userInfo as any;
-      await checkAuthAndRedirect();
-    });
-    // Ensure we clean up the subscription when component is destroyed
-    return () => {
       try {
         authListener?.subscription?.unsubscribe();
       } catch {}
     };
   });
 
-  async function checkAuthAndRedirect() {
-    // Don't interfere with signup page invite processing
-    if (typeof window !== 'undefined' && window.location.pathname === '/signup') {
+  // ===== SOLID AUTHENTICATION SYSTEM =====
+  
+  async function initializeAuth() {
+    console.log('🔐 Initializing authentication...');
+    
+    // Clean up old auth tokens from localStorage
+    localStorage.removeItem('sb-shadowwork-auth-v1');
+    console.log('🧹 Cleaned up old auth tokens from localStorage');
+    
+    authInitialized = false;
+    
+    try {
+      // First, check if we have a valid authenticated user
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error('❌ User check error:', error);
+        await clearAuthStateOnInit();
+        return;
+      }
+      
+      if (user) {
+        console.log('✅ Valid user found:', user.email);
+        await handleSuccessfulAuth(user);
+      } else {
+        console.log('ℹ️ No valid user found');
+        await clearAuthStateOnInit();
+      }
+    } catch (error) {
+      console.error('❌ Auth initialization error:', error);
+      await clearAuthStateOnInit();
+    } finally {
+      authInitialized = true;
+    }
+  }
+  
+  async function clearAuthStateOnInit() {
+    console.log('🧹 Clearing auth state on init...');
+    
+    // Clear user data
+    currentUser = null;
+    authorized = false;
+    username = '';
+    profileId = '';
+    
+    // Clear answers
+    answers = {};
+    answersStore.set({});
+    
+    // Clear localStorage (but keep language preference)
+    const languagePreference = localStorage.getItem('shadowwork_language');
+    const storedUsername = localStorage.getItem('shadowwork_username');
+    const storedProfileId = localStorage.getItem('shadowwork_profile_id');
+    
+    // Clear all localStorage
+    localStorage.clear();
+    
+    // Restore only the safe preferences
+    if (languagePreference) {
+      localStorage.setItem('shadowwork_language', languagePreference);
+    }
+    if (storedUsername) {
+      localStorage.setItem('shadowwork_username', storedUsername);
+    }
+    if (storedProfileId) {
+      localStorage.setItem('shadowwork_profile_id', storedProfileId);
+    }
+    
+    // Remove the old auth token from localStorage (Supabase will handle auth securely)
+    localStorage.removeItem('sb-shadowwork-auth-v1');
+    
+    // Clear global variables
+    username = '';
+    profileId = '';
+    
+    // Set view to login (only if not already set)
+    if (currentView !== 'login') {
+      currentView = 'login';
+    }
+    
+    console.log('✅ Auth state cleared on init');
+  }
+
+  async function handleAuthStateChange(event: string, session: any) {
+    console.log('🔄 Auth state change:', event, session ? 'session exists' : 'no session');
+    
+    // Don't interfere if auth isn't initialized yet
+    if (!authInitialized) {
+      console.log('⏳ Auth not initialized yet, skipping state change');
       return;
     }
     
-    if (!currentUser) {
-      authorized = false;
-      currentView = 'login';
-      // Ensure we're on the login page when not authenticated
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        goto('/login');
+    // Don't interfere if we're currently in the loading state
+    if (currentView === 'loading') {
+      console.log('⏳ Currently loading, skipping auth state change');
+      return;
+    }
+    
+    if (event === 'SIGNED_OUT') {
+      console.log('🚪 User signed out - syncing logout');
+      try {
+        await fetch('/auth/logout', { method: 'POST' });
+      } catch (e) {
+        console.error('Failed to sync logout:', e);
       }
+      await clearAuthState();
+    } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      console.log('✅ User signed in or token refreshed');
+      
+      // SECURITY: Always verify user with auth server instead of trusting session data
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('❌ User verification failed:', userError);
+        await clearAuthState();
+        return;
+      }
+      
+      if (user) {
+        // Sync session to server cookies AFTER user verification
+        try {
+          const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+          if (verifiedSession?.access_token && verifiedSession?.refresh_token) {
+            await fetch('/auth/cookie', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                access_token: verifiedSession.access_token, 
+                refresh_token: verifiedSession.refresh_token 
+              })
+            });
+          }
+        } catch (e) {
+          console.error('Failed to sync auth cookies:', e);
+        }
+        
+        await handleSuccessfulAuth(user);
+      } else {
+        console.log('❌ No user found after auth state change');
+        await clearAuthState();
+      }
+    }
+  }
+
+  async function handleSuccessfulAuth(user: any) {
+    console.log('✅ Handling successful auth for user:', user.email);
+    
+    // Set user data
+    currentUser = user;
+    
+    // Check authorization
+    const isAuthorized = await isAuthorizedUser();
+    if (!isAuthorized) {
+      console.log('❌ User not authorized');
+      await clearAuthState();
       return;
     }
-    authorized = await isAuthorizedUser();
-    if (!authorized) {
-      // Sign out unauthorized users to avoid lingering sessions
-      await supabase.auth.signOut();
-      currentView = 'login';
-      goto('/login');
-      return;
-    }
-    // Load profile settings when authorized
-    const email = currentUser?.email as string | undefined;
-    console.log('🔍 Loading profile for email:', email, 'Current profileId:', profileId);
+    
+    // Set authorized state
+    authorized = true;
+    
+    // Load profile data from database
+    const email = user?.email as string | undefined;
     if (email) {
-      const { data } = await getProfileByEmail(email);
-      if (data) {
-        const newProfileId = (data.id as string) || '';
-        console.log('📥 Profile loaded from database:', { id: newProfileId, username: data.username });
+      console.log('📥 Loading profile from database...');
+      const { data: profile } = await getProfileByEmail(email);
+      
+      if (profile) {
+        const newProfileId = (profile.id as string) || '';
+        console.log('✅ Profile loaded:', { id: newProfileId, username: profile.username });
+        
         profileId = newProfileId;
-        username = (data.username as string) || email;
-        const lang = (data.language as Language) || (localStorage.getItem('shadowwork_language') as Language) || 'en';
+        username = (profile.username as string) || email;
+        
+        const lang = (profile.language as Language) || currentLanguage;
         if (lang === 'en' || lang === 'de' || lang === 'pl') {
           currentLanguage = lang;
         }
+        
+        // Save to localStorage
         localStorage.setItem('shadowwork_username', username);
         localStorage.setItem('shadowwork_language', currentLanguage);
         if (profileId) {
           localStorage.setItem('shadowwork_profile_id', profileId);
-          console.log('💾 ProfileId saved to localStorage:', profileId);
-        } else {
-          console.warn('⚠️ ProfileId is empty, not saving to localStorage');
         }
-        // Hydrate answers from remote after profile is known
-        await hydrateAnswersFromRemote();
       } else {
-        // Ensure a profile record exists for this email
+        // Profile doesn't exist - create it
+        console.log('⚠️ Profile not found, creating new profile...');
         await updateProfileSettings({ email, username: email, language: currentLanguage });
-        // Try to read back the profile to capture profileId
+        
+        // Try to read back the profile
         const { data: created } = await getProfileByEmail(email);
-        profileId = (created?.id as string) || '';
-        if (profileId) localStorage.setItem('shadowwork_profile_id', profileId);
-        await hydrateAnswersFromRemote();
+        if (created) {
+          profileId = (created.id as string) || '';
+          username = (created.username as string) || email;
+          localStorage.setItem('shadowwork_username', username);
+          if (profileId) {
+            localStorage.setItem('shadowwork_profile_id', profileId);
+          }
+        }
       }
     }
-    // If authorized and currently at login, proceed to dashboard
-    if (currentView === 'login') {
-      currentDay = courseData[0];
-      currentView = 'dashboard';
-    }
+    
+    // Load answers
+    console.log('🔄 Starting answer loading process...');
+    await loadAnswers();
+    
+    // Set view to dashboard
+    currentView = 'dashboard';
+    currentDay = courseData[0];
+    
+    console.log('✅ Authentication successful, user ready');
   }
+
+  async function clearAuthState() {
+    console.log('🧹 Clearing auth state...');
+    
+    // Clear user data
+    currentUser = null;
+    authorized = false;
+    username = '';
+    profileId = '';
+    
+    // Clear answers
+    answers = {};
+    answersStore.set({});
+    
+    // Clear localStorage (but keep language preference)
+    const languagePreference = localStorage.getItem('shadowwork_language');
+    const storedUsername = localStorage.getItem('shadowwork_username');
+    const storedProfileId = localStorage.getItem('shadowwork_profile_id');
+    
+    // Clear all localStorage
+    localStorage.clear();
+    
+    // Restore only the safe preferences
+    if (languagePreference) {
+      localStorage.setItem('shadowwork_language', languagePreference);
+    }
+    if (storedUsername) {
+      localStorage.setItem('shadowwork_username', storedUsername);
+    }
+    if (storedProfileId) {
+      localStorage.setItem('shadowwork_profile_id', storedProfileId);
+    }
+    
+    // Remove the old auth token from localStorage (Supabase will handle auth securely)
+    localStorage.removeItem('sb-shadowwork-auth-v1');
+    
+    // Clear global variables
+    username = '';
+    profileId = '';
+    
+    // Set view to login
+    currentView = 'login';
+    
+    // Clear server-side session
+    try {
+      await fetch('/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.warn('Failed to clear server session:', error);
+    }
+    
+    console.log('✅ Auth state cleared');
+  }
+
+  // Legacy checkAuthAndRedirect function removed - replaced by new solid auth system
 
   async function hydrateAnswersFromRemote() {
     try {
-      const { data } = await answerStorage.getAnswers();
+      console.log('🔄 hydrateAnswersFromRemote() called');
+      const result = await answerStorage.getAnswers();
+      console.log('📦 answerStorage.getAnswers() result:', { 
+        success: !!result.data, 
+        rowCount: result.data?.length || 0,
+        error: result.error || 'none'
+      });
+      
+      const { data, error } = result;
+      
+      if (error) {
+        console.error('❌ Error from getAnswers:', error);
+        // Don't update store if there was an error
+        return;
+      }
       
       // Always build the in-memory structure: Record<dayId, string[]> with proper lengths
       const next: Record<string, string[]> = {};
@@ -277,20 +478,37 @@
       
       // If we have data, populate it
       if (data && data.length > 0) {
+        console.log('📥 Processing', data.length, 'answer rows from remote');
+        let populatedCount = 0;
         for (const row of data) {
           const d = row.day_id;
           const i = Number(row.question_index ?? 0);
           if (next[d] && i >= 0 && i < next[d].length) {
             next[d][i] = row.answer_text || '';
+            if (row.answer_text && row.answer_text.trim().length > 0) {
+              populatedCount++;
+            }
+          } else {
+            console.warn('⚠️ Answer row has invalid day/index:', { day_id: d, question_index: i });
           }
         }
+        console.log('✅ Populated', populatedCount, 'answers from remote');
+      } else {
+        console.log('ℹ️ No answer data returned from remote - user may not have answered any questions yet');
       }
       
       answers = next;
       answersStore.set(next);
       console.log('✅ Loaded answers from remote:', data?.length || 0, 'rows');
+      
+      // Log summary of loaded answers per day
+      const summary = Object.entries(next).map(([dayId, dayAnswers]) => {
+        const answeredCount = dayAnswers.filter(a => a && a.trim().length > 0).length;
+        return `${dayId}: ${answeredCount}/${dayAnswers.length}`;
+      }).join(', ');
+      console.log('📊 Answer summary by day:', summary);
     } catch (error) {
-      console.error('Failed to load answers:', error);
+      console.error('❌ Failed to load answers:', error);
     }
   }
 
@@ -305,19 +523,74 @@
   }
 
   async function handleLogin(event: CustomEvent<{ username: string }>) {
+    console.log('🔐 Handling login for username:', event.detail.username);
+    
+    // Save username to localStorage
     username = event.detail.username;
     localStorage.setItem('shadowwork_username', username);
-    // Enforce auth guard: only proceed if currentUser exists and user is authorized
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUser = user || null;
-    const ok = currentUser ? await isAuthorizedUser() : false;
-    if (!ok) {
-      currentView = 'login';
-      return;
+    
+    // Show loading state
+    currentView = 'loading';
+    loadingMessage = t(currentLanguage, 'auth.verifying');
+    loadingProgress = 20;
+    
+    try {
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      loadingProgress = 40;
+      
+      if (!user) {
+        console.log('❌ No authenticated user found');
+        loadingMessage = t(currentLanguage, 'auth.noUser');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await clearAuthState();
+        return;
+      }
+      
+      console.log('✅ Authenticated user found:', user.email);
+      currentUser = user;
+      
+      loadingMessage = t(currentLanguage, 'auth.checkingAuthorization');
+      loadingProgress = 60;
+      
+      // Check authorization
+      const isAuthorized = await isAuthorizedUser();
+      loadingProgress = 80;
+      
+      if (!isAuthorized) {
+        console.log('❌ User not authorized');
+        loadingMessage = t(currentLanguage, 'auth.notAuthorized');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        await clearAuthState();
+        return;
+      }
+      
+      console.log('✅ User authorized, proceeding with login');
+      
+      // Set authorized flag
+      authorized = true;
+      
+      loadingMessage = t(currentLanguage, 'auth.loadingData');
+      loadingProgress = 90;
+      
+      // Set current day and load answers
+      currentDay = courseData[0];
+      await loadAnswers();
+      
+      loadingProgress = 100;
+      loadingMessage = t(currentLanguage, 'auth.complete');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Transition to dashboard
+      currentView = 'dashboard';
+      console.log('✅ Login successful, user ready');
+      
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      loadingMessage = t(currentLanguage, 'auth.error');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await clearAuthState();
     }
-    currentDay = courseData[0]; // Set to intro
-    currentView = 'dashboard';
-    loadAnswers();
   }
   
   function handleStartIntro() {
@@ -378,18 +651,35 @@
     };
   }
 
-  function loadAnswers() {
-    const saved = localStorage.getItem(`answers_${username}`);
-    if (saved) {
-      answers = JSON.parse(saved);
-    } else {
-      // Initialize empty answers for all days
+  async function loadAnswers() {
+    console.log('📥 Loading answers...', { username, currentUser: !!currentUser, authorized });
+    
+    try {
+      // Initialize empty answers structure first
       answers = {};
       courseData.forEach(day => {
         answers[day.id] = new Array(day.questions.length).fill('');
       });
+      console.log('📥 Initialized empty answers structure');
+      answersStore.set(answers);
+      
+      // If user is authenticated, load from remote database (primary source of truth)
+      if (currentUser && authorized) {
+        console.log('📥 Loading answers from remote database... (user authenticated)');
+        await hydrateAnswersFromRemote();
+        console.log('✅ Remote answers loaded and store updated');
+      } else {
+        console.log('⚠️ Skipping remote load - currentUser:', !!currentUser, 'authorized:', authorized);
+      }
+    } catch (error) {
+      console.error('❌ Error loading answers:', error);
+      // Fallback to empty answers
+      answers = {};
+      courseData.forEach(day => {
+        answers[day.id] = new Array(day.questions.length).fill('');
+      });
+      answersStore.set(answers);
     }
-    answersStore.set(answers);
   }
 
   function handleAnswersUpdate(event: CustomEvent<Record<string, string[]>>) {
@@ -397,10 +687,7 @@
   }
 
   function showAnswers() {
-    // Get current answers from store
-    answersStore.subscribe(value => {
-      answers = value;
-    })();
+    // Get current answers from store (already reactive via $answersStore)
     currentView = 'view-answers';
   }
 
@@ -763,32 +1050,18 @@
   }
 
   async function logout() {
-    console.log('🚪 Logging out, clearing profileId:', profileId);
+    console.log('🚪 Logging out user...');
     
-    // Clear local state first
-    localStorage.removeItem('shadowwork_username');
-    localStorage.removeItem('shadowwork_profile_id');
-    username = '';
-    profileId = '';
-    console.log('🧹 ProfileId cleared during logout');
-    answers = {};
-    answersStore.set({});
+    // Close settings popup
     showSettings = false;
     
-    // Set view to login immediately to prevent UI flicker
-    currentView = 'login';
-    currentUser = null;
-    authorized = false;
-    
-    // Sign out from Supabase
+    // Sign out from Supabase (this will trigger the auth state change)
     await supabase.auth.signOut();
-    // Clear server-side auth cookies to fully invalidate session
-    try {
-      await fetch('/auth/logout', { method: 'POST' });
-    } catch {}
     
-    // Navigate to login page
-    goto('/login');
+    // Clear auth state (this will also clear localStorage and set view to login)
+    await clearAuthState();
+    
+    console.log('✅ Logout complete');
   }
 
   async function handleChangePassword(event: CustomEvent<{ oldPassword: string; newPassword: string }>) {
@@ -974,8 +1247,7 @@
 
   function changeLanguage(language: Language) {
     currentLanguage = language;
-    localStorage.setItem('shadowwork_language', language);
-    setLanguageCookie(language);
+    setStoredLanguage(language);
     if (typeof document !== 'undefined') {
       document.documentElement.lang = language;
     }
@@ -1156,9 +1428,51 @@
         {/if}
       {/if}
  
-      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-500 z-20 {currentView !== 'login' ? (sidebarCollapsed ? 'lg:left-20' : 'lg:left-80') : 'left-0'}">
-        {#if currentView === 'login'}
+      <div class="fixed top-16 bottom-0 right-0 overflow-y-auto transition-all duration-500 z-20 {(currentView !== 'login' && currentView !== 'checking') ? (sidebarCollapsed ? 'lg:left-20' : 'lg:left-80') : 'left-0'}">
+        {#if currentView === 'checking'}
+          <!-- Checking Auth State - Minimal UI -->
+          <div class="min-h-screen bg-gradient-to-br from-[#004D56] via-[#00444B] to-[#003B41] flex items-center justify-center p-4">
+            <div class="flex justify-center">
+              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FBCA29]"></div>
+            </div>
+          </div>
+        {:else if currentView === 'login'}
           <Login {currentLanguage} on:login={handleLogin} />
+        {:else if currentView === 'loading'}
+          <div class="min-h-screen bg-gradient-to-br from-[#004D56] via-[#00444B] to-[#003B41] flex items-center justify-center p-4">
+            <div class="max-w-md w-full">
+              <!-- Loading Card -->
+              <div class="bg-white/10 backdrop-blur-xl border border-white/30 rounded shadow-2xl p-8 text-center">
+                <!-- Logo -->
+                <div class="flex justify-center mb-6">
+                  <img src={logo} alt="Self Coaching Tools Logo" class="w-16 h-16 object-contain" />
+                </div>
+                
+                <!-- Loading Message -->
+                <h2 class="text-2xl font-bold text-white mb-4 font-primary">
+                  {loadingMessage}
+                </h2>
+                
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                  <div class="w-full bg-white/20 rounded-full h-2">
+                    <div 
+                      class="bg-gradient-to-r from-[#FBCA29] to-[#EBD27B] h-2 rounded-full transition-all duration-500 ease-out"
+                      style="width: {loadingProgress}%"
+                    ></div>
+                  </div>
+                  <p class="text-white/60 text-sm mt-2 font-secondary">
+                    {loadingProgress}%
+                  </p>
+                </div>
+                
+                <!-- Loading Animation -->
+                <div class="flex justify-center">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FBCA29]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         {:else if currentView === 'dashboard'}
           <Dashboard 
             {courseData}
@@ -1592,7 +1906,10 @@
       email={currentUser?.email}
       {currentLanguage}
       nameSaveStatus={nameSaveStatus}
-      on:close={() => showSettings = false}
+      on:close={() => { 
+        showSettings = false; 
+        nameSaveStatus = null; // Reset the status when closing
+      }}
       on:logout={logout}
       on:changePassword={handleChangePassword}
       on:changeName={handleChangeName}

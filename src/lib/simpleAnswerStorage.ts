@@ -103,50 +103,86 @@ export class SimpleAnswerStorage {
   }
 
   /**
-   * Get all answers for current authenticated user via RPC (get_user_answers)
+   * Get all answers for current authenticated user via direct Supabase query
    */
   async getAnswers(): Promise<{ data: AnswerRow[] | null; error?: string }> {
-    const profileId = this.getProfileId();
     try {
-      // Primary: RPC returning answers for current auth user
-      const { data, error } = await supabase.rpc('get_user_answers');
-      if (!error && Array.isArray(data)) {
-        const rows = (data as AnswerRow[]) || [];
+      console.log('📥 getAnswers() called - starting authentication check...');
+      
+      // Verify user authentication securely (validates JWT with auth server)
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('❌ User authentication error:', userError);
+        return { data: null, error: `Authentication error: ${userError.message}` };
+      }
+      
+      if (!user) {
+        console.warn('⚠️ No authenticated user found');
+        return { data: null, error: 'No authenticated user' };
+      }
+
+      console.log('✅ User authenticated:', user.email, 'user.id:', user.id);
+
+      // Get user's profile first
+      console.log('🔍 Looking for profile with user_id:', user.id);
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, user_id, email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('❌ Profile not found:', profileError);
+        return { data: null, error: 'Profile not found' };
+      }
+
+      console.log('✅ Profile found:', { id: profile.id, user_id: profile.user_id, email: profile.email });
+
+      // Get answers directly from the database
+      console.log('📞 Querying answers directly from database with profile_id:', profile.id);
+      const { data: answers, error: answersError } = await supabase
+        .from('answers')
+        .select('day_id, question_index, answer_text, updated_at')
+        .eq('profile_id', profile.id)
+        .order('day_id')
+        .order('question_index');
+
+      if (answersError) {
+        console.error('❌ Database query error:', answersError);
+        return { data: null, error: answersError.message };
+      }
+
+      console.log('📦 Database response received:', { 
+        hasData: !!answers, 
+        answerCount: answers?.length || 0
+      });
+
+      if (answers && answers.length > 0) {
+        const answerCount = answers.length;
+        console.log(`✅ Loaded ${answerCount} answer row(s) from database`);
+        
+        // Decrypt answers if they are encrypted
+        const rows = answers as AnswerRow[];
+        let decryptedCount = 0;
         for (const r of rows) {
-          if (typeof r.answer_text === 'string') {
+          if (typeof r.answer_text === 'string' && r.answer_text.length > 0) {
             const dec = await tryDecrypt(r.answer_text);
+            if (dec !== null && dec !== r.answer_text) {
+              decryptedCount++;
+            }
             r.answer_text = dec !== null ? dec : r.answer_text;
           }
         }
+        
+        console.log(`🔓 Decrypted ${decryptedCount} answer(s)`);
         return { data: rows };
       }
-      console.warn('RPC get_user_answers failed or returned invalid data; considering fallback:', error?.message);
 
-      // Fallback: query by profile_id if available
-      if (profileId) {
-        const { data: rows, error: selectError } = await supabase
-          .from('answers')
-          .select('day_id, question_index, answer_text, updated_at')
-          .eq('profile_id', profileId)
-          .order('day_id', { ascending: true })
-          .order('question_index', { ascending: true });
-        if (!selectError) {
-          const rows2 = (rows as AnswerRow[]) || [];
-          for (const r of rows2) {
-            if (typeof r.answer_text === 'string') {
-              const dec = await tryDecrypt(r.answer_text);
-              r.answer_text = dec !== null ? dec : r.answer_text;
-            }
-          }
-          return { data: rows2 };
-        }
-        console.error('Client select failed:', selectError);
-        return { data: null, error: selectError.message };
-      }
-
-      return { data: [], error: 'No data and no profileId for fallback' };
+      console.log('ℹ️ No answers found in database - returning empty array');
+      return { data: [] };
     } catch (error: any) {
-      console.error('Fetch answers threw exception:', error);
+      console.error('❌ Error loading answers:', error);
       return { data: null, error: error?.message || 'Network error' };
     }
   }

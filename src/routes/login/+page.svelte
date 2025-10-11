@@ -60,6 +60,7 @@
     
     try {
       if (typeof window !== 'undefined') {
+        // Use the main supabase client directly
         const params = new URLSearchParams(window.location.search);
         if (params.get('code')) {
           // PKCE implicit flow: exchange ?code for a session
@@ -79,10 +80,12 @@
 
     // Bridge client session to server cookies so server-side guards allow app routes
     // Verify user is authenticated (validates JWT with auth server)
+    // Use the main supabase client directly
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       isVerifying = true;
-      verifyMessage = 'Redirecting to dashboard…';
+      verifyMessage = 'Authenticated. Redirecting...';
+      
       // After verification, get session tokens (needed for cookie bridging)
       // This is safe because we've already verified the user above
       const { data: { session } } = await supabase.auth.getSession();
@@ -90,33 +93,27 @@
         isVerifying = false;
         return;
       }
+      
       try {
         await fetch('/auth/cookie', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
         });
-      } catch {}
-      goto('/dashboard');
+        
+        // Add a small delay to ensure auth state is fully synchronized
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Force navigation to dashboard
+        goto('/dashboard', { replaceState: true });
+      } catch (error) {
+        console.error('Failed to sync auth cookies:', error);
+        // Still redirect even if cookie sync fails
+        goto('/dashboard', { replaceState: true });
+      }
     }
 
-    // Also listen for auth changes initiated from the login form (password sign-in)
-    try {
-      unsub = supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (!session) return;
-        isVerifying = true;
-        verifyMessage = 'Syncing session…';
-        try {
-          await fetch('/auth/cookie', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token })
-          });
-        } catch {}
-        verifyMessage = 'Redirecting to dashboard…';
-        goto('/dashboard');
-      });
-    } catch {}
+    // Auth state changes are handled by App.svelte to avoid duplicate listeners
   });
 
   onDestroy(() => {

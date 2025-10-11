@@ -171,6 +171,27 @@ img {
   stroke: url(#golden-gradient-svg);
 }
 
+/* Global hyperlink styling with white/80 */
+a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+/* Keep existing link styles for specific contexts */
+a.underline {
+  color: #0C6E78 !important;
+  text-decoration: underline !important;
+}
+
+a.underline:hover {
+  color: white !important;
+}
+
 /* Simplified button class with teal background */
 .btn-primary {
   position: relative;

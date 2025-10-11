@@ -134,8 +134,7 @@
               <button
                 on:click={saveEdit}
                 disabled={isSaving}
-                class="px-6 py-2 text-sm font-bold text-white rounded shadow-md transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed font-primary"
-                style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
+                class="btn-primary golden-border px-6 py-2 text-sm font-bold shadow-md transition-all duration-200 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed font-primary"
               >
                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span class="relative z-10 flex items-center gap-2">
@@ -187,8 +186,7 @@
                   <p class="text-white/70 italic mb-3 font-secondary">{t(currentLanguage, 'answers.noResponse')}</p>
                   <button
                     on:click={() => startEditing(i)}
-                    class="px-4 py-2 text-sm font-medium text-white rounded shadow-md transition-all duration-200 font-primary"
-                    style="background: linear-gradient(135deg, #0C6E78 0%, #0A5A63 100%);"
+                    class="btn-primary golden-border px-4 py-2 text-sm font-medium shadow-md transition-all duration-200 font-primary"
                   >
                     {t(currentLanguage, 'answers.addResponse')}
                   </button>

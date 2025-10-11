@@ -78,6 +78,7 @@
         let processed = false;
         
         // Process different types of invite links
+        // Use the main supabase client directly
         if (token_hash) {
           console.log('Processing token_hash invite...');
           const { error } = await supabase.auth.verifyOtp({ token_hash, type: typeParam });
@@ -158,6 +159,7 @@
     loading = true;
     try {
       // Set password on the invited user
+      // Use the main supabase client directly
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) {
         throw updateError;
